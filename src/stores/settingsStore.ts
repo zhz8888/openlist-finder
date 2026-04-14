@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import type { MeilisearchConfig, ExperimentalFeatures, ThemeConfig } from "@/types";
+import type { MeilisearchConfig, ThemeConfig } from "@/types";
 
 function getSystemTheme(): "light" | "dark" {
   if (typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches) {
@@ -11,10 +11,8 @@ function getSystemTheme(): "light" | "dark" {
 
 interface SettingsState {
   meilisearch: MeilisearchConfig;
-  experimental: ExperimentalFeatures;
   theme: ThemeConfig;
   updateMeilisearch: (config: Partial<MeilisearchConfig>) => void;
-  setExperimental: (features: Partial<ExperimentalFeatures>) => void;
   setTheme: (theme: ThemeConfig) => void;
   getResolvedTheme: () => "light" | "dark";
 }
@@ -28,9 +26,6 @@ export const useSettingsStore = create<SettingsState>()(
         indexPrefix: "openlist",
         syncStrategy: "manual",
       },
-      experimental: {
-        meilisearch: false,
-      },
       theme: {
         mode: "system",
       },
@@ -38,12 +33,6 @@ export const useSettingsStore = create<SettingsState>()(
       updateMeilisearch: (config) => {
         set((state) => ({
           meilisearch: { ...state.meilisearch, ...config },
-        }));
-      },
-
-      setExperimental: (features) => {
-        set((state) => ({
-          experimental: { ...state.experimental, ...features },
         }));
       },
 

@@ -6,7 +6,6 @@ pub struct AppConfig {
     pub servers: Vec<ServerEntry>,
     pub active_server_id: Option<String>,
     pub meilisearch: MeilisearchEntry,
-    pub experimental: ExperimentalConfig,
     pub theme: ThemeConfigEntry,
 }
 
@@ -32,12 +31,6 @@ pub struct MeilisearchEntry {
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ExperimentalConfig {
-    pub meilisearch: bool,
-}
-
-#[allow(dead_code)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ThemeConfigEntry {
     pub mode: String,
 }
@@ -52,9 +45,6 @@ impl Default for AppConfig {
                 api_key: String::new(),
                 index_prefix: "openlist".to_string(),
                 sync_strategy: "manual".to_string(),
-            },
-            experimental: ExperimentalConfig {
-                meilisearch: false,
             },
             theme: ThemeConfigEntry {
                 mode: "system".to_string(),

@@ -5,7 +5,7 @@
 ## 功能特性
 
 - **OpenList 集成** — 连接 OpenList 服务器，浏览和管理远程文件系统（列表、重命名、删除、复制、移动）
-- **Meilisearch 搜索** — 将文件元数据同步至 Meilisearch 索引，实现快速全文检索（实验性特性）
+- **Meilisearch 搜索** — 将文件元数据同步至 Meilisearch 索引，实现快速全文检索
 - **MCP 服务** — 通过 stdio 暴露文件操作与搜索能力，供 AI 工具集成调用
 - **多服务器管理** — 支持配置多个 OpenList 服务器，Token 认证
 - **主题系统** — GitHub Light / GitHub Dark / 跟随系统，基于 DaisyUI 主题
@@ -105,9 +105,9 @@ npm run tauri build
 - **服务器地址** — OpenList 实例的 URL（如 `https://fox.oplist.org`）
 - **Token** — 认证令牌
 
-### Meilisearch（实验性）
+### Meilisearch
 
-需在设置中启用实验性特性后配置：
+在设置页面配置 Meilisearch 连接信息：
 
 - **Host** — Meilisearch 服务地址（默认 `http://localhost:7700`）
 - **API Key** — Meilisearch API 密钥
@@ -128,8 +128,8 @@ MCP 服务通过 stdio 传输协议运行，可被支持 MCP 的 AI 工具集成
 | `move_file` | 移动文件 |
 | `edit_file` | 编辑文件内容 |
 | `search_files` | 搜索文件（需 Meilisearch） |
-| `sync_index` | 同步索引（需 Meilisearch，实验性） |
-| `get_index_status` | 获取索引状态（需 Meilisearch，实验性） |
+| `sync_index` | 同步索引（需 Meilisearch） |
+| `get_index_status` | 获取索引状态（需 Meilisearch） |
 
 ## 许可证
 

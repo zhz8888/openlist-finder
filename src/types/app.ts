@@ -1,7 +1,3 @@
-export interface ExperimentalFeatures {
-  meilisearch: boolean;
-}
-
 export interface ThemeConfig {
   mode: "light" | "dark" | "system";
 }
@@ -10,7 +6,6 @@ export interface AppSettings {
   servers: import("./openlist").ServerConfig[];
   activeServerId: string | null;
   meilisearch: import("./meilisearch").MeilisearchConfig;
-  experimental: ExperimentalFeatures;
   theme: ThemeConfig;
 }
 

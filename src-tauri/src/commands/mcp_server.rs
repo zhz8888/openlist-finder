@@ -40,7 +40,7 @@ pub struct McpTool {
 pub struct McpServer;
 
 impl McpServer {
-    pub fn get_tools(experimental_enabled: bool) -> Vec<McpTool> {
+    pub fn get_tools() -> Vec<McpTool> {
         let mut tools = vec![
             McpTool {
                 name: "list_directory".to_string(),
@@ -56,7 +56,7 @@ impl McpServer {
             },
             McpTool {
                 name: "search_files".to_string(),
-                description: "Search files using Meilisearch (experimental feature must be enabled)".to_string(),
+                description: "Search files using Meilisearch".to_string(),
                 input_schema: serde_json::json!({
                     "type": "object",
                     "properties": {
@@ -178,10 +178,9 @@ impl McpServer {
             },
         ];
 
-        if experimental_enabled {
-            tools.push(McpTool {
-                name: "sync_index".to_string(),
-                description: "Sync file index to Meilisearch (requires experimental Meilisearch feature)".to_string(),
+        tools.push(McpTool {
+            name: "sync_index".to_string(),
+            description: "Sync file index to Meilisearch".to_string(),
                 input_schema: serde_json::json!({
                     "type": "object",
                     "properties": {
@@ -193,7 +192,7 @@ impl McpServer {
             });
             tools.push(McpTool {
                 name: "get_index_status".to_string(),
-                description: "Get Meilisearch index status (requires experimental Meilisearch feature)".to_string(),
+                description: "Get Meilisearch index status".to_string(),
                 input_schema: serde_json::json!({
                     "type": "object",
                     "properties": {
@@ -225,8 +224,8 @@ impl McpServer {
         }
     }
 
-    pub fn handle_tools_list(id: Option<i64>, experimental_enabled: bool) -> JsonRpcResponse {
-        let tools: Vec<Value> = Self::get_tools(experimental_enabled).into_iter().map(|t| {
+    pub fn handle_tools_list(id: Option<i64>) -> JsonRpcResponse {
+        let tools: Vec<Value> = Self::get_tools().into_iter().map(|t| {
             serde_json::json!({
                 "name": t.name,
                 "description": t.description,
@@ -465,7 +464,7 @@ impl McpServer {
             }
             "sync_index" | "get_index_status" => {
                 serde_json::json!({
-                    "content": [{ "type": "text", "text": format!("{} requires experimental Meilisearch feature to be enabled in application settings.", tool_name) }],
+                    "content": [{ "type": "text", "text": format!("{} requires Meilisearch to be configured in application settings.", tool_name) }],
                     "isError": true
                 })
             }
@@ -551,7 +550,7 @@ pub fn run_stdio_server() {
                     "notifications/initialized" => {
                         continue;
                     }
-                    "tools/list" => McpServer::handle_tools_list(request.id, false),
+                    "tools/list" => McpServer::handle_tools_list(request.id),
                     "tools/call" => rt.block_on(McpServer::handle_tool_call(request.id, request.params)),
                     "ping" => JsonRpcResponse {
                         jsonrpc: "2.0".to_string(),

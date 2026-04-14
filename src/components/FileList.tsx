@@ -52,7 +52,7 @@ function getFileIcon(file: FileInfo) {
 
 export function FileList() {
   const { getActiveServer } = useServerStore();
-  const { experimental, meilisearch } = useSettingsStore();
+  const { meilisearch } = useSettingsStore();
   const { query, setQuery, setResults, isSearching, setSearchError } = useSearchStore();
   const currentPath = useFileBrowserStore((s) => s.currentPath);
   const addToast = useToastStore((s) => s.addToast);
@@ -183,7 +183,7 @@ export function FileList() {
   }, [pathModal, getActiveServer, loadFiles, addToast]);
 
   const handleSearch = useCallback(async () => {
-    if (!experimental.meilisearch || !query.trim()) return;
+    if (!query.trim()) return;
     const server = getActiveServer();
     if (!server) return;
     try {
@@ -195,7 +195,7 @@ export function FileList() {
       setSearchError(msg);
       addToast("error", `Search failed: ${msg}`);
     }
-  }, [experimental.meilisearch, query, getActiveServer, meilisearch, setResults, setSearchError, addToast]);
+  }, [meilisearch, query, getActiveServer, setResults, setSearchError, addToast]);
 
   const handleEditFile = useCallback((file: FileInfo) => {
     const server = getActiveServer();
@@ -219,8 +219,7 @@ export function FileList() {
     <div className="flex-1 flex flex-col overflow-hidden">
       <Breadcrumb />
 
-      {experimental.meilisearch && (
-        <div className="px-4 py-2 bg-base-100 border-b border-base-300 flex gap-2">
+      <div className="px-4 py-2 bg-base-100 border-b border-base-300 flex gap-2">
           <input
             type="text"
             placeholder="Search files..."
@@ -234,7 +233,6 @@ export function FileList() {
             {isSearching ? <span className="loading loading-spinner loading-xs"></span> : "Search"}
           </button>
         </div>
-      )}
 
       {error && (
         <div className="alert alert-error mx-4 mt-2">

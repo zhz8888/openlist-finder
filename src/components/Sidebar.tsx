@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { useServerStore, useSettingsStore, useSearchStore, useFileBrowserStore } from "@/stores";
+import { useServerStore, useSearchStore, useFileBrowserStore } from "@/stores";
 import { useFileBrowser } from "@/hooks";
 
 export function Sidebar() {
   const { servers, activeServerId, setActiveServer } = useServerStore();
-  const { experimental } = useSettingsStore();
   const { indexProgress } = useSearchStore();
   const { loadFiles } = useFileBrowser();
   const rawFiles = useFileBrowserStore((s) => s.files);
@@ -90,9 +89,8 @@ export function Sidebar() {
               <div className="stat-value text-base">{rawFiles.length}</div>
             </div>
 
-            {experimental.meilisearch && (
-              <div className="stat bg-base-100 rounded-box p-3">
-                <div className="stat-title text-xs">Index Status</div>
+            <div className="stat bg-base-100 rounded-box p-3">
+              <div className="stat-title text-xs">Index Status</div>
                 {indexProgress.isRunning ? (
                   <div className="flex items-center gap-2">
                     <progress
@@ -108,8 +106,7 @@ export function Sidebar() {
                   </div>
                 )}
               </div>
-            )}
-          </div>
+            </div>
         ) : (
           <div className="text-center py-8">
             <p className="text-sm opacity-60">No server configured</p>

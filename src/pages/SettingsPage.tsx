@@ -6,7 +6,7 @@ import type { ThemeConfig } from "@/types";
 
 export function SettingsPage() {
   const { servers, addServer, removeServer, updateServer, setDefaultServer } = useServerStore();
-  const { meilisearch, experimental, theme, updateMeilisearch, setExperimental, setTheme } = useSettingsStore();
+  const { meilisearch, theme, updateMeilisearch, setTheme } = useSettingsStore();
 
   const [newServerName, setNewServerName] = useState("");
   const [newServerUrl, setNewServerUrl] = useState("");
@@ -144,32 +144,7 @@ export function SettingsPage() {
 
           <section className="card bg-base-200">
             <div className="card-body">
-              <h2 className="card-title text-lg">Experimental Features</h2>
-              <p className="text-sm opacity-70">Enable experimental features that are still in development.</p>
-              <div className="form-control mt-2">
-                <label className="label cursor-pointer justify-start gap-3">
-                  <input
-                    type="checkbox"
-                    className="toggle toggle-primary"
-                    checked={experimental.meilisearch}
-                    onChange={(e) => setExperimental({ meilisearch: e.target.checked })}
-                  />
-                  <div>
-                    <span className="label-text font-medium">Meilisearch Integration</span>
-                    <p className="text-xs opacity-60">Enable file search and indexing via Meilisearch</p>
-                  </div>
-                </label>
-              </div>
-            </div>
-          </section>
-
-          {experimental.meilisearch && (
-            <section className="card bg-base-200">
-              <div className="card-body">
-                <h2 className="card-title text-lg">
-                  Meilisearch Configuration
-                  <span className="badge badge-warning badge-sm">Experimental</span>
-                </h2>
+              <h2 className="card-title text-lg">Meilisearch Configuration</h2>
                 <div className="space-y-2 mt-2">
                   <input
                     type="text"
@@ -220,7 +195,6 @@ export function SettingsPage() {
                 </div>
               </div>
             </section>
-          )}
 
           <section className="card bg-base-200">
             <div className="card-body">
