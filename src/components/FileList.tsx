@@ -251,8 +251,9 @@ export function FileList() {
       {contextMenu && (
         <div
           className="dropdown-content menu bg-base-100 rounded-box z-50 w-52 p-2 shadow-lg border border-base-300 fixed context-menu"
-          style={{ left: contextMenu.x, top: contextMenu.y }}
+          style={{ "--ctx-x": `${contextMenu.x}px`, "--ctx-y": `${contextMenu.y}px` } as React.CSSProperties}
           role="menu"
+          aria-label="File context menu"
         >
           <li role="menuitem"><button type="button" onClick={() => { setRenameModal({ file: contextMenu.file, newName: contextMenu.file.name }); setContextMenu(null); }}>Rename</button></li>
           <li role="menuitem"><button type="button" onClick={() => { setDeleteModal([contextMenu.file]); setContextMenu(null); }}>Delete</button></li>

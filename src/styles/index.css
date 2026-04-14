@@ -38,3 +38,8 @@ html, body, #root {
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
 }
+
+.context-menu {
+  left: var(--ctx-x, 0);
+  top: var(--ctx-y, 0);
+}
