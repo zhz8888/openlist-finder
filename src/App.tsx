@@ -1,17 +1,20 @@
 import { HashRouter, Routes, Route } from "react-router-dom";
-import { ThemeProvider } from "@/components";
+import { ThemeProvider, ErrorBoundary, ToastContainer } from "@/components";
 import { MainLayout, SettingsPage } from "@/pages";
 
 function App() {
   return (
-    <ThemeProvider>
-      <HashRouter>
-        <Routes>
-          <Route path="/" element={<MainLayout />} />
-          <Route path="/settings" element={<SettingsPage />} />
-        </Routes>
-      </HashRouter>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <HashRouter>
+          <Routes>
+            <Route path="/" element={<MainLayout />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Routes>
+        </HashRouter>
+        <ToastContainer />
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 

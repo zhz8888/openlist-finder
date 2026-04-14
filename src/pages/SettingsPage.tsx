@@ -73,7 +73,7 @@ export function SettingsPage() {
 
   return (
     <div className="flex h-screen bg-base-100">
-      <div className="flex-1 overflow-auto p-6 max-w-3xl mx-auto">
+      <div className="flex-1 overflow-auto p-6 max-w-3xl mx-auto w-full">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">Settings</h1>
           <a href="#/" className="btn btn-ghost btn-sm">
@@ -98,24 +98,24 @@ export function SettingsPage() {
                         <input type="text" className="input input-bordered input-sm w-full" value={editUrl} onChange={(e) => setEditUrl(e.target.value)} placeholder="URL" />
                         <input type="password" className="input input-bordered input-sm w-full" value={editToken} onChange={(e) => setEditToken(e.target.value)} placeholder="Token" />
                         <div className="flex gap-2">
-                          <button className="btn btn-primary btn-sm" onClick={handleSaveEdit}>Save</button>
-                          <button className="btn btn-ghost btn-sm" onClick={() => setEditingServer(null)}>Cancel</button>
+                          <button type="button" className="btn btn-primary btn-sm" onClick={handleSaveEdit}>Save</button>
+                          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditingServer(null)}>Cancel</button>
                         </div>
                       </div>
                     ) : (
                       <>
-                        <div className="flex-1">
-                          <div className="font-medium">{server.name}</div>
-                          <div className="text-xs opacity-60">{server.url}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate">{server.name}</div>
+                          <div className="text-xs opacity-60 truncate">{server.url}</div>
                         </div>
-                        <div className="flex gap-1">
+                        <div className="flex gap-1 flex-shrink-0 flex-wrap">
                           {server.isDefault ? (
                             <span className="badge badge-primary badge-sm">Default</span>
                           ) : (
-                            <button className="btn btn-ghost btn-xs" onClick={() => setDefaultServer(server.id)}>Set Default</button>
+                            <button type="button" className="btn btn-ghost btn-xs" onClick={() => setDefaultServer(server.id)}>Set Default</button>
                           )}
-                          <button className="btn btn-ghost btn-xs" onClick={() => handleStartEdit(server.id)}>Edit</button>
-                          <button className="btn btn-ghost btn-xs text-error" onClick={() => removeServer(server.id)}>Delete</button>
+                          <button type="button" className="btn btn-ghost btn-xs" onClick={() => handleStartEdit(server.id)}>Edit</button>
+                          <button type="button" className="btn btn-ghost btn-xs text-error" onClick={() => removeServer(server.id)}>Delete</button>
                         </div>
                       </>
                     )}
@@ -129,9 +129,9 @@ export function SettingsPage() {
                 <input type="text" className="input input-bordered w-full" value={newServerName} onChange={(e) => setNewServerName(e.target.value)} placeholder="Server Name" />
                 <input type="text" className="input input-bordered w-full" value={newServerUrl} onChange={(e) => setNewServerUrl(e.target.value)} placeholder="Server URL (e.g., https://example.com)" />
                 <input type="password" className="input input-bordered w-full" value={newServerToken} onChange={(e) => setNewServerToken(e.target.value)} placeholder="Access Token" />
-                <div className="flex gap-2">
-                  <button className="btn btn-primary" onClick={handleAddServer} disabled={!newServerName || !newServerUrl || !newServerToken}>Add Server</button>
-                  <button className="btn btn-ghost" onClick={handleTestConnection} disabled={!newServerUrl || !newServerToken}>Test Connection</button>
+                <div className="flex gap-2 flex-wrap">
+                  <button type="button" className="btn btn-primary" onClick={handleAddServer} disabled={!newServerName || !newServerUrl || !newServerToken}>Add Server</button>
+                  <button type="button" className="btn btn-ghost" onClick={handleTestConnection} disabled={!newServerUrl || !newServerToken}>Test Connection</button>
                 </div>
                 {testResult && (
                   <div className={`alert ${testResult.includes("success") ? "alert-success" : "alert-error"} text-sm`}>
@@ -208,7 +208,7 @@ export function SettingsPage() {
                     </select>
                   </div>
                   <div className="flex gap-2">
-                    <button className="btn btn-ghost" onClick={handleTestMeilisearch} disabled={!meilisearch.host || !meilisearch.apiKey}>
+                    <button type="button" className="btn btn-ghost" onClick={handleTestMeilisearch} disabled={!meilisearch.host || !meilisearch.apiKey}>
                       Test Connection
                     </button>
                   </div>
@@ -229,10 +229,11 @@ export function SettingsPage() {
                 <label className="label">
                   <span className="label-text">Appearance</span>
                 </label>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   {(["light", "dark", "system"] as const).map((mode) => (
                     <button
                       key={mode}
+                      type="button"
                       className={`btn btn-sm ${theme.mode === mode ? "btn-primary" : "btn-ghost"}`}
                       onClick={() => setTheme({ mode } as ThemeConfig)}
                     >

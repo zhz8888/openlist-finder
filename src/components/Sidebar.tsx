@@ -18,7 +18,7 @@ export function Sidebar() {
 
   if (collapsed) {
     return (
-      <div className="flex flex-col items-center py-4 px-2 bg-base-200 border-r border-base-300 w-12">
+      <div className="flex flex-col items-center py-4 px-1 bg-base-200 border-r border-base-300 w-14">
         <button
           className="btn btn-ghost btn-sm btn-square"
           onClick={() => setCollapsed(false)}
@@ -32,7 +32,7 @@ export function Sidebar() {
         {servers.map((s) => (
           <button
             key={s.id}
-            className={`btn btn-ghost btn-xs btn-square ${s.id === activeServerId ? "btn-active" : ""}`}
+            className={`btn btn-ghost btn-xs btn-square mb-1 ${s.id === activeServerId ? "btn-active" : ""}`}
             onClick={() => handleServerSwitch(s.id)}
             title={s.name}
           >

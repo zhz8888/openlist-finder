@@ -1,7 +1,7 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useFileBrowser } from "@/hooks";
-import { useServerStore, useSettingsStore, useSearchStore, useFileBrowserStore } from "@/stores";
-import { renameFile, deleteFiles, copyFiles, moveFiles } from "@/services/openlist";
+import { useServerStore, useSettingsStore, useSearchStore, useFileBrowserStore, useToastStore } from "@/stores";
+import { renameFile, deleteFiles, copyFiles, moveFiles, getFileInfo } from "@/services/openlist";
 import { search as searchMeilisearch } from "@/services/meilisearch";
 import { Breadcrumb, SortHeader } from "./Breadcrumb";
 import type { FileInfo, SortField } from "@/types";
@@ -19,6 +19,20 @@ function formatDate(dateStr: string): string {
   } catch {
     return dateStr;
   }
+}
+
+function isTextFile(file: FileInfo): boolean {
+  if (file.isDir) return false;
+  const textTypes = ["text", "json", "xml", "yaml", "yml", "markdown", "md", "csv", "log", "ini", "conf", "cfg", "sh", "bat", "ps1", "py", "js", "ts", "jsx", "tsx", "css", "html", "sql", "env", "gitignore", "toml", "rs"];
+  const ext = file.name.split(".").pop()?.toLowerCase() || "";
+  return textTypes.some((t) => ext === t || file.type?.includes(t));
+}
+
+function isImageFile(file: FileInfo): boolean {
+  if (file.isDir) return false;
+  const imageExts = ["jpg", "jpeg", "png", "gif", "bmp", "svg", "webp", "ico"];
+  const ext = file.name.split(".").pop()?.toLowerCase() || "";
+  return imageExts.includes(ext) || file.type?.startsWith("image/");
 }
 
 function getFileIcon(file: FileInfo) {
@@ -41,6 +55,7 @@ export function FileList() {
   const { experimental, meilisearch } = useSettingsStore();
   const { query, setQuery, setResults, isSearching, setSearchError } = useSearchStore();
   const currentPath = useFileBrowserStore((s) => s.currentPath);
+  const addToast = useToastStore((s) => s.addToast);
   const {
     files,
     selectedFiles,
@@ -59,6 +74,11 @@ export function FileList() {
   const [deleteModal, setDeleteModal] = useState<FileInfo[] | null>(null);
   const [pathModal, setPathModal] = useState<{ files: FileInfo[]; operation: "copy" | "move"; targetPath: string } | null>(null);
   const [previewModal, setPreviewModal] = useState<FileInfo | null>(null);
+  const [previewContent, setPreviewContent] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [editModal, setEditModal] = useState<{ file: FileInfo; content: string } | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     const handleClick = () => setContextMenu(null);
@@ -80,8 +100,30 @@ export function FileList() {
       loadFiles(newPath);
     } else {
       setPreviewModal(file);
+      setPreviewContent(null);
+      if (isTextFile(file)) {
+        loadPreviewContent(file);
+      }
     }
   }, [navigateToDirectory, loadFiles, currentPath]);
+
+  const loadPreviewContent = useCallback(async (file: FileInfo) => {
+    const server = getActiveServer();
+    if (!server) return;
+    setPreviewLoading(true);
+    try {
+      const info = await getFileInfo(server.url, server.token, file.path);
+      if (info.content) {
+        setPreviewContent(info.content);
+      } else {
+        setPreviewContent("(No text content available for preview)");
+      }
+    } catch {
+      setPreviewContent("(Failed to load file content)");
+    } finally {
+      setPreviewLoading(false);
+    }
+  }, [getActiveServer]);
 
   const handleContextMenu = useCallback((e: React.MouseEvent, file: FileInfo) => {
     e.preventDefault();
@@ -95,11 +137,13 @@ export function FileList() {
     try {
       await renameFile(server.url, server.token, renameModal.file.path.replace(/\/[^/]+$/, "") || "/", renameModal.file.name, renameModal.newName);
       setRenameModal(null);
+      addToast("success", `Renamed "${renameModal.file.name}" to "${renameModal.newName}"`);
       loadFiles();
     } catch (err) {
-      setSearchError(err instanceof Error ? err.message : String(err));
+      const msg = err instanceof Error ? err.message : String(err);
+      addToast("error", `Rename failed: ${msg}`);
     }
-  }, [renameModal, getActiveServer, loadFiles, setSearchError]);
+  }, [renameModal, getActiveServer, loadFiles, addToast]);
 
   const handleDelete = useCallback(async () => {
     if (!deleteModal) return;
@@ -109,11 +153,13 @@ export function FileList() {
       await deleteFiles(server.url, server.token, deleteModal[0].path.replace(/\/[^/]+$/, "") || "/", deleteModal.map((f) => f.name));
       setDeleteModal(null);
       clearSelection();
+      addToast("success", `Deleted ${deleteModal.length} file(s)`);
       loadFiles();
     } catch (err) {
-      setSearchError(err instanceof Error ? err.message : String(err));
+      const msg = err instanceof Error ? err.message : String(err);
+      addToast("error", `Delete failed: ${msg}`);
     }
-  }, [deleteModal, getActiveServer, loadFiles, clearSelection, setSearchError]);
+  }, [deleteModal, getActiveServer, loadFiles, clearSelection, addToast]);
 
   const handleCopyMove = useCallback(async () => {
     if (!pathModal) return;
@@ -123,15 +169,18 @@ export function FileList() {
       const srcDir = pathModal.files[0].path.replace(/\/[^/]+$/, "") || "/";
       if (pathModal.operation === "copy") {
         await copyFiles(server.url, server.token, srcDir, pathModal.targetPath, pathModal.files.map((f) => f.name));
+        addToast("success", `Copied ${pathModal.files.length} file(s) to ${pathModal.targetPath}`);
       } else {
         await moveFiles(server.url, server.token, srcDir, pathModal.targetPath, pathModal.files.map((f) => f.name));
+        addToast("success", `Moved ${pathModal.files.length} file(s) to ${pathModal.targetPath}`);
       }
       setPathModal(null);
       loadFiles();
     } catch (err) {
-      setSearchError(err instanceof Error ? err.message : String(err));
+      const msg = err instanceof Error ? err.message : String(err);
+      addToast("error", `${pathModal.operation === "copy" ? "Copy" : "Move"} failed: ${msg}`);
     }
-  }, [pathModal, getActiveServer, loadFiles, setSearchError]);
+  }, [pathModal, getActiveServer, loadFiles, addToast]);
 
   const handleSearch = useCallback(async () => {
     if (!experimental.meilisearch || !query.trim()) return;
@@ -142,9 +191,29 @@ export function FileList() {
       const result = await searchMeilisearch(meilisearch.host, meilisearch.apiKey, indexUid, query);
       setResults(result.hits);
     } catch (err) {
-      setSearchError(err instanceof Error ? err.message : String(err));
+      const msg = err instanceof Error ? err.message : String(err);
+      setSearchError(msg);
+      addToast("error", `Search failed: ${msg}`);
     }
-  }, [experimental.meilisearch, query, getActiveServer, meilisearch, setResults, setSearchError]);
+  }, [experimental.meilisearch, query, getActiveServer, meilisearch, setResults, setSearchError, addToast]);
+
+  const handleEditFile = useCallback((file: FileInfo) => {
+    const server = getActiveServer();
+    if (!server) return;
+    setEditModal({ file, content: previewContent || "" });
+    setPreviewModal(null);
+  }, [getActiveServer, previewContent]);
+
+  const handleSaveEdit = useCallback(async () => {
+    if (!editModal) return;
+    setEditSaving(true);
+    try {
+      addToast("info", `File content save for "${editModal.file.name}" is not supported by OpenList API. Use rename or delete+upload instead.`);
+      setEditModal(null);
+    } finally {
+      setEditSaving(false);
+    }
+  }, [editModal, addToast]);
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -255,6 +324,10 @@ export function FileList() {
           role="menu"
           aria-label="File context menu"
         >
+          <li role="menuitem"><button type="button" onClick={() => { setPreviewModal(contextMenu.file); setPreviewContent(null); if (isTextFile(contextMenu.file)) loadPreviewContent(contextMenu.file); setContextMenu(null); }}>View</button></li>
+          {!contextMenu.file.isDir && isTextFile(contextMenu.file) && (
+            <li role="menuitem"><button type="button" onClick={() => { setEditModal({ file: contextMenu.file, content: "" }); setContextMenu(null); }}>Edit</button></li>
+          )}
           <li role="menuitem"><button type="button" onClick={() => { setRenameModal({ file: contextMenu.file, newName: contextMenu.file.name }); setContextMenu(null); }}>Rename</button></li>
           <li role="menuitem"><button type="button" onClick={() => { setDeleteModal([contextMenu.file]); setContextMenu(null); }}>Delete</button></li>
           <li role="menuitem"><button type="button" onClick={() => { setPathModal({ files: [contextMenu.file], operation: "copy", targetPath: "" }); setContextMenu(null); }}>Copy</button></li>
@@ -328,16 +401,88 @@ export function FileList() {
           <div className="modal-box max-w-3xl">
             <h3 className="font-bold text-lg">{previewModal.name}</h3>
             <div className="py-4">
-              <p className="text-sm"><strong>Path:</strong> {previewModal.path}</p>
-              <p className="text-sm"><strong>Size:</strong> {formatFileSize(previewModal.size)}</p>
-              <p className="text-sm"><strong>Modified:</strong> {formatDate(previewModal.modified)}</p>
-              <p className="text-sm"><strong>Type:</strong> {previewModal.type || "Unknown"}</p>
+              <div className="grid grid-cols-2 gap-2 text-sm mb-4">
+                <p><strong>Path:</strong> {previewModal.path}</p>
+                <p><strong>Size:</strong> {formatFileSize(previewModal.size)}</p>
+                <p><strong>Modified:</strong> {formatDate(previewModal.modified)}</p>
+                <p><strong>Type:</strong> {previewModal.type || "Unknown"}</p>
+              </div>
+
+              {isImageFile(previewModal) && (
+                <div className="border border-base-300 rounded-lg p-2 bg-base-200">
+                  <img
+                    src={`${getActiveServer()?.url}/d${previewModal.path}`}
+                    alt={previewModal.name}
+                    className="max-w-full max-h-96 mx-auto object-contain"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                      (e.target as HTMLImageElement).parentElement!.innerHTML = "<p class='text-center text-sm opacity-50 py-8'>Image preview not available</p>";
+                    }}
+                  />
+                </div>
+              )}
+
+              {isTextFile(previewModal) && (
+                <div className="border border-base-300 rounded-lg bg-base-200">
+                  {previewLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <span className="loading loading-spinner loading-sm"></span>
+                      <span className="ml-2 text-sm opacity-70">Loading content...</span>
+                    </div>
+                  ) : previewContent ? (
+                    <pre className="p-3 text-xs overflow-auto max-h-80 whitespace-pre-wrap break-words font-mono">
+                      {previewContent}
+                    </pre>
+                  ) : (
+                    <p className="text-center text-sm opacity-50 py-8">No preview available</p>
+                  )}
+                </div>
+              )}
+
+              {!isTextFile(previewModal) && !isImageFile(previewModal) && (
+                <div className="border border-base-300 rounded-lg p-4 bg-base-200 text-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <p className="text-sm opacity-50 mt-2">Preview not available for this file type</p>
+                </div>
+              )}
             </div>
             <div className="modal-action">
-              <button type="button" className="btn" onClick={() => setPreviewModal(null)}>Close</button>
+              {isTextFile(previewModal) && (
+                <button type="button" className="btn btn-sm" onClick={() => handleEditFile(previewModal)}>Edit</button>
+              )}
+              <button type="button" className="btn" onClick={() => { setPreviewModal(null); setPreviewContent(null); }}>Close</button>
             </div>
           </div>
-          <form method="dialog" className="modal-backdrop"><button type="button" onClick={() => setPreviewModal(null)}>close</button></form>
+          <form method="dialog" className="modal-backdrop"><button type="button" onClick={() => { setPreviewModal(null); setPreviewContent(null); }}>close</button></form>
+        </dialog>
+      )}
+
+      {editModal && (
+        <dialog className="modal modal-open">
+          <div className="modal-box max-w-4xl">
+            <h3 className="font-bold text-lg">Edit: {editModal.file.name}</h3>
+            <p className="text-xs opacity-50 mt-1">{editModal.file.path}</p>
+            <div className="mt-4">
+              <textarea
+                ref={textareaRef}
+                className="textarea textarea-bordered w-full font-mono text-xs leading-relaxed"
+                rows={20}
+                value={editModal.content}
+                onChange={(e) => setEditModal({ ...editModal, content: e.target.value })}
+                aria-label="File content editor"
+                placeholder="Loading file content..."
+              />
+            </div>
+            <div className="modal-action">
+              <button type="button" className="btn btn-ghost" onClick={() => setEditModal(null)}>Cancel</button>
+              <button type="button" className="btn btn-primary" onClick={handleSaveEdit} disabled={editSaving}>
+                {editSaving ? <span className="loading loading-spinner loading-xs"></span> : "Save"}
+              </button>
+            </div>
+          </div>
+          <form method="dialog" className="modal-backdrop"><button type="button" onClick={() => setEditModal(null)}>close</button></form>
         </dialog>
       )}
     </div>

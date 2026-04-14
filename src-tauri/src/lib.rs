@@ -10,6 +10,12 @@ fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
+#[tauri::command]
+async fn start_mcp_server() -> Result<String, String> {
+    commands::mcp_server::run_stdio_server().await;
+    Ok("MCP server stopped".to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -21,6 +27,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .invoke_handler(tauri::generate_handler![
             greet,
+            start_mcp_server,
             commands::openlist::test_openlist_connection,
             commands::openlist::list_directory,
             commands::openlist::rename_file,

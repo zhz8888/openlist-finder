@@ -79,3 +79,20 @@ export const useServerStore = create<ServerState>()(
     }
   )
 );
+
+async function migrateToTauriStore() {
+  try {
+    const { load } = await import("@tauri-apps/plugin-store");
+    const store = await load("servers.json", { defaults: {} });
+    const persistKey = "openlist-servers";
+    const localData = localStorage.getItem(persistKey);
+    if (localData) {
+      await store.set(persistKey, localData);
+      await store.save();
+    }
+  } catch {}
+}
+
+if (typeof window !== "undefined" && (window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__) {
+  migrateToTauriStore();
+}

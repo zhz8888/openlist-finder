@@ -14,6 +14,7 @@ export interface FileInfo {
   isDir: boolean;
   type: string;
   path: string;
+  content?: string;
 }
 
 export interface FileListResponse {
