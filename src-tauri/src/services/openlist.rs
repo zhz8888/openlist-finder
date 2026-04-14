@@ -169,11 +169,9 @@ impl OpenListService {
             return Err(message.to_string());
         }
 
-        let file_info: FileInfo = data.get("data")
-            .cloned()
-            .ok_or("No data in response")?
-            .try_into()
-            .map_err(|e: serde_json::Error| format!("Parse error: {}", e))?;
+        let file_info: FileInfo = serde_json::from_value(
+            data.get("data").cloned().ok_or("No data in response")?
+        ).map_err(|e| format!("Parse error: {}", e))?;
 
         Ok(file_info)
     }

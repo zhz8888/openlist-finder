@@ -12,7 +12,9 @@ fn greet(name: &str) -> String {
 
 #[tauri::command]
 async fn start_mcp_server() -> Result<String, String> {
-    commands::mcp_server::run_stdio_server().await;
+    tokio::task::spawn_blocking(|| {
+        commands::mcp_server::run_stdio_server();
+    }).await.map_err(|e| format!("MCP server task failed: {}", e))?;
     Ok("MCP server stopped".to_string())
 }
 

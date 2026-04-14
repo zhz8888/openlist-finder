@@ -284,8 +284,8 @@ impl McpServer {
                     Some(q) => q.to_string(),
                     None => return Self::handle_invalid_params(id, "Missing query"),
                 };
-                let limit = arguments.get("limit").and_then(|v| v.as_u64()).unwrap_or(20) as i32;
-                let offset = arguments.get("offset").and_then(|v| v.as_u64()).unwrap_or(0) as i32;
+                let limit = Some(arguments.get("limit").and_then(|v| v.as_u64()).unwrap_or(20) as i64);
+                let offset = Some(arguments.get("offset").and_then(|v| v.as_u64()).unwrap_or(0) as i64);
                 let host = arguments.get("host").and_then(|v| v.as_str()).unwrap_or("http://localhost:7700");
                 let api_key = arguments.get("api_key").and_then(|v| v.as_str()).unwrap_or("");
                 let index_uid = arguments.get("index_uid").and_then(|v| v.as_str()).unwrap_or("openlist");
@@ -509,10 +509,15 @@ impl McpServer {
     }
 }
 
-pub async fn run_stdio_server() {
+pub fn run_stdio_server() {
     let stdin = io::stdin();
     let mut stdout = io::stdout();
     let reader = stdin.lock();
+
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("Failed to create tokio runtime");
 
     for line in reader.lines() {
         match line {
@@ -547,7 +552,7 @@ pub async fn run_stdio_server() {
                         continue;
                     }
                     "tools/list" => McpServer::handle_tools_list(request.id, false),
-                    "tools/call" => McpServer::handle_tool_call(request.id, request.params).await,
+                    "tools/call" => rt.block_on(McpServer::handle_tool_call(request.id, request.params)),
                     "ping" => JsonRpcResponse {
                         jsonrpc: "2.0".to_string(),
                         id: request.id,

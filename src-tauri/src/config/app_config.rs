@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
     pub servers: Vec<ServerEntry>,
@@ -9,6 +10,7 @@ pub struct AppConfig {
     pub theme: ThemeConfigEntry,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServerEntry {
     pub id: String,
@@ -19,6 +21,7 @@ pub struct ServerEntry {
     pub created_at: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MeilisearchEntry {
     pub host: String,
@@ -27,11 +30,13 @@ pub struct MeilisearchEntry {
     pub sync_strategy: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExperimentalConfig {
     pub meilisearch: bool,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ThemeConfigEntry {
     pub mode: String,

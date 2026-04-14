@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServerConfig {
     pub id: String,
@@ -34,6 +35,7 @@ pub struct FileOperationResult {
     pub message: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CopyMoveRequest {
     pub src_dir: String,
@@ -41,6 +43,7 @@ pub struct CopyMoveRequest {
     pub names: Vec<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RenameRequest {
     pub dir: String,

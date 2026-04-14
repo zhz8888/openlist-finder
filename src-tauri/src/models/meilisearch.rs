@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MeilisearchConfig {
     pub host: String,
@@ -48,6 +49,7 @@ pub struct TaskInfo {
     pub enqueued_at: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IndexSyncProgress {
     pub total: i64,
