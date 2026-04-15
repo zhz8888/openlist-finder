@@ -49,11 +49,11 @@
   --color-github-bg: #0d1117;
   --color-github-surface: #161b22;
   --color-github-surface-hover: #21262d;
-  --color-github-border: #30363d;
-  --color-github-border-muted: #21262d;
-  --color-github-text: #e6edf3;
-  --color-github-text-secondary: #adbac7;
-  --color-github-text-tertiary: #768390;
+  --color-github-border: #444c56;
+  --color-github-border-muted: #373e47;
+  --color-github-text: #f0f6fc;
+  --color-github-text-secondary: #c9d1d9;
+  --color-github-text-tertiary: #8b949e;
   --color-github-accent: #58a6ff;
   --color-github-accent-hover: #79c0ff;
   --color-github-accent-emphasis: #388bfd;
@@ -63,20 +63,20 @@
   --color-github-danger-emphasis: #da3633;
   --color-github-warning: #d29922;
   --color-github-warning-emphasis: #9e6a03;
-  --color-github-counter: #768390;
+  --color-github-counter: #8b949e;
   --color-github-shadow: rgba(1, 4, 9, 0.3);
   --color-github-shadowEmphasis: rgba(1, 4, 9, 0.4);
   --color-github-overlay: rgba(1, 4, 9, 0.5);
   --color-github-input-bg: #0d1117;
-  --color-github-input-border: #30363d;
-  --color-github-input-placeholder: #768390;
+  --color-github-input-border: #444c56;
+  --color-github-input-placeholder: #8b949e;
 
   --color-bg: #0d1117;
-  --color-fg: #e6edf3;
-  --color-border: #30363d;
-  --color-border-muted: #21262d;
-  --color-neutral: #adbac7;
-  --color-neutral-muted: #768390;
+  --color-fg: #f0f6fc;
+  --color-border: #444c56;
+  --color-border-muted: #373e47;
+  --color-neutral: #c9d1d9;
+  --color-neutral-muted: #8b949e;
   --color-accent: #58a6ff;
   --color-accent-hover: #79c0ff;
   --color-success: #3fb950;
@@ -98,6 +98,56 @@ html, body, #root {
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-github-surface);
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 6px;
+  border: 2px solid var(--color-github-surface);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-neutral);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--color-github-surface);
+}
+
+[data-theme="github-dark"] ::-webkit-scrollbar-track {
+  background: #161b22;
+}
+
+[data-theme="github-dark"] ::-webkit-scrollbar-thumb {
+  background: #8b949e;
+  border: 2px solid #161b22;
+}
+
+[data-theme="github-dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #c9d1d9;
+}
+
+[data-theme="github-dark"] ::-webkit-scrollbar-corner {
+  background: #161b22;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) var(--color-github-surface);
+}
+
+[data-theme="github-dark"] * {
+  scrollbar-color: #8b949e #161b22;
 }
 
 .context-menu {
@@ -147,6 +197,185 @@ body {
 .btn-ghost:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
+}
+
+[data-theme="github-dark"] .input-bordered {
+  background-color: #0d1117;
+  border-color: #444c56;
+  color: #f0f6fc;
+}
+
+[data-theme="github-dark"] .input-bordered:hover {
+  border-color: #58a6ff;
+}
+
+[data-theme="github-dark"] .input-bordered:focus {
+  background-color: #0d1117;
+  border-color: #58a6ff;
+  color: #f0f6fc;
+}
+
+[data-theme="github-dark"] .select {
+  background-color: #0d1117;
+  border-color: #444c56;
+  color: #f0f6fc;
+}
+
+[data-theme="github-dark"] .select:hover {
+  border-color: #58a6ff;
+}
+
+[data-theme="github-dark"] .select:focus {
+  border-color: #58a6ff;
+  color: #f0f6fc;
+}
+
+[data-theme="github-dark"] .select option {
+  background-color: #161b22;
+  color: #f0f6fc;
+}
+
+[data-theme="github-dark"] .label-text {
+  color: #f0f6fc;
+}
+
+[data-theme="github-dark"] .text-secondary,
+[data-theme="github-dark"] .text-base-content\/70,
+[data-theme="github-dark"] .text-base-content\/60 {
+  color: #c9d1d9 !important;
+}
+
+[data-theme="github-dark"] .card-title {
+  color: #f0f6fc;
+}
+
+[data-theme="github-dark"] .divider {
+  color: #c9d1d9;
+}
+
+[data-theme="github-dark"] .text-xs {
+  color: #c9d1d9;
+}
+
+[data-theme="github-dark"] code {
+  background-color: #161b22;
+  color: #f0f6fc;
+  border-color: #444c56;
+}
+
+[data-theme="github-dark"] pre {
+  background-color: #161b22;
+  color: #f0f6fc;
+  border-color: #444c56;
+}
+
+[data-theme="github-dark"] .alert {
+  color: #f0f6fc;
+}
+
+[data-theme="github-dark"] .badge {
+  color: #f0f6fc;
+}
+
+[data-theme="github-dark"] .text-sm {
+  color: #c9d1d9;
+}
+
+[data-theme="github-dark"] p {
+  color: #c9d1d9;
+}
+
+[data-theme="github-dark"] h1,
+[data-theme="github-dark"] h2,
+[data-theme="github-dark"] h3,
+[data-theme="github-dark"] h4,
+[data-theme="github-dark"] h5,
+[data-theme="github-dark"] h6 {
+  color: #f0f6fc;
+}
+
+[data-theme="github-dark"] .font-medium {
+  color: #f0f6fc;
+}
+
+[data-theme="github-dark"] .text-base-content {
+  color: #f0f6fc !important;
+}
+
+[data-theme="github-dark"] .text-neutral {
+  color: #c9d1d9 !important;
+}
+
+[data-theme="github-dark"] .text-neutral-muted {
+  color: #8b949e !important;
+}
+
+[data-theme="github-dark"] ::selection {
+  background-color: rgba(88, 166, 255, 0.3);
+  color: #f0f6fc;
+}
+
+.result-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 2px solid;
+  margin-top: 0.75rem;
+  transition: all 0.3s ease-in-out;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.result-success {
+  background-color: #dafbe1;
+  border-color: #3fb950;
+  color: #1a7f37;
+}
+
+[data-theme="github-dark"] .result-success {
+  background-color: rgba(46, 160, 67, 0.15);
+  border-color: #3fb950;
+  color: #3fb950;
+}
+
+.result-error {
+  background-color: #ffebe9;
+  border-color: #f85149;
+  color: #cf222e;
+}
+
+[data-theme="github-dark"] .result-error {
+  background-color: rgba(248, 81, 73, 0.15);
+  border-color: #f85149;
+  color: #f85149;
+}
+
+.result-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.result-text {
+  flex: 1;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  font-weight: 500;
 }
 
 .btn-ghost.btn-xs {
@@ -342,20 +571,28 @@ body {
   align-items: center;
   gap: 0.5rem;
   padding: 0.625rem 1rem;
-  border-radius: 0.375rem;
-  border: 1px solid var(--color-border);
-  background-color: var(--color-bg);
-  color: var(--color-fg);
+  border-radius: 6px;
+  border: 1px solid var(--color-github-border);
+  background-color: var(--color-github-surface);
+  color: var(--color-github-text);
   cursor: pointer;
   font-size: 0.875rem;
   font-weight: 500;
-  transition: all 0.2s ease;
+  transition: all 0.2s ease-in-out;
   min-width: 140px;
+  position: relative;
 }
 
 .theme-btn:hover {
-  border-color: var(--color-accent);
-  background-color: var(--color-github-surface);
+  background-color: #ffffff;
+  color: #1f883d;
+  border-color: #1f883d;
+}
+
+[data-theme="github-dark"] .theme-btn:hover {
+  background-color: #ffffff;
+  color: #238636;
+  border-color: #238636;
 }
 
 .theme-btn:focus-visible {
@@ -364,13 +601,17 @@ body {
 }
 
 .theme-btn-active {
-  border-color: var(--color-accent);
-  background-color: var(--color-github-surface);
-  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.15);
+  background-color: #1f883d;
+  color: #ffffff;
+  border-color: rgba(31, 35, 40, 0.15);
+  box-shadow: 0 0 0 3px rgba(31, 136, 61, 0.2);
 }
 
 [data-theme="github-dark"] .theme-btn-active {
-  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
+  background-color: #238636;
+  color: #ffffff;
+  border-color: rgba(240, 246, 252, 0.1);
+  box-shadow: 0 0 0 3px rgba(35, 134, 54, 0.3);
 }
 
 .theme-icon {
@@ -452,6 +693,7 @@ body {
 
 .select::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
 
 .select::-webkit-scrollbar-track {
@@ -462,10 +704,24 @@ body {
 .select::-webkit-scrollbar-thumb {
   background: var(--color-border);
   border-radius: 4px;
+  border: 1px solid var(--color-github-surface);
 }
 
 .select::-webkit-scrollbar-thumb:hover {
   background: var(--color-neutral);
+}
+
+[data-theme="github-dark"] .select::-webkit-scrollbar-track {
+  background: #161b22;
+}
+
+[data-theme="github-dark"] .select::-webkit-scrollbar-thumb {
+  background: #8b949e;
+  border: 1px solid #161b22;
+}
+
+[data-theme="github-dark"] .select::-webkit-scrollbar-thumb:hover {
+  background: #c9d1d9;
 }
 
 @media screen and (max-width: 768px) {
@@ -520,6 +776,23 @@ body {
 
 .toggle {
   transition: all 0.3s ease-in-out;
+  background-color: #cf222e;
+  border-color: #cf222e;
+}
+
+.toggle:checked {
+  background-color: #1a7f37;
+  border-color: #1a7f37;
+}
+
+[data-theme="github-dark"] .toggle {
+  background-color: #da3633;
+  border-color: #da3633;
+}
+
+[data-theme="github-dark"] .toggle:checked {
+  background-color: #238636;
+  border-color: #238636;
 }
 
 .progress {
@@ -544,34 +817,38 @@ body {
 }
 
 .test-connection-btn {
-  border: 2px solid var(--color-border);
-  border-radius: 8px;
-  transition: all 0.3s ease-in-out;
+  background-color: var(--color-github-surface);
+  color: var(--color-github-text);
+  border: 1px solid var(--color-github-border);
+  border-radius: 6px;
+  transition: all 0.2s ease-in-out;
   position: relative;
   overflow: visible;
+  font-weight: 500;
 }
 
 .test-connection-btn:hover:not(:disabled) {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.2), 0 0 20px rgba(9, 105, 218, 0.3);
-  transform: translateY(-1px);
+  background-color: #ffffff;
+  color: #1f883d;
+  border-color: #1f883d;
 }
 
 [data-theme="github-dark"] .test-connection-btn:hover:not(:disabled) {
-  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.25), 0 0 20px rgba(88, 166, 255, 0.4);
+  background-color: #ffffff;
+  color: #238636;
+  border-color: #238636;
 }
 
 .test-connection-btn:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow: 0 0 0 2px rgba(9, 105, 218, 0.3);
+  transform: scale(0.98);
 }
 
 [data-theme="github-dark"] .test-connection-btn:active:not(:disabled) {
-  box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.35);
+  background-color: #21262d;
 }
 
 .test-connection-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
@@ -622,34 +899,38 @@ body {
 }
 
 .reset-default-btn {
-  border: 2px solid var(--color-border);
-  border-radius: 8px;
-  transition: all 0.3s ease-in-out;
+  background-color: var(--color-github-surface);
+  color: var(--color-github-text);
+  border: 1px solid var(--color-github-border);
+  border-radius: 6px;
+  transition: all 0.2s ease-in-out;
   position: relative;
   overflow: visible;
+  font-weight: 500;
 }
 
 .reset-default-btn:hover:not(:disabled) {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.2), 0 0 20px rgba(9, 105, 218, 0.3);
-  transform: translateY(-1px);
+  background-color: #ffffff;
+  color: #1f883d;
+  border-color: #1f883d;
 }
 
 [data-theme="github-dark"] .reset-default-btn:hover:not(:disabled) {
-  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.25), 0 0 20px rgba(88, 166, 255, 0.4);
+  background-color: #ffffff;
+  color: #238636;
+  border-color: #238636;
 }
 
 .reset-default-btn:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow: 0 0 0 2px rgba(9, 105, 218, 0.3);
+  transform: scale(0.98);
 }
 
 [data-theme="github-dark"] .reset-default-btn:active:not(:disabled) {
-  box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.35);
+  background-color: #21262d;
 }
 
 .reset-default-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
@@ -668,14 +949,56 @@ body {
   user-select: none;
 }
 
+.toggle-status-enabled {
+  background-color: #1a7f37;
+  color: #ffffff;
+  border-color: #1a7f37;
+}
+
+.toggle-status-disabled {
+  background-color: #cf222e;
+  color: #ffffff;
+  border-color: #cf222e;
+}
+
+[data-theme="github-dark"] .toggle-status-enabled {
+  background-color: #238636;
+  color: #ffffff;
+  border-color: #238636;
+}
+
+[data-theme="github-dark"] .toggle-status-disabled {
+  background-color: #da3633;
+  color: #ffffff;
+  border-color: #da3633;
+}
+
 .toggle-status-label:hover {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.2);
+  box-shadow: 0 0 0 3px rgba(31, 136, 61, 0.2);
+}
+
+.toggle-status-enabled:hover {
+  background-color: #1f883d;
+  border-color: #1f883d;
+}
+
+.toggle-status-disabled:hover {
+  background-color: #a40e26;
+  border-color: #a40e26;
 }
 
 [data-theme="github-dark"] .toggle-status-label:hover {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.3);
+  box-shadow: 0 0 0 3px rgba(35, 134, 54, 0.3);
+}
+
+[data-theme="github-dark"] .toggle-status-enabled:hover {
+  background-color: #2ea043;
+  border-color: #2ea043;
+}
+
+[data-theme="github-dark"] .toggle-status-disabled:hover {
+  background-color: #b62324;
+  border-color: #b62324;
 }
 
 .toggle-status-label:active {
@@ -683,6 +1006,79 @@ body {
 }
 
 .toggle-status-label:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.btn-primary {
+  background-color: #1f883d;
+  color: #ffffff;
+  border: 1px solid rgba(31, 35, 40, 0.15);
+  border-radius: 6px;
+  transition: all 0.2s ease-in-out;
+  font-weight: 500;
+  position: relative;
+  overflow: visible;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #1a7f37;
+  border-color: rgba(31, 35, 40, 0.15);
+}
+
+[data-theme="github-dark"] .btn-primary {
+  background-color: #238636;
+  border-color: rgba(240, 246, 252, 0.1);
+}
+
+[data-theme="github-dark"] .btn-primary:hover:not(:disabled) {
+  background-color: #2ea043;
+  border-color: rgba(240, 246, 252, 0.1);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.btn-ghost {
+  background-color: transparent;
+  color: var(--color-github-text);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  transition: all 0.2s ease-in-out;
+  font-weight: 500;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background-color: var(--color-github-surface);
+  border-color: var(--color-github-border);
+}
+
+[data-theme="github-dark"] .btn-ghost:hover:not(:disabled) {
+  background-color: #21262d;
+  border-color: #30363d;
+}
+
+.btn-ghost:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.btn-ghost:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-ghost:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }

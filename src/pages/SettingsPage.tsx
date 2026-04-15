@@ -167,8 +167,19 @@ export function SettingsPage() {
                   <button type="button" className="btn btn-ghost test-connection-btn" onClick={handleTestConnection} disabled={!newServerUrl || !newServerToken}>测试连接</button>
                 </div>
                 {testResult && (
-                  <div className={`alert ${testResult.includes("成功") ? "alert-success" : "alert-error"} text-sm`}>
-                    {testResult}
+                  <div className={`result-message ${testResult.includes("成功") ? "result-success" : "result-error"}`}>
+                    <div className="result-icon">
+                      {testResult.includes("成功") ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      )}
+                    </div>
+                    <div className="result-text">{testResult}</div>
                   </div>
                 )}
               </div>
@@ -224,8 +235,19 @@ export function SettingsPage() {
                     </button>
                   </div>
                   {meilisearchTestResult && (
-                    <div className={`alert ${meilisearchTestResult.includes("成功") ? "alert-success" : "alert-error"} text-sm`}>
-                      {meilisearchTestResult}
+                    <div className={`result-message ${meilisearchTestResult.includes("成功") ? "result-success" : "result-error"}`}>
+                      <div className="result-icon">
+                        {meilisearchTestResult.includes("成功") ? (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        )}
+                      </div>
+                      <div className="result-text">{meilisearchTestResult}</div>
                     </div>
                   )}
                 </div>
@@ -242,15 +264,15 @@ export function SettingsPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="toggle toggle-primary"
-                      checked={mcp.enabled}
-                      onChange={(e) => updateMCP({ enabled: e.target.checked })}
-                    />
-                    <span className="text-sm font-medium toggle-status-label">{mcp.enabled ? "已启用" : "已禁用"}</span>
-                  </label>
+                  <button
+                    type="button"
+                    className={`text-sm font-medium toggle-status-label ${mcp.enabled ? "toggle-status-enabled" : "toggle-status-disabled"}`}
+                    onClick={() => updateMCP({ enabled: !mcp.enabled })}
+                    aria-pressed={mcp.enabled}
+                    aria-label={mcp.enabled ? "点击禁用MCP服务器" : "点击启用MCP服务器"}
+                  >
+                    {mcp.enabled ? "已启用" : "已禁用"}
+                  </button>
                   <button
                     type="button"
                     className="btn btn-sm btn-ghost border border-base-300"
@@ -274,7 +296,7 @@ export function SettingsPage() {
 
               {mcpExpanded && (
                 <div className="space-y-4 mt-4 pt-4 border-t border-base-300">
-                  <div className={`space-y-3 pl-1 border-l-2 ${mcp.enabled ? "border-primary/50" : "border-base-300"}`}>
+                  <div className="space-y-3">
                     <div className="form-control">
                       <label className="label">
                         <span className="label-text">服务器名称</span>
