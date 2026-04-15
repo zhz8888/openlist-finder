@@ -25,3 +25,15 @@ export interface MCPResponse {
     data?: unknown;
   };
 }
+
+export type MCPAuthType = "none" | "api_key" | "basic";
+
+export interface MCPConfig {
+  enabled: boolean;
+  host: string;
+  port: number;
+  authType: MCPAuthType;
+  apiKey: string;
+  username: string;
+  password: string;
+}

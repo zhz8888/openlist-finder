@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import type { MeilisearchConfig, ThemeConfig } from "@/types";
+import type { MeilisearchConfig, ThemeConfig, MCPConfig } from "@/types";
 
 function getSystemTheme(): "light" | "dark" {
   if (typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches) {
@@ -13,11 +13,24 @@ interface SettingsState {
   meilisearch: MeilisearchConfig;
   theme: ThemeConfig;
   sidebarCollapsed: boolean;
+  mcp: MCPConfig;
   updateMeilisearch: (config: Partial<MeilisearchConfig>) => void;
   setTheme: (theme: ThemeConfig) => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
   getResolvedTheme: () => "light" | "dark";
+  updateMCP: (config: Partial<MCPConfig>) => void;
+  resetMCP: () => void;
 }
+
+const defaultMCPConfig: MCPConfig = {
+  enabled: false,
+  host: "127.0.0.1",
+  port: 3000,
+  authType: "none",
+  apiKey: "",
+  username: "",
+  password: "",
+};
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
@@ -32,6 +45,7 @@ export const useSettingsStore = create<SettingsState>()(
         mode: "system",
       },
       sidebarCollapsed: false,
+      mcp: { ...defaultMCPConfig },
 
       updateMeilisearch: (config) => {
         set((state) => ({
@@ -53,6 +67,16 @@ export const useSettingsStore = create<SettingsState>()(
           return getSystemTheme();
         }
         return theme.mode;
+      },
+
+      updateMCP: (config) => {
+        set((state) => ({
+          mcp: { ...state.mcp, ...config },
+        }));
+      },
+
+      resetMCP: () => {
+        set({ mcp: { ...defaultMCPConfig } });
       },
     }),
     {
