@@ -181,28 +181,26 @@ impl McpServer {
         tools.push(McpTool {
             name: "sync_index".to_string(),
             description: "Sync file index to Meilisearch".to_string(),
-                input_schema: serde_json::json!({
-                    "type": "object",
-                    "properties": {
-                        "server_id": { "type": "string" },
-                        "path": { "type": "string", "description": "Root path to sync" }
-                    },
-                    "required": ["server_id", "path"]
-                }),
-            });
-            tools.push(McpTool {
-                name: "get_index_status".to_string(),
-                description: "Get Meilisearch index status".to_string(),
-                input_schema: serde_json::json!({
-                    "type": "object",
-                    "properties": {
-                        "server_id": { "type": "string" }
-                    },
-                    "required": ["server_id"]
-                }),
-            });
-        }
-
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "server_id": { "type": "string" },
+                    "path": { "type": "string", "description": "Root path to sync" }
+                },
+                "required": ["server_id", "path"]
+            }),
+        });
+        tools.push(McpTool {
+            name: "get_index_status".to_string(),
+            description: "Get Meilisearch index status".to_string(),
+            input_schema: serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "server_id": { "type": "string" }
+                },
+                "required": ["server_id"]
+            }),
+        });
         tools
     }
 
