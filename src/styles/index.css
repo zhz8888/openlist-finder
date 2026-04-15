@@ -107,6 +107,29 @@ body {
 
 .btn {
   transition: all 0.2s ease;
+  border-radius: 8px;
+}
+
+.btn-primary {
+  background-color: #22863a;
+  border-color: #22863a;
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background-color: #1a6b2d;
+  border-color: #1a6b2d;
+}
+
+.btn-primary:active {
+  background-color: #155d27;
+  border-color: #155d27;
+}
+
+.btn-primary:focus-visible {
+  outline: 2px solid #22863a;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(34, 134, 58, 0.3);
 }
 
 .card {
@@ -244,4 +267,28 @@ body {
     transition: none !important;
     animation: none !important;
   }
+}
+
+.sidebar-transition {
+  transition: width 300ms ease-in-out, min-width 300ms ease-in-out;
+  overflow: hidden;
+}
+
+.sidebar-collapsed {
+  width: 56px;
+  min-width: 56px;
+}
+
+.sidebar-expanded {
+  width: 256px;
+  min-width: 256px;
+}
+
+.sidebar-content {
+  opacity: 1;
+  transition: opacity 300ms ease-in-out;
+}
+
+.sidebar-collapsed .sidebar-content {
+  opacity: 0;
 }
