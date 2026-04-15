@@ -79,7 +79,7 @@ export function SettingsPage() {
     <div className="flex h-screen bg-base-100">
       <div className="flex-1 overflow-auto p-6 max-w-3xl mx-auto w-full">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">设置</h1>
+          <h1 className="text-2xl font-bold text-base-content">设置</h1>
           <a href="#/" className="btn btn-ghost btn-sm">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -110,7 +110,7 @@ export function SettingsPage() {
                       <>
                         <div className="flex-1 min-w-0">
                           <div className="font-medium truncate">{server.name}</div>
-                          <div className="text-xs opacity-60 truncate">{server.url}</div>
+                          <div className="text-xs text-neutral truncate">{server.url}</div>
                         </div>
                         <div className="flex gap-1 flex-shrink-0 flex-wrap">
                           {server.isDefault ? (
@@ -129,11 +129,11 @@ export function SettingsPage() {
 
               <div className="divider">添加新服务器</div>
 
-              <div className="space-y-2">
+              <div className="bg-base-100 rounded-lg p-4 space-y-3">
                 <input type="text" className="input input-bordered w-full" value={newServerName} onChange={(e) => setNewServerName(e.target.value)} placeholder="服务器名称" />
                 <input type="text" className="input input-bordered w-full" value={newServerUrl} onChange={(e) => setNewServerUrl(e.target.value)} placeholder="服务器地址（例如：https://example.com）" />
                 <input type="password" className="input input-bordered w-full" value={newServerToken} onChange={(e) => setNewServerToken(e.target.value)} placeholder="访问令牌" />
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex gap-2">
                   <button type="button" className="btn btn-primary" onClick={handleAddServer} disabled={!newServerName || !newServerUrl || !newServerToken}>添加服务器</button>
                   <button type="button" className="btn btn-ghost" onClick={handleTestConnection} disabled={!newServerUrl || !newServerToken}>测试连接</button>
                 </div>

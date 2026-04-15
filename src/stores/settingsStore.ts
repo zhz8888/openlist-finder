@@ -12,8 +12,10 @@ function getSystemTheme(): "light" | "dark" {
 interface SettingsState {
   meilisearch: MeilisearchConfig;
   theme: ThemeConfig;
+  sidebarCollapsed: boolean;
   updateMeilisearch: (config: Partial<MeilisearchConfig>) => void;
   setTheme: (theme: ThemeConfig) => void;
+  setSidebarCollapsed: (collapsed: boolean) => void;
   getResolvedTheme: () => "light" | "dark";
 }
 
@@ -29,6 +31,7 @@ export const useSettingsStore = create<SettingsState>()(
       theme: {
         mode: "system",
       },
+      sidebarCollapsed: false,
 
       updateMeilisearch: (config) => {
         set((state) => ({
@@ -38,6 +41,10 @@ export const useSettingsStore = create<SettingsState>()(
 
       setTheme: (theme) => {
         set({ theme });
+      },
+
+      setSidebarCollapsed: (collapsed) => {
+        set({ sidebarCollapsed: collapsed });
       },
 
       getResolvedTheme: () => {

@@ -247,7 +247,7 @@ export function FileList() {
             <span className="loading loading-spinner loading-lg"></span>
           </div>
         ) : files.length === 0 ? (
-          <div className="flex items-center justify-center h-full opacity-50">
+          <div className="flex items-center justify-center h-full text-neutral-muted">
             <p>未找到文件</p>
           </div>
         ) : (
@@ -305,9 +305,9 @@ export function FileList() {
                       <span className={file.isDir ? "font-medium" : ""}>{file.name}</span>
                     </div>
                   </td>
-                  <td className="text-xs opacity-70">{file.isDir ? "—" : formatFileSize(file.size)}</td>
-                  <td className="text-xs opacity-70">{formatDate(file.modified)}</td>
-                  <td className="text-xs opacity-70">{file.isDir ? "文件夹" : file.type || "文件"}</td>
+                  <td className="text-xs text-neutral">{file.isDir ? "—" : formatFileSize(file.size)}</td>
+                  <td className="text-xs text-neutral">{formatDate(file.modified)}</td>
+                  <td className="text-xs text-neutral">{file.isDir ? "文件夹" : file.type || "文件"}</td>
                 </tr>
               ))}
             </tbody>
@@ -337,7 +337,7 @@ export function FileList() {
         <dialog className="modal modal-open">
           <div className="modal-box">
             <h3 className="font-bold text-lg">重命名文件</h3>
-            <p className="py-2 text-sm opacity-70">当前名称：{renameModal.file.name}</p>
+            <p className="py-2 text-sm text-neutral">当前名称：{renameModal.file.name}</p>
             <input
               type="text"
               className="input input-bordered w-full"

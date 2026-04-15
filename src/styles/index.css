@@ -34,8 +34,8 @@
   --color-fg: #1f2328;
   --color-border: #d0d7de;
   --color-border-muted: #d8dee4;
-  --color-neutral: #6e7781;
-  --color-neutral-muted: #8c959f;
+  --color-neutral: #57606a;
+  --color-neutral-muted: #6e7781;
   --color-accent: #0969da;
   --color-accent-hover: #0550ae;
   --color-success: #1a7f37;
@@ -48,12 +48,12 @@
 [data-theme="github-dark"] {
   --color-github-bg: #0d1117;
   --color-github-surface: #161b22;
-  --color-github-surface-hover: #1f2328;
+  --color-github-surface-hover: #21262d;
   --color-github-border: #30363d;
   --color-github-border-muted: #21262d;
   --color-github-text: #e6edf3;
-  --color-github-text-secondary: #8b949e;
-  --color-github-text-tertiary: #6e7681;
+  --color-github-text-secondary: #adbac7;
+  --color-github-text-tertiary: #768390;
   --color-github-accent: #58a6ff;
   --color-github-accent-hover: #79c0ff;
   --color-github-accent-emphasis: #388bfd;
@@ -63,20 +63,20 @@
   --color-github-danger-emphasis: #da3633;
   --color-github-warning: #d29922;
   --color-github-warning-emphasis: #9e6a03;
-  --color-github-counter: #6e7681;
+  --color-github-counter: #768390;
   --color-github-shadow: rgba(1, 4, 9, 0.3);
   --color-github-shadowEmphasis: rgba(1, 4, 9, 0.4);
   --color-github-overlay: rgba(1, 4, 9, 0.5);
   --color-github-input-bg: #0d1117;
   --color-github-input-border: #30363d;
-  --color-github-input-placeholder: #6e7681;
+  --color-github-input-placeholder: #768390;
 
   --color-bg: #0d1117;
   --color-fg: #e6edf3;
   --color-border: #30363d;
   --color-border-muted: #21262d;
-  --color-neutral: #8b949e;
-  --color-neutral-muted: #6e7681;
+  --color-neutral: #adbac7;
+  --color-neutral-muted: #768390;
   --color-accent: #58a6ff;
   --color-accent-hover: #79c0ff;
   --color-success: #3fb950;
@@ -108,6 +108,8 @@ body {
 .btn {
   transition: all 0.2s ease;
   border-radius: 8px;
+  position: relative;
+  z-index: 1;
 }
 
 .btn-primary {
@@ -132,8 +134,60 @@ body {
   box-shadow: 0 0 0 3px rgba(34, 134, 58, 0.3);
 }
 
+.btn-ghost {
+  color: var(--color-fg);
+  background-color: transparent;
+}
+
+.btn-ghost:hover {
+  background-color: var(--color-github-surface-hover);
+  color: var(--color-fg);
+}
+
+.btn-ghost:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.btn-ghost.btn-xs {
+  min-height: 1.5rem;
+  padding: 0.25rem 0.5rem;
+}
+
 .card {
   transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.card-body {
+  padding: 1.25rem;
+}
+
+.card-title {
+  color: var(--color-fg);
+}
+
+.divider {
+  color: var(--color-neutral);
+  margin: 1rem 0;
+}
+
+.form-control {
+  margin-bottom: 0.5rem;
+}
+
+.label-text {
+  color: var(--color-neutral);
+  font-size: 0.875rem;
+}
+
+.stat-title {
+  color: var(--color-neutral);
+}
+
+.stat-value {
+  color: var(--color-fg);
 }
 
 .input, .select, .textarea {
@@ -142,6 +196,7 @@ body {
 
 .badge {
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  color: #ffffff;
 }
 
 .alert {
@@ -162,6 +217,14 @@ body {
 
 .text-secondary {
   color: var(--color-neutral);
+}
+
+.text-neutral {
+  color: var(--color-neutral);
+}
+
+.text-neutral-muted {
+  color: var(--color-neutral-muted);
 }
 
 .border-base-300 {
