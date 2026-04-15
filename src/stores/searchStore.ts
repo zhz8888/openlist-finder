@@ -1,18 +1,30 @@
 import { create } from "zustand";
 import type { IndexSyncProgress, MeilisearchDoc } from "@/types";
 
+export type IndexAvailabilityStatus = 
+  | "unknown"
+  | "checking"
+  | "available"
+  | "indexing"
+  | "unavailable"
+  | "error";
+
 interface SearchState {
   query: string;
   results: MeilisearchDoc[];
   isSearching: boolean;
   searchError: string | null;
   indexProgress: IndexSyncProgress;
+  indexStatus: IndexAvailabilityStatus;
+  indexErrorMessage: string | null;
   setQuery: (query: string) => void;
   setResults: (results: MeilisearchDoc[]) => void;
   setSearching: (searching: boolean) => void;
   setSearchError: (error: string | null) => void;
   setIndexProgress: (progress: Partial<IndexSyncProgress>) => void;
   resetIndexProgress: () => void;
+  setIndexStatus: (status: IndexAvailabilityStatus) => void;
+  setIndexErrorMessage: (message: string | null) => void;
 }
 
 export const useSearchStore = create<SearchState>()((set) => ({
@@ -26,6 +38,8 @@ export const useSearchStore = create<SearchState>()((set) => ({
     percentage: 0,
     isRunning: false,
   },
+  indexStatus: "unknown",
+  indexErrorMessage: null,
 
   setQuery: (query) => set({ query }),
   setResults: (results) => set({ results }),
@@ -46,4 +60,6 @@ export const useSearchStore = create<SearchState>()((set) => ({
       },
     });
   },
+  setIndexStatus: (status) => set({ indexStatus: status }),
+  setIndexErrorMessage: (message) => set({ indexErrorMessage: message }),
 }));

@@ -1,10 +1,11 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useFileBrowser } from "@/hooks";
 import { useServerStore, useSettingsStore, useSearchStore, useFileBrowserStore, useToastStore } from "@/stores";
+import type { IndexAvailabilityStatus } from "@/stores/searchStore";
 import { renameFile, deleteFiles, copyFiles, moveFiles, getFileInfo } from "@/services/openlist";
-import { search as searchMeilisearch } from "@/services/meilisearch";
+import { search as searchMeilisearch, getStats } from "@/services/meilisearch";
 import { Breadcrumb, SortHeader } from "./Breadcrumb";
-import type { FileInfo, SortField } from "@/types";
+import type { FileInfo, SortField, MeilisearchDoc } from "@/types";
 
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return "—";
@@ -50,10 +51,33 @@ function getFileIcon(file: FileInfo) {
   );
 }
 
+function convertDocToFileInfo(doc: MeilisearchDoc): FileInfo {
+  return {
+    name: doc.name,
+    size: doc.size,
+    modified: doc.modified,
+    isDir: doc.is_dir,
+    type: 0,
+    path: doc.dir_path ? `${doc.dir_path}/${doc.name}`.replace(/\/+/g, "/") : `/${doc.name}`,
+  };
+}
+
 export function FileList() {
   const { getActiveServer } = useServerStore();
   const { meilisearch } = useSettingsStore();
-  const { query, setQuery, setResults, isSearching, setSearchError } = useSearchStore();
+  const { 
+    query, 
+    setQuery, 
+    results, 
+    setResults, 
+    isSearching, 
+    searchError, 
+    setSearchError,
+    indexStatus,
+    indexErrorMessage,
+    setIndexStatus,
+    setIndexErrorMessage,
+  } = useSearchStore();
   const currentPath = useFileBrowserStore((s) => s.currentPath);
   const addToast = useToastStore((s) => s.addToast);
   const {
@@ -78,7 +102,47 @@ export function FileList() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [editModal, setEditModal] = useState<{ file: FileInfo; content: string } | null>(null);
   const [editSaving, setEditSaving] = useState(false);
+  const [isSearchMode, setIsSearchMode] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const checkIndexAvailability = useCallback(async (): Promise<IndexAvailabilityStatus> => {
+    const server = getActiveServer();
+    if (!server || !meilisearch.host || !meilisearch.apiKey) {
+      return "unavailable";
+    }
+
+    try {
+      const indexUid = `${meilisearch.indexPrefix}-${server.id}`;
+      const stats = await getStats(meilisearch.host, meilisearch.apiKey, indexUid);
+      
+      if (stats.isIndexing) {
+        return "indexing";
+      }
+      
+      if (stats.numberOfDocuments === 0) {
+        return "unavailable";
+      }
+      
+      return "available";
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setIndexErrorMessage(msg);
+      return "error";
+    }
+  }, [getActiveServer, meilisearch, setIndexErrorMessage]);
+
+  useEffect(() => {
+    const checkIndex = async () => {
+      setIndexStatus("checking");
+      const status = await checkIndexAvailability();
+      setIndexStatus(status);
+    };
+
+    checkIndex();
+    
+    const interval = setInterval(checkIndex, 5000);
+    return () => clearInterval(interval);
+  }, [checkIndexAvailability, setIndexStatus]);
 
   useEffect(() => {
     const handleClick = () => setContextMenu(null);
@@ -183,19 +247,37 @@ export function FileList() {
   }, [pathModal, getActiveServer, loadFiles, addToast]);
 
   const handleSearch = useCallback(async () => {
-    if (!query.trim()) return;
+    if (!query.trim()) {
+      setIsSearchMode(false);
+      setResults([]);
+      return;
+    }
+
+    if (indexStatus !== "available") {
+      addToast("warning", "搜索功能暂时不可用，请等待索引构建完成后再试");
+      return;
+    }
+
     const server = getActiveServer();
     if (!server) return;
     try {
       const indexUid = `${meilisearch.indexPrefix}-${server.id}`;
       const result = await searchMeilisearch(meilisearch.host, meilisearch.apiKey, indexUid, query);
       setResults(result.hits);
+      setIsSearchMode(true);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setSearchError(msg);
       addToast("error", `搜索失败：${msg}`);
     }
-  }, [meilisearch, query, getActiveServer, setResults, setSearchError, addToast]);
+  }, [meilisearch, query, getActiveServer, setResults, setSearchError, addToast, indexStatus]);
+
+  const handleClearSearch = useCallback(() => {
+    setQuery("");
+    setResults([]);
+    setIsSearchMode(false);
+    setSearchError(null);
+  }, [setQuery, setResults, setSearchError]);
 
   const handleEditFile = useCallback((file: FileInfo) => {
     const server = getActiveServer();
@@ -222,17 +304,72 @@ export function FileList() {
       <div className="px-4 py-2 bg-base-100 border-b border-base-300 flex gap-2">
           <input
             type="text"
-            placeholder="搜索文件..."
+            placeholder={indexStatus === "available" ? "搜索文件..." : "搜索功能暂时不可用..."}
             className="input input-bordered input-sm flex-1"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
             aria-label="搜索文件"
+            disabled={indexStatus !== "available"}
           />
-          <button type="button" className="btn btn-primary btn-sm" onClick={handleSearch} disabled={isSearching}>
+          <button 
+            type="button" 
+            className="btn btn-primary btn-sm" 
+            onClick={handleSearch} 
+            disabled={isSearching || indexStatus !== "available"}
+          >
             {isSearching ? <span className="loading loading-spinner loading-xs"></span> : "搜索"}
           </button>
+          {isSearchMode && (
+            <button type="button" className="btn btn-ghost btn-sm" onClick={handleClearSearch}>
+              清除
+            </button>
+          )}
         </div>
+
+      {indexStatus === "checking" && (
+        <div className="alert alert-info mx-4 mt-2">
+          <span className="loading loading-spinner loading-xs"></span>
+          <span>正在检查索引状态...</span>
+        </div>
+      )}
+
+      {indexStatus === "indexing" && (
+        <div className="alert alert-warning mx-4 mt-2">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <span>搜索功能暂时不可用，请等待索引构建完成后再试</span>
+        </div>
+      )}
+
+      {indexStatus === "unavailable" && (
+        <div className="alert alert-warning mx-4 mt-2">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <span>搜索功能暂时不可用，请等待索引构建完成后再试</span>
+        </div>
+      )}
+
+      {indexStatus === "error" && (
+        <div className="alert alert-error mx-4 mt-2">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div className="flex flex-col">
+            <span>Meilisearch 服务不可用</span>
+            {indexErrorMessage && <span className="text-xs opacity-70">{indexErrorMessage}</span>}
+          </div>
+        </div>
+      )}
+
+      {searchError && (
+        <div className="alert alert-error mx-4 mt-2">
+          <span>{searchError}</span>
+          <button type="button" className="btn btn-sm btn-ghost" onClick={() => setSearchError(null)}>关闭</button>
+        </div>
+      )}
 
       {error && (
         <div className="alert alert-error mx-4 mt-2">
@@ -242,7 +379,65 @@ export function FileList() {
       )}
 
       <div className="flex-1 overflow-auto">
-        {isLoading ? (
+        {isSearchMode ? (
+          results.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-neutral-muted">
+              <p>未找到匹配 "{query}" 的文件</p>
+              <button type="button" className="btn btn-ghost btn-sm mt-2" onClick={handleClearSearch}>返回文件列表</button>
+            </div>
+          ) : (
+            <div>
+              <div className="px-4 py-2 text-sm text-neutral">
+                搜索结果：找到 {results.length} 个匹配项
+              </div>
+              <table className="table table-sm">
+                <thead>
+                  <tr>
+                    <th>名称</th>
+                    <th>路径</th>
+                    <th>大小</th>
+                    <th>修改时间</th>
+                    <th>类型</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {results.map((doc) => {
+                    const file = convertDocToFileInfo(doc);
+                    return (
+                      <tr
+                        key={doc.id}
+                        className="hover cursor-pointer"
+                        onDoubleClick={() => {
+                          if (file.isDir) {
+                            handleClearSearch();
+                            loadFiles(file.path);
+                          } else {
+                            setPreviewModal(file);
+                            setPreviewContent(null);
+                            if (isTextFile(file)) {
+                              loadPreviewContent(file);
+                            }
+                          }
+                        }}
+                      >
+                        <td>
+                          <div className="flex items-center gap-2">
+                            {getFileIcon(file)}
+                            <span className={file.isDir ? "font-medium" : ""}>{file.name}</span>
+                          </div>
+                        </td>
+                        <td className="text-xs text-neutral">{doc.dir_path || "/"}</td>
+                        <td className="text-xs text-neutral">{file.isDir ? "—" : formatFileSize(file.size)}</td>
+                        <td className="text-xs text-neutral">{formatDate(file.modified)}</td>
+                        <td className="text-xs text-neutral">{file.isDir ? "文件夹" : "文件"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )
+        ) : isLoading ? (
           <div className="flex items-center justify-center h-full">
             <span className="loading loading-spinner loading-lg"></span>
           </div>
