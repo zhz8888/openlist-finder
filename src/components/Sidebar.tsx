@@ -21,7 +21,7 @@ export function Sidebar() {
         <button
           className="btn btn-ghost btn-sm btn-square"
           onClick={() => setCollapsed(false)}
-          title="Expand sidebar"
+          title="展开侧边栏"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
@@ -49,7 +49,7 @@ export function Sidebar() {
         <button
           className="btn btn-ghost btn-xs btn-square"
           onClick={() => setCollapsed(true)}
-          title="Collapse sidebar"
+          title="折叠侧边栏"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7M19 19l-7-7 7-7" />
@@ -62,14 +62,14 @@ export function Sidebar() {
           <div className="space-y-3">
             <div className="form-control">
               <label className="label py-1">
-                <span className="label-text text-xs opacity-70">Server</span>
+                <span className="label-text text-xs opacity-70">服务器</span>
               </label>
               <select
                 className="select select-bordered select-sm w-full"
                 value={activeServerId || ""}
                 onChange={(e) => handleServerSwitch(e.target.value)}
-                title="Select server"
-                aria-label="Select server"
+                title="选择服务器"
+                aria-label="选择服务器"
               >
                 {servers.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -80,17 +80,17 @@ export function Sidebar() {
             </div>
 
             <div className="stat bg-base-100 rounded-box p-3">
-              <div className="stat-title text-xs">Server Name</div>
+              <div className="stat-title text-xs">服务器名称</div>
               <div className="stat-value text-base truncate">{activeServer.name}</div>
             </div>
 
             <div className="stat bg-base-100 rounded-box p-3">
-              <div className="stat-title text-xs">Total Files</div>
+              <div className="stat-title text-xs">文件总数</div>
               <div className="stat-value text-base">{rawFiles.length}</div>
             </div>
 
             <div className="stat bg-base-100 rounded-box p-3">
-              <div className="stat-title text-xs">Index Status</div>
+              <div className="stat-title text-xs">索引状态</div>
                 {indexProgress.isRunning ? (
                   <div className="flex items-center gap-2">
                     <progress
@@ -109,8 +109,8 @@ export function Sidebar() {
             </div>
         ) : (
           <div className="text-center py-8">
-            <p className="text-sm opacity-60">No server configured</p>
-            <p className="text-xs opacity-40 mt-1">Add a server in Settings</p>
+            <p className="text-sm opacity-60">未配置服务器</p>
+            <p className="text-xs opacity-40 mt-1">请在设置中添加服务器</p>
           </div>
         )}
       </div>
@@ -121,7 +121,7 @@ export function Sidebar() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-          Settings
+          设置
         </a>
       </div>
     </div>

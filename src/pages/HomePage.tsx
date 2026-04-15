@@ -20,9 +20,9 @@ export function HomePage() {
           <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
           </svg>
-          <h2 className="text-xl font-semibold opacity-60">Welcome to OpenList Finder</h2>
-          <p className="text-sm opacity-40">Add an OpenList server in Settings to get started</p>
-          <a href="#/settings" className="btn btn-primary btn-sm">Go to Settings</a>
+          <h2 className="text-xl font-semibold opacity-60">欢迎使用 OpenList Finder</h2>
+          <p className="text-sm opacity-40">请在设置中添加 OpenList 服务器以开始使用</p>
+          <a href="#/settings" className="btn btn-primary btn-sm">前往设置</a>
         </div>
       </div>
     );

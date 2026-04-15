@@ -116,10 +116,10 @@ export function FileList() {
       if (info.content) {
         setPreviewContent(info.content);
       } else {
-        setPreviewContent("(No text content available for preview)");
+        setPreviewContent("（无文本内容可供预览）");
       }
     } catch {
-      setPreviewContent("(Failed to load file content)");
+      setPreviewContent("（加载文件内容失败）");
     } finally {
       setPreviewLoading(false);
     }
@@ -137,11 +137,11 @@ export function FileList() {
     try {
       await renameFile(server.url, server.token, renameModal.file.path.replace(/\/[^/]+$/, "") || "/", renameModal.file.name, renameModal.newName);
       setRenameModal(null);
-      addToast("success", `Renamed "${renameModal.file.name}" to "${renameModal.newName}"`);
+      addToast("success", `已重命名文件 "${renameModal.file.name}" 为 "${renameModal.newName}"`);
       loadFiles();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      addToast("error", `Rename failed: ${msg}`);
+      addToast("error", `重命名失败：${msg}`);
     }
   }, [renameModal, getActiveServer, loadFiles, addToast]);
 
@@ -153,11 +153,11 @@ export function FileList() {
       await deleteFiles(server.url, server.token, deleteModal[0].path.replace(/\/[^/]+$/, "") || "/", deleteModal.map((f) => f.name));
       setDeleteModal(null);
       clearSelection();
-      addToast("success", `Deleted ${deleteModal.length} file(s)`);
+      addToast("success", `已删除 ${deleteModal.length} 个文件`);
       loadFiles();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      addToast("error", `Delete failed: ${msg}`);
+      addToast("error", `删除失败：${msg}`);
     }
   }, [deleteModal, getActiveServer, loadFiles, clearSelection, addToast]);
 
@@ -169,16 +169,16 @@ export function FileList() {
       const srcDir = pathModal.files[0].path.replace(/\/[^/]+$/, "") || "/";
       if (pathModal.operation === "copy") {
         await copyFiles(server.url, server.token, srcDir, pathModal.targetPath, pathModal.files.map((f) => f.name));
-        addToast("success", `Copied ${pathModal.files.length} file(s) to ${pathModal.targetPath}`);
+        addToast("success", `已复制 ${pathModal.files.length} 个文件到 ${pathModal.targetPath}`);
       } else {
         await moveFiles(server.url, server.token, srcDir, pathModal.targetPath, pathModal.files.map((f) => f.name));
-        addToast("success", `Moved ${pathModal.files.length} file(s) to ${pathModal.targetPath}`);
+        addToast("success", `已移动 ${pathModal.files.length} 个文件到 ${pathModal.targetPath}`);
       }
       setPathModal(null);
       loadFiles();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      addToast("error", `${pathModal.operation === "copy" ? "Copy" : "Move"} failed: ${msg}`);
+      addToast("error", `${pathModal.operation === "copy" ? "复制" : "移动"}失败：${msg}`);
     }
   }, [pathModal, getActiveServer, loadFiles, addToast]);
 
@@ -193,7 +193,7 @@ export function FileList() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setSearchError(msg);
-      addToast("error", `Search failed: ${msg}`);
+      addToast("error", `搜索失败：${msg}`);
     }
   }, [meilisearch, query, getActiveServer, setResults, setSearchError, addToast]);
 
@@ -208,7 +208,7 @@ export function FileList() {
     if (!editModal) return;
     setEditSaving(true);
     try {
-      addToast("info", `File content save for "${editModal.file.name}" is not supported by OpenList API. Use rename or delete+upload instead.`);
+      addToast("info", `保存文件 "${editModal.file.name}" 的功能不受 OpenList API 支持。请使用重命名或删除后重新上传。`);
       setEditModal(null);
     } finally {
       setEditSaving(false);
@@ -222,22 +222,22 @@ export function FileList() {
       <div className="px-4 py-2 bg-base-100 border-b border-base-300 flex gap-2">
           <input
             type="text"
-            placeholder="Search files..."
+            placeholder="搜索文件..."
             className="input input-bordered input-sm flex-1"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            aria-label="Search files"
+            aria-label="搜索文件"
           />
           <button type="button" className="btn btn-primary btn-sm" onClick={handleSearch} disabled={isSearching}>
-            {isSearching ? <span className="loading loading-spinner loading-xs"></span> : "Search"}
+            {isSearching ? <span className="loading loading-spinner loading-xs"></span> : "搜索"}
           </button>
         </div>
 
       {error && (
         <div className="alert alert-error mx-4 mt-2">
           <span>{error}</span>
-          <button type="button" className="btn btn-sm btn-ghost" onClick={() => loadFiles()}>Retry</button>
+          <button type="button" className="btn btn-sm btn-ghost" onClick={() => loadFiles()}>重试</button>
         </div>
       )}
 
@@ -248,13 +248,13 @@ export function FileList() {
           </div>
         ) : files.length === 0 ? (
           <div className="flex items-center justify-center h-full opacity-50">
-            <p>No files found</p>
+            <p>未找到文件</p>
           </div>
         ) : (
           <table className="table table-sm">
             <thead>
               <tr>
-                <th className="w-8" aria-label="Select all">
+                <th className="w-8" aria-label="全选">
                   <label>
                     <input
                       type="checkbox"
@@ -268,14 +268,14 @@ export function FileList() {
                           files.forEach((f) => toggleFileSelection(f.name));
                         }
                       }}
-                      aria-label="Select all files"
+                      aria-label="全选文件"
                     />
                   </label>
                 </th>
-                <SortHeader field="name" label="Name" currentSort={sortConfig} onSort={handleSort} />
-                <SortHeader field="size" label="Size" currentSort={sortConfig} onSort={handleSort} />
-                <SortHeader field="modified" label="Modified" currentSort={sortConfig} onSort={handleSort} />
-                <SortHeader field="type" label="Type" currentSort={sortConfig} onSort={handleSort} />
+                <SortHeader field="name" label="名称" currentSort={sortConfig} onSort={handleSort} />
+                <SortHeader field="size" label="大小" currentSort={sortConfig} onSort={handleSort} />
+                <SortHeader field="modified" label="修改时间" currentSort={sortConfig} onSort={handleSort} />
+                <SortHeader field="type" label="类型" currentSort={sortConfig} onSort={handleSort} />
               </tr>
             </thead>
             <tbody>
@@ -295,7 +295,7 @@ export function FileList() {
                         checked={selectedFiles.has(file.name)}
                         onChange={() => toggleFileSelection(file.name)}
                         onClick={(e) => e.stopPropagation()}
-                        aria-label={`Select ${file.name}`}
+                        aria-label={`选择 ${file.name}`}
                       />
                     </label>
                   </td>
@@ -307,7 +307,7 @@ export function FileList() {
                   </td>
                   <td className="text-xs opacity-70">{file.isDir ? "—" : formatFileSize(file.size)}</td>
                   <td className="text-xs opacity-70">{formatDate(file.modified)}</td>
-                  <td className="text-xs opacity-70">{file.isDir ? "Directory" : file.type || "File"}</td>
+                  <td className="text-xs opacity-70">{file.isDir ? "文件夹" : file.type || "文件"}</td>
                 </tr>
               ))}
             </tbody>
@@ -320,77 +320,77 @@ export function FileList() {
           className="dropdown-content menu bg-base-100 rounded-box z-50 w-52 p-2 shadow-lg border border-base-300 fixed context-menu"
           style={{ "--ctx-x": `${contextMenu.x}px`, "--ctx-y": `${contextMenu.y}px` } as React.CSSProperties}
           role="menu"
-          aria-label="File context menu"
+          aria-label="文件右键菜单"
         >
-          <li role="menuitem"><button type="button" onClick={() => { setPreviewModal(contextMenu.file); setPreviewContent(null); if (isTextFile(contextMenu.file)) loadPreviewContent(contextMenu.file); setContextMenu(null); }}>View</button></li>
+          <li role="menuitem"><button type="button" onClick={() => { setPreviewModal(contextMenu.file); setPreviewContent(null); if (isTextFile(contextMenu.file)) loadPreviewContent(contextMenu.file); setContextMenu(null); }}>查看</button></li>
           {!contextMenu.file.isDir && isTextFile(contextMenu.file) && (
-            <li role="menuitem"><button type="button" onClick={() => { setEditModal({ file: contextMenu.file, content: "" }); setContextMenu(null); }}>Edit</button></li>
+            <li role="menuitem"><button type="button" onClick={() => { setEditModal({ file: contextMenu.file, content: "" }); setContextMenu(null); }}>编辑</button></li>
           )}
-          <li role="menuitem"><button type="button" onClick={() => { setRenameModal({ file: contextMenu.file, newName: contextMenu.file.name }); setContextMenu(null); }}>Rename</button></li>
-          <li role="menuitem"><button type="button" onClick={() => { setDeleteModal([contextMenu.file]); setContextMenu(null); }}>Delete</button></li>
-          <li role="menuitem"><button type="button" onClick={() => { setPathModal({ files: [contextMenu.file], operation: "copy", targetPath: "" }); setContextMenu(null); }}>Copy</button></li>
-          <li role="menuitem"><button type="button" onClick={() => { setPathModal({ files: [contextMenu.file], operation: "move", targetPath: "" }); setContextMenu(null); }}>Move</button></li>
+          <li role="menuitem"><button type="button" onClick={() => { setRenameModal({ file: contextMenu.file, newName: contextMenu.file.name }); setContextMenu(null); }}>重命名</button></li>
+          <li role="menuitem"><button type="button" onClick={() => { setDeleteModal([contextMenu.file]); setContextMenu(null); }}>删除</button></li>
+          <li role="menuitem"><button type="button" onClick={() => { setPathModal({ files: [contextMenu.file], operation: "copy", targetPath: "" }); setContextMenu(null); }}>复制</button></li>
+          <li role="menuitem"><button type="button" onClick={() => { setPathModal({ files: [contextMenu.file], operation: "move", targetPath: "" }); setContextMenu(null); }}>移动</button></li>
         </div>
       )}
 
       {renameModal && (
         <dialog className="modal modal-open">
           <div className="modal-box">
-            <h3 className="font-bold text-lg">Rename File</h3>
-            <p className="py-2 text-sm opacity-70">Current: {renameModal.file.name}</p>
+            <h3 className="font-bold text-lg">重命名文件</h3>
+            <p className="py-2 text-sm opacity-70">当前名称：{renameModal.file.name}</p>
             <input
               type="text"
               className="input input-bordered w-full"
               value={renameModal.newName}
               onChange={(e) => setRenameModal({ ...renameModal, newName: e.target.value })}
               onKeyDown={(e) => e.key === "Enter" && handleRename()}
-              aria-label="New file name"
+              aria-label="新文件名称"
             />
             <div className="modal-action">
-              <button type="button" className="btn btn-ghost" onClick={() => setRenameModal(null)}>Cancel</button>
-              <button type="button" className="btn btn-primary" onClick={handleRename}>Rename</button>
+              <button type="button" className="btn btn-ghost" onClick={() => setRenameModal(null)}>取消</button>
+              <button type="button" className="btn btn-primary" onClick={handleRename}>重命名</button>
             </div>
           </div>
-          <form method="dialog" className="modal-backdrop"><button type="button" onClick={() => setRenameModal(null)}>close</button></form>
+          <form method="dialog" className="modal-backdrop"><button type="button" onClick={() => setRenameModal(null)}>关闭</button></form>
         </dialog>
       )}
 
       {deleteModal && (
         <dialog className="modal modal-open">
           <div className="modal-box">
-            <h3 className="font-bold text-lg text-error">Confirm Delete</h3>
-            <p className="py-2">Are you sure you want to delete the following files?</p>
+            <h3 className="font-bold text-lg text-error">确认删除</h3>
+            <p className="py-2">确定要删除以下文件吗？</p>
             <ul className="list-disc list-inside text-sm">
               {deleteModal.map((f) => <li key={f.name}>{f.name}</li>)}
             </ul>
             <div className="modal-action">
-              <button type="button" className="btn btn-ghost" onClick={() => setDeleteModal(null)}>Cancel</button>
-              <button type="button" className="btn btn-error" onClick={handleDelete}>Delete</button>
+              <button type="button" className="btn btn-ghost" onClick={() => setDeleteModal(null)}>取消</button>
+              <button type="button" className="btn btn-error" onClick={handleDelete}>删除</button>
             </div>
           </div>
-          <form method="dialog" className="modal-backdrop"><button type="button" onClick={() => setDeleteModal(null)}>close</button></form>
+          <form method="dialog" className="modal-backdrop"><button type="button" onClick={() => setDeleteModal(null)}>关闭</button></form>
         </dialog>
       )}
 
       {pathModal && (
         <dialog className="modal modal-open">
           <div className="modal-box">
-            <h3 className="font-bold text-lg">{pathModal.operation === "copy" ? "Copy" : "Move"} Files</h3>
-            <p className="py-2 text-sm">Target directory path:</p>
+            <h3 className="font-bold text-lg">{pathModal.operation === "copy" ? "复制" : "移动"}文件</h3>
+            <p className="py-2 text-sm">目标目录路径：</p>
             <input
               type="text"
               className="input input-bordered w-full"
-              placeholder="/target/directory"
+              placeholder="/目标目录"
               value={pathModal.targetPath}
               onChange={(e) => setPathModal({ ...pathModal, targetPath: e.target.value })}
-              aria-label="Target directory path"
+              aria-label="目标目录路径"
             />
             <div className="modal-action">
-              <button type="button" className="btn btn-ghost" onClick={() => setPathModal(null)}>Cancel</button>
-              <button type="button" className="btn btn-primary" onClick={handleCopyMove}>{pathModal.operation === "copy" ? "Copy" : "Move"}</button>
+              <button type="button" className="btn btn-ghost" onClick={() => setPathModal(null)}>取消</button>
+              <button type="button" className="btn btn-primary" onClick={handleCopyMove}>{pathModal.operation === "copy" ? "复制" : "移动"}</button>
             </div>
           </div>
-          <form method="dialog" className="modal-backdrop"><button type="button" onClick={() => setPathModal(null)}>close</button></form>
+          <form method="dialog" className="modal-backdrop"><button type="button" onClick={() => setPathModal(null)}>关闭</button></form>
         </dialog>
       )}
 
@@ -400,10 +400,10 @@ export function FileList() {
             <h3 className="font-bold text-lg">{previewModal.name}</h3>
             <div className="py-4">
               <div className="grid grid-cols-2 gap-2 text-sm mb-4">
-                <p><strong>Path:</strong> {previewModal.path}</p>
-                <p><strong>Size:</strong> {formatFileSize(previewModal.size)}</p>
-                <p><strong>Modified:</strong> {formatDate(previewModal.modified)}</p>
-                <p><strong>Type:</strong> {previewModal.type || "Unknown"}</p>
+                <p><strong>路径：</strong> {previewModal.path}</p>
+                <p><strong>大小：</strong> {formatFileSize(previewModal.size)}</p>
+                <p><strong>修改时间：</strong> {formatDate(previewModal.modified)}</p>
+                <p><strong>类型：</strong> {previewModal.type || "未知"}</p>
               </div>
 
               {isImageFile(previewModal) && (
@@ -414,7 +414,7 @@ export function FileList() {
                     className="max-w-full max-h-96 mx-auto object-contain"
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = "none";
-                      (e.target as HTMLImageElement).parentElement!.innerHTML = "<p class='text-center text-sm opacity-50 py-8'>Image preview not available</p>";
+                      (e.target as HTMLImageElement).parentElement!.innerHTML = "<p class='text-center text-sm opacity-50 py-8'>图片预览不可用</p>";
                     }}
                   />
                 </div>
@@ -425,14 +425,14 @@ export function FileList() {
                   {previewLoading ? (
                     <div className="flex items-center justify-center py-8">
                       <span className="loading loading-spinner loading-sm"></span>
-                      <span className="ml-2 text-sm opacity-70">Loading content...</span>
+                      <span className="ml-2 text-sm opacity-70">正在加载内容...</span>
                     </div>
                   ) : previewContent ? (
                     <pre className="p-3 text-xs overflow-auto max-h-80 whitespace-pre-wrap break-words font-mono">
                       {previewContent}
                     </pre>
                   ) : (
-                    <p className="text-center text-sm opacity-50 py-8">No preview available</p>
+                    <p className="text-center text-sm opacity-50 py-8">预览不可用</p>
                   )}
                 </div>
               )}
@@ -442,25 +442,25 @@ export function FileList() {
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <p className="text-sm opacity-50 mt-2">Preview not available for this file type</p>
+                  <p className="text-sm opacity-50 mt-2">此文件类型不支持预览</p>
                 </div>
               )}
             </div>
             <div className="modal-action">
               {isTextFile(previewModal) && (
-                <button type="button" className="btn btn-sm" onClick={() => handleEditFile(previewModal)}>Edit</button>
+                <button type="button" className="btn btn-sm" onClick={() => handleEditFile(previewModal)}>编辑</button>
               )}
-              <button type="button" className="btn" onClick={() => { setPreviewModal(null); setPreviewContent(null); }}>Close</button>
+              <button type="button" className="btn" onClick={() => { setPreviewModal(null); setPreviewContent(null); }}>关闭</button>
             </div>
           </div>
-          <form method="dialog" className="modal-backdrop"><button type="button" onClick={() => { setPreviewModal(null); setPreviewContent(null); }}>close</button></form>
+          <form method="dialog" className="modal-backdrop"><button type="button" onClick={() => { setPreviewModal(null); setPreviewContent(null); }}>关闭</button></form>
         </dialog>
       )}
 
       {editModal && (
         <dialog className="modal modal-open">
           <div className="modal-box max-w-4xl">
-            <h3 className="font-bold text-lg">Edit: {editModal.file.name}</h3>
+            <h3 className="font-bold text-lg">编辑：{editModal.file.name}</h3>
             <p className="text-xs opacity-50 mt-1">{editModal.file.path}</p>
             <div className="mt-4">
               <textarea
@@ -469,18 +469,18 @@ export function FileList() {
                 rows={20}
                 value={editModal.content}
                 onChange={(e) => setEditModal({ ...editModal, content: e.target.value })}
-                aria-label="File content editor"
-                placeholder="Loading file content..."
+                aria-label="文件内容编辑器"
+                placeholder="正在加载文件内容..."
               />
             </div>
             <div className="modal-action">
-              <button type="button" className="btn btn-ghost" onClick={() => setEditModal(null)}>Cancel</button>
+              <button type="button" className="btn btn-ghost" onClick={() => setEditModal(null)}>取消</button>
               <button type="button" className="btn btn-primary" onClick={handleSaveEdit} disabled={editSaving}>
-                {editSaving ? <span className="loading loading-spinner loading-xs"></span> : "Save"}
+                {editSaving ? <span className="loading loading-spinner loading-xs"></span> : "保存"}
               </button>
             </div>
           </div>
-          <form method="dialog" className="modal-backdrop"><button type="button" onClick={() => setEditModal(null)}>close</button></form>
+          <form method="dialog" className="modal-backdrop"><button type="button" onClick={() => setEditModal(null)}>关闭</button></form>
         </dialog>
       )}
     </div>
