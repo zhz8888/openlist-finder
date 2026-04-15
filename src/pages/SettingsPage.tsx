@@ -268,7 +268,7 @@ export function SettingsPage() {
                     type="button"
                     className={`text-sm font-medium toggle-status-label ${mcp.enabled ? "toggle-status-enabled" : "toggle-status-disabled"}`}
                     onClick={() => updateMCP({ enabled: !mcp.enabled })}
-                    aria-pressed={mcp.enabled}
+                    aria-pressed={mcp.enabled ? "true" : "false"}
                     aria-label={mcp.enabled ? "点击禁用MCP服务器" : "点击启用MCP服务器"}
                   >
                     {mcp.enabled ? "已启用" : "已禁用"}
@@ -277,7 +277,7 @@ export function SettingsPage() {
                     type="button"
                     className="btn btn-sm btn-ghost border border-base-300"
                     onClick={() => setMcpExpanded(!mcpExpanded)}
-                    aria-expanded={mcpExpanded}
+                    aria-expanded={mcpExpanded ? "true" : "false"}
                     aria-label={mcpExpanded ? "收起配置" : "展开配置"}
                   >
                     <span>{mcpExpanded ? "收起" : "展开"}</span>
@@ -423,7 +423,7 @@ export function SettingsPage() {
                 <button
                   type="button"
                   role="radio"
-                  aria-checked={Boolean(theme.mode === "light")}
+                  aria-checked={theme.mode === "light" ? "true" : "false"}
                   className={`theme-btn ${theme.mode === "light" ? "theme-btn-active" : ""}`}
                   onClick={() => handleThemeChange("light")}
                   onKeyDown={(e) => {
@@ -452,7 +452,7 @@ export function SettingsPage() {
                 <button
                   type="button"
                   role="radio"
-                  aria-checked={Boolean(theme.mode === "dark")}
+                  aria-checked={theme.mode === "dark" ? "true" : "false"}
                   className={`theme-btn ${theme.mode === "dark" ? "theme-btn-active" : ""}`}
                   onClick={() => handleThemeChange("dark")}
                   onKeyDown={(e) => {
@@ -476,7 +476,7 @@ export function SettingsPage() {
                 <button
                   type="button"
                   role="radio"
-                  aria-checked={Boolean(theme.mode === "system")}
+                  aria-checked={theme.mode === "system" ? "true" : "false"}
                   className={`theme-btn ${theme.mode === "system" ? "theme-btn-active" : ""}`}
                   onClick={() => handleThemeChange("system")}
                   onKeyDown={(e) => {

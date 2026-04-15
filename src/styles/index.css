@@ -689,6 +689,7 @@ body {
 
 .input[type="number"] {
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 .select::-webkit-scrollbar {
@@ -946,6 +947,7 @@ body {
   transition: all 0.3s ease-in-out;
   display: inline-flex;
   align-items: center;
+  -webkit-user-select: none;
   user-select: none;
 }
 
