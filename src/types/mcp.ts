@@ -26,14 +26,11 @@ export interface MCPResponse {
   };
 }
 
-export type MCPAuthType = "none" | "api_key" | "basic";
+export type MCPLogLevel = "debug" | "info" | "warn" | "error";
 
 export interface MCPConfig {
   enabled: boolean;
-  host: string;
-  port: number;
-  authType: MCPAuthType;
-  apiKey: string;
-  username: string;
-  password: string;
+  serverName: string;
+  serverVersion: string;
+  logLevel: MCPLogLevel;
 }

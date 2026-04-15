@@ -2,25 +2,7 @@ import { useState } from "react";
 import { useServerStore, useSettingsStore } from "@/stores";
 import { testConnection } from "@/services/openlist";
 import { testConnection as testMeilisearchConnection } from "@/services/meilisearch";
-import type { ThemeConfig, MCPAuthType } from "@/types";
-
-const isValidIP = (ip: string): boolean => {
-  if (ip === "localhost" || ip === "127.0.0.1") return true;
-  const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
-  if (!ipRegex.test(ip)) return false;
-  const parts = ip.split(".").map(Number);
-  return parts.every((part) => part >= 0 && part <= 255);
-};
-
-const isValidHostname = (host: string): boolean => {
-  if (isValidIP(host)) return true;
-  const hostnameRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
-  return hostnameRegex.test(host);
-};
-
-const isValidPort = (port: number): boolean => {
-  return Number.isInteger(port) && port >= 1 && port <= 65535;
-};
+import type { ThemeConfig, MCPLogLevel } from "@/types";
 
 export function SettingsPage() {
   const { servers, addServer, removeServer, updateServer, setDefaultServer } = useServerStore();
@@ -35,10 +17,6 @@ export function SettingsPage() {
   const [editName, setEditName] = useState("");
   const [editUrl, setEditUrl] = useState("");
   const [editToken, setEditToken] = useState("");
-  const [mcpValidationErrors, setMcpValidationErrors] = useState<{
-    host?: string;
-    port?: string;
-  }>({});
 
   const handleAddServer = async () => {
     if (!newServerName || !newServerUrl || !newServerToken) return;
@@ -95,40 +73,6 @@ export function SettingsPage() {
 
   const handleThemeChange = (mode: "light" | "dark" | "system") => {
     setTheme({ mode } as ThemeConfig);
-  };
-
-  const handleMCPHostChange = (value: string) => {
-    updateMCP({ host: value });
-    if (value && !isValidHostname(value)) {
-      setMcpValidationErrors((prev) => ({ ...prev, host: "请输入有效的 IP 地址或主机名" }));
-    } else {
-      setMcpValidationErrors((prev) => {
-        const { host: _, ...rest } = prev;
-        return rest;
-      });
-    }
-  };
-
-  const handleMCPPortChange = (value: string) => {
-    const port = parseInt(value, 10);
-    if (value === "" || isNaN(port)) {
-      updateMCP({ port: 0 });
-      setMcpValidationErrors((prev) => ({ ...prev, port: "请输入有效的端口号" }));
-    } else if (!isValidPort(port)) {
-      updateMCP({ port });
-      setMcpValidationErrors((prev) => ({ ...prev, port: "端口号范围：1-65535" }));
-    } else {
-      updateMCP({ port });
-      setMcpValidationErrors((prev) => {
-        const { port: _, ...rest } = prev;
-        return rest;
-      });
-    }
-  };
-
-  const handleMCPReset = () => {
-    resetMCP();
-    setMcpValidationErrors({});
   };
 
   return (
@@ -258,8 +202,10 @@ export function SettingsPage() {
 
           <section className="card bg-base-200">
             <div className="card-body">
-              <h2 className="card-title text-lg">MCP 服务配置</h2>
-              <p className="text-sm text-secondary mb-4">配置 Model Context Protocol 服务连接</p>
+              <h2 className="card-title text-lg">MCP 服务器配置</h2>
+              <p className="text-sm text-secondary mb-4">
+                配置 Model Context Protocol 服务器，供 AI 助手（如 Claude Desktop）通过 stdio 连接使用
+              </p>
 
               <div className="space-y-4">
                 <div className="form-control">
@@ -270,121 +216,114 @@ export function SettingsPage() {
                       checked={mcp.enabled}
                       onChange={(e) => updateMCP({ enabled: e.target.checked })}
                     />
-                    <span className="label-text">启用 MCP 服务</span>
+                    <span className="label-text">启用 MCP 服务器</span>
                   </label>
                 </div>
 
                 <div className={`space-y-3 ${!mcp.enabled ? "opacity-50 pointer-events-none" : ""}`}>
                   <div className="form-control">
                     <label className="label">
-                      <span className="label-text">服务器地址</span>
+                      <span className="label-text">服务器名称</span>
                     </label>
                     <input
                       type="text"
-                      className={`input input-bordered w-full ${mcpValidationErrors.host ? "input-error" : ""}`}
-                      value={mcp.host}
-                      onChange={(e) => handleMCPHostChange(e.target.value)}
-                      placeholder="例如：127.0.0.1 或 localhost"
+                      className="input input-bordered w-full"
+                      value={mcp.serverName}
+                      onChange={(e) => updateMCP({ serverName: e.target.value })}
+                      placeholder="MCP 服务器名称"
                       disabled={!mcp.enabled}
                     />
-                    {mcpValidationErrors.host && (
-                      <label className="label">
-                        <span className="label-text-alt text-error">{mcpValidationErrors.host}</span>
-                      </label>
-                    )}
+                    <label className="label">
+                      <span className="label-text-alt text-secondary">显示给连接的 AI 助手</span>
+                    </label>
                   </div>
 
                   <div className="form-control">
                     <label className="label">
-                      <span className="label-text">端口</span>
+                      <span className="label-text">服务器版本</span>
                     </label>
                     <input
-                      type="number"
-                      className={`input input-bordered w-full ${mcpValidationErrors.port ? "input-error" : ""}`}
-                      value={mcp.port || ""}
-                      onChange={(e) => handleMCPPortChange(e.target.value)}
-                      placeholder="例如：3000"
-                      min={1}
-                      max={65535}
+                      type="text"
+                      className="input input-bordered w-full"
+                      value={mcp.serverVersion}
+                      onChange={(e) => updateMCP({ serverVersion: e.target.value })}
+                      placeholder="例如：0.1.0"
                       disabled={!mcp.enabled}
                     />
-                    {mcpValidationErrors.port && (
-                      <label className="label">
-                        <span className="label-text-alt text-error">{mcpValidationErrors.port}</span>
-                      </label>
-                    )}
                   </div>
 
                   <div className="form-control">
                     <label className="label">
-                      <span className="label-text">认证方式</span>
+                      <span className="label-text">日志级别</span>
                     </label>
                     <select
                       className="select select-bordered w-full"
-                      value={mcp.authType}
-                      onChange={(e) => updateMCP({ authType: e.target.value as MCPAuthType })}
+                      value={mcp.logLevel}
+                      onChange={(e) => updateMCP({ logLevel: e.target.value as MCPLogLevel })}
                       disabled={!mcp.enabled}
-                      title="认证方式"
-                      aria-label="认证方式"
+                      title="日志级别"
+                      aria-label="日志级别"
                     >
-                      <option value="none">无认证</option>
-                      <option value="api_key">API 密钥</option>
-                      <option value="basic">用户名密码</option>
+                      <option value="debug">Debug（调试）</option>
+                      <option value="info">Info（信息）</option>
+                      <option value="warn">Warn（警告）</option>
+                      <option value="error">Error（错误）</option>
                     </select>
+                    <label className="label">
+                      <span className="label-text-alt text-secondary">控制 MCP 服务器的日志输出级别</span>
+                    </label>
                   </div>
 
-                  {mcp.authType === "api_key" && (
-                    <div className="form-control">
-                      <label className="label">
-                        <span className="label-text">API 密钥</span>
-                      </label>
-                      <input
-                        type="password"
-                        className="input input-bordered w-full"
-                        value={mcp.apiKey}
-                        onChange={(e) => updateMCP({ apiKey: e.target.value })}
-                        placeholder="输入 API 密钥"
+                  <div className="bg-base-100 rounded-lg p-4 mt-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-medium">Claude Desktop 配置示例</h3>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-xs"
+                        onClick={() => {
+                          const config = {
+                            mcpServers: {
+                              [mcp.serverName]: {
+                                command: "path/to/openlist-finder",
+                                args: ["--mcp"]
+                              }
+                            }
+                          };
+                          navigator.clipboard.writeText(JSON.stringify(config, null, 2));
+                        }}
                         disabled={!mcp.enabled}
-                      />
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        复制
+                      </button>
                     </div>
-                  )}
-
-                  {mcp.authType === "basic" && (
-                    <>
-                      <div className="form-control">
-                        <label className="label">
-                          <span className="label-text">用户名</span>
-                        </label>
-                        <input
-                          type="text"
-                          className="input input-bordered w-full"
-                          value={mcp.username}
-                          onChange={(e) => updateMCP({ username: e.target.value })}
-                          placeholder="输入用户名"
-                          disabled={!mcp.enabled}
-                        />
-                      </div>
-                      <div className="form-control">
-                        <label className="label">
-                          <span className="label-text">密码</span>
-                        </label>
-                        <input
-                          type="password"
-                          className="input input-bordered w-full"
-                          value={mcp.password}
-                          onChange={(e) => updateMCP({ password: e.target.value })}
-                          placeholder="输入密码"
-                          disabled={!mcp.enabled}
-                        />
-                      </div>
-                    </>
-                  )}
+                    <p className="text-sm text-secondary mb-3">
+                      将以下配置添加到 Claude Desktop 的配置文件中：
+                    </p>
+                    <pre className="bg-base-300 p-3 rounded text-xs overflow-x-auto font-mono">
+{JSON.stringify({
+  mcpServers: {
+    [mcp.serverName]: {
+      command: "path/to/openlist-finder",
+      args: ["--mcp"]
+    }
+  }
+}, null, 2)}
+                    </pre>
+                    <div className="mt-3 text-xs text-secondary">
+                      <p className="font-medium mb-1">配置文件位置：</p>
+                      <p>macOS: <code className="bg-base-300 px-1 rounded">~/Library/Application Support/Claude/claude_desktop_config.json</code></p>
+                      <p className="mt-1">Windows: <code className="bg-base-300 px-1 rounded">%APPDATA%\Claude\claude_desktop_config.json</code></p>
+                    </div>
+                  </div>
 
                   <div className="flex gap-2 pt-2">
                     <button
                       type="button"
                       className="btn btn-ghost"
-                      onClick={handleMCPReset}
+                      onClick={resetMCP}
                       disabled={!mcp.enabled}
                     >
                       重置为默认

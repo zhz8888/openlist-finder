@@ -24,12 +24,9 @@ interface SettingsState {
 
 const defaultMCPConfig: MCPConfig = {
   enabled: false,
-  host: "127.0.0.1",
-  port: 3000,
-  authType: "none",
-  apiKey: "",
-  username: "",
-  password: "",
+  serverName: "openlist-finder",
+  serverVersion: "0.1.0",
+  logLevel: "info",
 };
 
 export const useSettingsStore = create<SettingsState>()(
