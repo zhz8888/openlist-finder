@@ -23,16 +23,16 @@ function formatDate(dateStr: string): string {
 
 function isTextFile(file: FileInfo): boolean {
   if (file.isDir) return false;
-  const textTypes = ["text", "json", "xml", "yaml", "yml", "markdown", "md", "csv", "log", "ini", "conf", "cfg", "sh", "bat", "ps1", "py", "js", "ts", "jsx", "tsx", "css", "html", "sql", "env", "gitignore", "toml", "rs"];
+  const textExts = ["txt", "text", "json", "xml", "yaml", "yml", "markdown", "md", "csv", "log", "ini", "conf", "cfg", "sh", "bat", "ps1", "py", "js", "ts", "jsx", "tsx", "css", "html", "sql", "env", "gitignore", "toml", "rs", "go", "java", "c", "cpp", "h", "hpp", "vue", "svelte"];
   const ext = file.name.split(".").pop()?.toLowerCase() || "";
-  return textTypes.some((t) => ext === t || file.type?.includes(t));
+  return textExts.includes(ext);
 }
 
 function isImageFile(file: FileInfo): boolean {
   if (file.isDir) return false;
-  const imageExts = ["jpg", "jpeg", "png", "gif", "bmp", "svg", "webp", "ico"];
+  const imageExts = ["jpg", "jpeg", "png", "gif", "bmp", "svg", "webp", "ico", "avif"];
   const ext = file.name.split(".").pop()?.toLowerCase() || "";
-  return imageExts.includes(ext) || file.type?.startsWith("image/");
+  return imageExts.includes(ext);
 }
 
 function getFileIcon(file: FileInfo) {
@@ -109,7 +109,7 @@ export function FileList() {
 
   const loadPreviewContent = useCallback(async (file: FileInfo) => {
     const server = getActiveServer();
-    if (!server) return;
+    if (!server || !file.path) return;
     setPreviewLoading(true);
     try {
       const info = await getFileInfo(server.url, server.token, file.path);
@@ -131,7 +131,7 @@ export function FileList() {
   }, []);
 
   const handleRename = useCallback(async () => {
-    if (!renameModal) return;
+    if (!renameModal || !renameModal.file.path) return;
     const server = getActiveServer();
     if (!server) return;
     try {
@@ -146,7 +146,7 @@ export function FileList() {
   }, [renameModal, getActiveServer, loadFiles, addToast]);
 
   const handleDelete = useCallback(async () => {
-    if (!deleteModal) return;
+    if (!deleteModal || !deleteModal[0].path) return;
     const server = getActiveServer();
     if (!server) return;
     try {
@@ -162,7 +162,7 @@ export function FileList() {
   }, [deleteModal, getActiveServer, loadFiles, clearSelection, addToast]);
 
   const handleCopyMove = useCallback(async () => {
-    if (!pathModal) return;
+    if (!pathModal || !pathModal.files[0].path) return;
     const server = getActiveServer();
     if (!server) return;
     try {

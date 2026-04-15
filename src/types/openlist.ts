@@ -12,15 +12,22 @@ export interface FileInfo {
   size: number;
   modified: string;
   isDir: boolean;
-  type: string;
-  path: string;
+  type: number;
+  created?: string;
+  sign?: string;
+  thumb?: string;
+  hashInfo?: unknown;
+  path?: string;
   content?: string;
 }
 
 export interface FileListResponse {
   content: FileInfo[];
   total: number;
-  path: string;
+  readme?: string;
+  header?: string;
+  write?: boolean;
+  provider?: string;
 }
 
 export interface FileDetail {
@@ -28,8 +35,12 @@ export interface FileDetail {
   size: number;
   modified: string;
   isDir: boolean;
-  type: string;
-  path: string;
+  type: number;
+  created?: string;
+  sign?: string;
+  thumb?: string;
+  hashInfo?: unknown;
+  path?: string;
   content?: string;
 }
 

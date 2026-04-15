@@ -13,8 +13,8 @@ impl OpenListService {
 
     pub async fn test_connection(&self, url: &str, token: &str) -> Result<ServerTestResult, String> {
         let response = self.client
-            .get(format!("{}/api/public/settings", url.trim_end_matches('/')))
-            .header("Authorization", token)
+            .get(format!("{}/api/me", url.trim_end_matches('/')))
+            .header("Authorization", format!("Bearer {}", token))
             .send()
             .await
             .map_err(|e| format!("Connection failed: {}", e))?;
@@ -36,10 +36,19 @@ impl OpenListService {
 
     pub async fn list_directory(&self, url: &str, token: &str, path: &str) -> Result<FileListResponse, String> {
         let api_path = format!("{}/api/fs/list", url.trim_end_matches('/'));
+        let body = serde_json::json!({
+            "path": path,
+            "password": "",
+            "page": 1,
+            "per_page": 0,
+            "refresh": false
+        });
+
         let response = self.client
-            .get(&api_path)
-            .query(&[("path", path)])
-            .header("Authorization", token)
+            .post(&api_path)
+            .header("Authorization", format!("Bearer {}", token))
+            .header("Content-Type", "application/json")
+            .json(&body)
             .send()
             .await
             .map_err(|e| format!("Request failed: {}", e))?;
@@ -59,27 +68,41 @@ impl OpenListService {
             .cloned()
             .unwrap_or(serde_json::Value::Array(vec![]));
 
-        let files: Vec<FileInfo> = serde_json::from_value(content).unwrap_or_default();
+        let mut files: Vec<FileInfo> = serde_json::from_value(content).unwrap_or_default();
+        let base_path = path.trim_end_matches('/');
+        for file in &mut files {
+            if file.path.is_none() {
+                file.path = Some(format!("{}/{}", base_path, file.name));
+            }
+        }
         let total = data.get("data").and_then(|d| d.get("total")).and_then(|t| t.as_i64()).unwrap_or(0);
+        let readme = data.get("data").and_then(|d| d.get("readme")).and_then(|r| r.as_str()).map(|s| s.to_string());
+        let header = data.get("data").and_then(|d| d.get("header")).and_then(|h| h.as_str()).map(|s| s.to_string());
+        let write = data.get("data").and_then(|d| d.get("write")).and_then(|w| w.as_bool());
+        let provider = data.get("data").and_then(|d| d.get("provider")).and_then(|p| p.as_str()).map(|s| s.to_string());
 
         Ok(FileListResponse {
             content: files,
             total,
-            path: path.to_string(),
+            readme,
+            header,
+            write,
+            provider,
         })
     }
 
     pub async fn rename(&self, url: &str, token: &str, dir: &str, old_name: &str, new_name: &str) -> Result<FileOperationResult, String> {
         let api_path = format!("{}/api/fs/rename", url.trim_end_matches('/'));
+        let dir = dir.trim_end_matches('/');
+        let source_path = format!("{}/{}", dir, old_name);
         let body = serde_json::json!({
-            "dir": dir,
-            "old_name": old_name,
-            "new_name": new_name,
+            "path": source_path,
+            "name": new_name,
         });
 
         let response = self.client
             .post(&api_path)
-            .header("Authorization", token)
+            .header("Authorization", format!("Bearer {}", token))
             .header("Content-Type", "application/json")
             .json(&body)
             .send()
@@ -98,7 +121,7 @@ impl OpenListService {
 
         let response = self.client
             .post(&api_path)
-            .header("Authorization", token)
+            .header("Authorization", format!("Bearer {}", token))
             .header("Content-Type", "application/json")
             .json(&body)
             .send()
@@ -118,7 +141,7 @@ impl OpenListService {
 
         let response = self.client
             .post(&api_path)
-            .header("Authorization", token)
+            .header("Authorization", format!("Bearer {}", token))
             .header("Content-Type", "application/json")
             .json(&body)
             .send()
@@ -138,7 +161,7 @@ impl OpenListService {
 
         let response = self.client
             .post(&api_path)
-            .header("Authorization", token)
+            .header("Authorization", format!("Bearer {}", token))
             .header("Content-Type", "application/json")
             .json(&body)
             .send()
@@ -150,10 +173,19 @@ impl OpenListService {
 
     pub async fn get_file_info(&self, url: &str, token: &str, path: &str) -> Result<FileInfo, String> {
         let api_path = format!("{}/api/fs/get", url.trim_end_matches('/'));
+        let body = serde_json::json!({
+            "path": path,
+            "password": "",
+            "page": 1,
+            "per_page": 0,
+            "refresh": false
+        });
+
         let response = self.client
-            .get(&api_path)
-            .query(&[("path", path)])
-            .header("Authorization", token)
+            .post(&api_path)
+            .header("Authorization", format!("Bearer {}", token))
+            .header("Content-Type", "application/json")
+            .json(&body)
             .send()
             .await
             .map_err(|e| format!("Request failed: {}", e))?;

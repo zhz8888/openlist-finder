@@ -18,15 +18,31 @@ pub struct FileInfo {
     pub modified: String,
     pub is_dir: bool,
     #[serde(rename = "type")]
-    pub file_type: String,
-    pub path: String,
+    pub file_type: i32,
+    #[serde(default)]
+    pub created: Option<String>,
+    #[serde(default)]
+    pub sign: Option<String>,
+    #[serde(default)]
+    pub thumb: Option<String>,
+    #[serde(default)]
+    pub hash_info: Option<serde_json::Value>,
+    #[serde(default)]
+    pub path: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FileListResponse {
     pub content: Vec<FileInfo>,
     pub total: i64,
-    pub path: String,
+    #[serde(default)]
+    pub readme: Option<String>,
+    #[serde(default)]
+    pub header: Option<String>,
+    #[serde(default)]
+    pub write: Option<bool>,
+    #[serde(default)]
+    pub provider: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

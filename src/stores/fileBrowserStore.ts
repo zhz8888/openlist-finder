@@ -88,7 +88,7 @@ export const useFileBrowserStore = create<FileBrowserState>()((set, get) => ({
           cmp = new Date(a.modified).getTime() - new Date(b.modified).getTime();
           break;
         case "type":
-          cmp = a.type.localeCompare(b.type);
+          cmp = a.type - b.type;
           break;
       }
       return sortConfig.order === "asc" ? cmp : -cmp;
