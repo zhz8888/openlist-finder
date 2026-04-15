@@ -22,7 +22,8 @@
 | UI | DaisyUI 5 + Tailwind CSS 4 |
 | 状态管理 | Zustand 5 |
 | 路由 | React Router DOM 7 |
-| 后端 | Rust（reqwest、serde、tokio） |
+| Hooks | ahooks 3 |
+| 后端 | Rust（reqwest、serde、tokio、meilisearch-sdk） |
 | 持久化 | Tauri Plugin Store |
 
 ## 项目结构
@@ -30,42 +31,65 @@
 ```
 openlist-finder/
 ├── src/                          # 前端源码
+│   ├── assets/                   # 静态资源
 │   ├── components/               # UI 组件
 │   │   ├── Breadcrumb.tsx        # 面包屑导航
 │   │   ├── ErrorBoundary.tsx     # 错误边界
 │   │   ├── FileList.tsx          # 文件列表与操作
 │   │   ├── Sidebar.tsx           # 侧边栏
 │   │   ├── ThemeProvider.tsx     # 主题提供者
-│   │   └── ToastContainer.tsx    # 通知容器
+│   │   ├── ToastContainer.tsx    # 通知容器
+│   │   └── index.ts              # 组件导出
 │   ├── hooks/                    # 自定义 Hooks
 │   │   ├── useFileBrowser.ts     # 文件浏览逻辑
-│   │   └── useTheme.ts           # 主题切换
+│   │   ├── useTheme.ts           # 主题切换
+│   │   └── index.ts              # Hooks 导出
 │   ├── pages/                    # 页面
 │   │   ├── HomePage.tsx          # 主页（文件浏览）
-│   │   └── SettingsPage.tsx      # 设置页
+│   │   ├── SettingsPage.tsx      # 设置页
+│   │   └── index.ts              # 页面导出
 │   ├── services/                 # API 服务
 │   │   ├── openlist.ts           # OpenList API 客户端
-│   │   └── meilisearch.ts        # Meilisearch API 客户端
+│   │   ├── meilisearch.ts        # Meilisearch API 客户端
+│   │   └── index.ts              # 服务导出
 │   ├── stores/                   # Zustand 状态
 │   │   ├── fileBrowserStore.ts   # 文件浏览状态
 │   │   ├── searchStore.ts        # 搜索状态
 │   │   ├── serverStore.ts        # 服务器配置
 │   │   ├── settingsStore.ts      # 应用设置
-│   │   └── toastStore.ts         # 通知状态
+│   │   ├── toastStore.ts         # 通知状态
+│   │   └── index.ts              # Store 导出
 │   ├── types/                    # TypeScript 类型定义
-│   └── styles/
-│       └── index.css             # 全局样式与 DaisyUI 主题
+│   │   ├── app.ts                # 应用类型
+│   │   ├── mcp.ts                # MCP 类型
+│   │   ├── meilisearch.ts        # Meilisearch 类型
+│   │   ├── openlist.ts           # OpenList 类型
+│   │   └── index.ts              # 类型导出
+│   ├── styles/
+│   │   └── index.css             # 全局样式与 DaisyUI 主题
+│   ├── App.tsx                   # 应用入口
+│   └── main.tsx                  # React 入口
 ├── src-tauri/                    # Rust 后端
 │   └── src/
 │       ├── commands/             # Tauri 命令
 │       │   ├── openlist.rs       # OpenList 操作命令
 │       │   ├── meilisearch.rs    # Meilisearch 操作命令
-│       │   └── mcp_server.rs     # MCP 服务实现
+│       │   ├── mcp_server.rs     # MCP 服务实现
+│       │   └── mod.rs            # 命令模块导出
 │       ├── config/               # 应用配置
+│       │   ├── app_config.rs     # 配置定义
+│       │   └── mod.rs            # 配置模块导出
 │       ├── models/               # 数据模型
+│       │   ├── meilisearch.rs    # Meilisearch 模型
+│       │   ├── openlist.rs       # OpenList 模型
+│       │   └── mod.rs            # 模型模块导出
 │       ├── services/             # 后端服务层
-│       └── lib.rs                # Tauri 入口
-└── package.json
+│       │   ├── meilisearch.rs    # Meilisearch 服务
+│       │   ├── openlist.rs       # OpenList 服务
+│       │   └── mod.rs            # 服务模块导出
+│       ├── lib.rs                # Tauri 库入口
+│       └── main.rs               # Rust 主入口
+└── package.json                  # 项目配置
 ```
 
 ## 开发
