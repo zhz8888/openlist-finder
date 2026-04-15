@@ -1,24 +1,24 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSettingsStore } from "@/stores";
 
 export function useTheme() {
   const { theme, setTheme, getResolvedTheme } = useSettingsStore();
+  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">(() => getResolvedTheme());
 
   useEffect(() => {
-    const resolved = getResolvedTheme();
-    const dataTheme = resolved === "dark" ? "github-dark" : "github-light";
-    document.documentElement.setAttribute("data-theme", dataTheme);
+    const handleThemeChange = () => {
+      setResolvedTheme(getResolvedTheme());
+    };
 
-    if (theme.mode === "system") {
-      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-      const handler = () => {
-        const newTheme = mediaQuery.matches ? "github-dark" : "github-light";
-        document.documentElement.setAttribute("data-theme", newTheme);
-      };
-      mediaQuery.addEventListener("change", handler);
-      return () => mediaQuery.removeEventListener("change", handler);
-    }
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    mediaQuery.addEventListener("change", handleThemeChange);
+
+    return () => mediaQuery.removeEventListener("change", handleThemeChange);
+  }, [getResolvedTheme]);
+
+  useEffect(() => {
+    setResolvedTheme(getResolvedTheme());
   }, [theme, getResolvedTheme]);
 
-  return { theme, setTheme, resolvedTheme: getResolvedTheme() };
+  return { theme, setTheme, resolvedTheme };
 }

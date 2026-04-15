@@ -71,6 +71,10 @@ export function SettingsPage() {
     setEditingServer(null);
   };
 
+  const handleThemeChange = (mode: "light" | "dark" | "system") => {
+    setTheme({ mode } as ThemeConfig);
+  };
+
   return (
     <div className="flex h-screen bg-base-100">
       <div className="flex-1 overflow-auto p-6 max-w-3xl mx-auto w-full">
@@ -196,26 +200,96 @@ export function SettingsPage() {
               </div>
             </section>
 
-          <section className="card bg-base-200">
+          <section className="card bg-base-200" role="region" aria-labelledby="theme-heading">
             <div className="card-body">
-              <h2 className="card-title text-lg">Theme</h2>
-              <div className="form-control mt-2">
-                <label className="label">
-                  <span className="label-text">Appearance</span>
-                </label>
-                <div className="flex gap-2 flex-wrap">
-                  {(["light", "dark", "system"] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      type="button"
-                      className={`btn btn-sm ${theme.mode === mode ? "btn-primary" : "btn-ghost"}`}
-                      onClick={() => setTheme({ mode } as ThemeConfig)}
-                    >
-                      {mode === "light" ? "☀️ Light" : mode === "dark" ? "🌙 Dark" : "💻 System"}
-                    </button>
-                  ))}
-                </div>
+              <h2 className="card-title text-lg" id="theme-heading">Theme</h2>
+              <p className="text-sm text-secondary mb-4">Choose your preferred color theme</p>
+              <div
+                role="radiogroup"
+                aria-label="Theme selection"
+                className="flex gap-3 flex-wrap"
+              >
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={Boolean(theme.mode === "light")}
+                  className={`theme-btn ${theme.mode === "light" ? "theme-btn-active" : ""}`}
+                  onClick={() => handleThemeChange("light")}
+                  onKeyDown={(e) => {
+                    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+                      e.preventDefault();
+                      handleThemeChange("dark");
+                    }
+                  }}
+                  tabIndex={theme.mode === "light" ? 0 : -1}
+                >
+                  <span className="theme-icon" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="4"></circle>
+                      <path d="M12 2v2"></path>
+                      <path d="M12 20v2"></path>
+                      <path d="m4.93 4.93 1.41 1.41"></path>
+                      <path d="m17.66 17.66 1.41 1.41"></path>
+                      <path d="M2 12h2"></path>
+                      <path d="M20 12h2"></path>
+                      <path d="m6.34 17.66-1.41 1.41"></path>
+                      <path d="m19.07 4.93-1.41 1.41"></path>
+                    </svg>
+                  </span>
+                  <span className="theme-label">GitHub Light</span>
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={Boolean(theme.mode === "dark")}
+                  className={`theme-btn ${theme.mode === "dark" ? "theme-btn-active" : ""}`}
+                  onClick={() => handleThemeChange("dark")}
+                  onKeyDown={(e) => {
+                    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+                      e.preventDefault();
+                      handleThemeChange("system");
+                    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+                      e.preventDefault();
+                      handleThemeChange("light");
+                    }
+                  }}
+                  tabIndex={theme.mode === "dark" ? 0 : -1}
+                >
+                  <span className="theme-icon" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+                    </svg>
+                  </span>
+                  <span className="theme-label">GitHub Dark</span>
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={Boolean(theme.mode === "system")}
+                  className={`theme-btn ${theme.mode === "system" ? "theme-btn-active" : ""}`}
+                  onClick={() => handleThemeChange("system")}
+                  onKeyDown={(e) => {
+                    if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+                      e.preventDefault();
+                      handleThemeChange("dark");
+                    }
+                  }}
+                  tabIndex={theme.mode === "system" ? 0 : -1}
+                >
+                  <span className="theme-icon" aria-hidden="true">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect width="20" height="14" x="2" y="3" rx="2"></rect>
+                      <line x1="8" x2="16" y1="21" y2="3"></line>
+                      <path d="M12 17v4"></path>
+                      <path d="M8 21h8"></path>
+                    </svg>
+                  </span>
+                  <span className="theme-label">System</span>
+                </button>
               </div>
+              <p className="text-xs text-secondary mt-2" aria-live="polite">
+                Current: {theme.mode === "system" ? "Following system preference" : `Using ${theme.mode} theme`}
+              </p>
             </div>
           </section>
         </div>
