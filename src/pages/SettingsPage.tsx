@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useServerStore, useSettingsStore } from "@/stores";
+import { useServerStore, useSettingsStore, useToastStore } from "@/stores";
 import { testConnection } from "@/services/openlist";
 import { testConnection as testMeilisearchConnection } from "@/services/meilisearch";
 import type { ThemeConfig, MCPLogLevel } from "@/types";
@@ -7,6 +7,7 @@ import type { ThemeConfig, MCPLogLevel } from "@/types";
 export function SettingsPage() {
   const { servers, addServer, removeServer, updateServer, setDefaultServer } = useServerStore();
   const { meilisearch, theme, mcp, updateMeilisearch, setTheme, updateMCP, resetMCP } = useSettingsStore();
+  const addToast = useToastStore((s) => s.addToast);
 
   const [newServerName, setNewServerName] = useState("");
   const [newServerUrl, setNewServerUrl] = useState("");
@@ -17,6 +18,34 @@ export function SettingsPage() {
   const [editName, setEditName] = useState("");
   const [editUrl, setEditUrl] = useState("");
   const [editToken, setEditToken] = useState("");
+  const [mcpExpanded, setMcpExpanded] = useState(false);
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        addToast("success", "配置已复制到剪贴板");
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+          document.execCommand("copy");
+          addToast("success", "配置已复制到剪贴板");
+        } catch (err) {
+          addToast("error", "复制失败，请手动复制");
+        }
+        document.body.removeChild(textArea);
+      }
+    } catch (err) {
+      addToast("error", "复制失败，请手动复制");
+    }
+  };
 
   const handleAddServer = async () => {
     if (!newServerName || !newServerUrl || !newServerToken) return;
@@ -127,15 +156,15 @@ export function SettingsPage() {
                 ))}
               </div>
 
-              <div className="divider">添加新服务器</div>
+              <div className="divider divider-start text-base-content font-medium">添加新服务器</div>
 
-              <div className="bg-base-100 rounded-lg p-4 space-y-3">
+              <div className="space-y-2 mt-2">
                 <input type="text" className="input input-bordered w-full" value={newServerName} onChange={(e) => setNewServerName(e.target.value)} placeholder="服务器名称" />
                 <input type="text" className="input input-bordered w-full" value={newServerUrl} onChange={(e) => setNewServerUrl(e.target.value)} placeholder="服务器地址（例如：https://example.com）" />
                 <input type="password" className="input input-bordered w-full" value={newServerToken} onChange={(e) => setNewServerToken(e.target.value)} placeholder="访问令牌" />
-                <div className="flex gap-2">
+                <div className="flex gap-3 pt-2">
                   <button type="button" className="btn btn-primary" onClick={handleAddServer} disabled={!newServerName || !newServerUrl || !newServerToken}>添加服务器</button>
-                  <button type="button" className="btn btn-ghost" onClick={handleTestConnection} disabled={!newServerUrl || !newServerToken}>测试连接</button>
+                  <button type="button" className="btn btn-ghost test-connection-btn" onClick={handleTestConnection} disabled={!newServerUrl || !newServerToken}>测试连接</button>
                 </div>
                 {testResult && (
                   <div className={`alert ${testResult.includes("成功") ? "alert-success" : "alert-error"} text-sm`}>
@@ -169,14 +198,14 @@ export function SettingsPage() {
                     className="input input-bordered w-full"
                     value={meilisearch.indexPrefix}
                     onChange={(e) => updateMeilisearch({ indexPrefix: e.target.value })}
-                    placeholder="索引前缀（默认：openlist）"
+                    placeholder="索引前缀"
                   />
                   <div className="form-control">
                     <label className="label">
                       <span className="label-text">同步策略</span>
                     </label>
                     <select
-                      className="select select-bordered w-full"
+                      className="select select-bordered w-full select-with-outline"
                       value={meilisearch.syncStrategy}
                       onChange={(e) => updateMeilisearch({ syncStrategy: e.target.value as "manual" | "auto" })}
                       title="同步策略"
@@ -186,8 +215,11 @@ export function SettingsPage() {
                       <option value="auto">自动</option>
                     </select>
                   </div>
-                  <div className="flex gap-2">
-                    <button type="button" className="btn btn-ghost" onClick={handleTestMeilisearch} disabled={!meilisearch.host || !meilisearch.apiKey}>
+                  <div className="flex gap-3 pt-2">
+                    <button type="button" className="btn btn-primary" onClick={() => addToast("success", "Meilisearch 配置已保存")}>
+                      保存配置
+                    </button>
+                    <button type="button" className="btn btn-ghost test-connection-btn" onClick={handleTestMeilisearch} disabled={!meilisearch.host || !meilisearch.apiKey}>
                       测试连接
                     </button>
                   </div>
@@ -202,107 +234,129 @@ export function SettingsPage() {
 
           <section className="card bg-base-200">
             <div className="card-body">
-              <h2 className="card-title text-lg">MCP 服务器配置</h2>
-              <p className="text-sm text-secondary mb-4">
-                配置 Model Context Protocol 服务器，供 AI 助手（如 Claude Desktop）通过 stdio 连接使用
-              </p>
-
-              <div className="space-y-4">
-                <div className="form-control">
-                  <label className="label cursor-pointer justify-start gap-3">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1">
+                  <h2 className="card-title text-lg">MCP 服务器配置</h2>
+                  <p className="text-sm text-base-content/70">
+                    配置 Model Context Protocol 服务器，供 AI 助手通过 stdio 连接使用
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
                       className="toggle toggle-primary"
                       checked={mcp.enabled}
                       onChange={(e) => updateMCP({ enabled: e.target.checked })}
                     />
-                    <span className="label-text">启用 MCP 服务器</span>
+                    <span className="text-sm font-medium toggle-status-label">{mcp.enabled ? "已启用" : "已禁用"}</span>
                   </label>
-                </div>
-
-                <div className={`space-y-3 ${!mcp.enabled ? "opacity-50 pointer-events-none" : ""}`}>
-                  <div className="form-control">
-                    <label className="label">
-                      <span className="label-text">服务器名称</span>
-                    </label>
-                    <input
-                      type="text"
-                      className="input input-bordered w-full"
-                      value={mcp.serverName}
-                      onChange={(e) => updateMCP({ serverName: e.target.value })}
-                      placeholder="MCP 服务器名称"
-                      disabled={!mcp.enabled}
-                    />
-                    <label className="label">
-                      <span className="label-text-alt text-secondary">显示给连接的 AI 助手</span>
-                    </label>
-                  </div>
-
-                  <div className="form-control">
-                    <label className="label">
-                      <span className="label-text">服务器版本</span>
-                    </label>
-                    <input
-                      type="text"
-                      className="input input-bordered w-full"
-                      value={mcp.serverVersion}
-                      onChange={(e) => updateMCP({ serverVersion: e.target.value })}
-                      placeholder="例如：0.1.0"
-                      disabled={!mcp.enabled}
-                    />
-                  </div>
-
-                  <div className="form-control">
-                    <label className="label">
-                      <span className="label-text">日志级别</span>
-                    </label>
-                    <select
-                      className="select select-bordered w-full"
-                      value={mcp.logLevel}
-                      onChange={(e) => updateMCP({ logLevel: e.target.value as MCPLogLevel })}
-                      disabled={!mcp.enabled}
-                      title="日志级别"
-                      aria-label="日志级别"
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-ghost border border-base-300"
+                    onClick={() => setMcpExpanded(!mcpExpanded)}
+                    aria-expanded={mcpExpanded}
+                    aria-label={mcpExpanded ? "收起配置" : "展开配置"}
+                  >
+                    <span>{mcpExpanded ? "收起" : "展开"}</span>
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      className={`h-4 w-4 transition-transform duration-200 ${mcpExpanded ? "rotate-180" : ""}`} 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
                     >
-                      <option value="debug">Debug（调试）</option>
-                      <option value="info">Info（信息）</option>
-                      <option value="warn">Warn（警告）</option>
-                      <option value="error">Error（错误）</option>
-                    </select>
-                    <label className="label">
-                      <span className="label-text-alt text-secondary">控制 MCP 服务器的日志输出级别</span>
-                    </label>
-                  </div>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
 
-                  <div className="bg-base-100 rounded-lg p-4 mt-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-medium">Claude Desktop 配置示例</h3>
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-xs"
-                        onClick={() => {
-                          const config = {
-                            mcpServers: {
-                              [mcp.serverName]: {
-                                command: "path/to/openlist-finder",
-                                args: ["--mcp"]
-                              }
-                            }
-                          };
-                          navigator.clipboard.writeText(JSON.stringify(config, null, 2));
-                        }}
+              {mcpExpanded && (
+                <div className="space-y-4 mt-4 pt-4 border-t border-base-300">
+                  <div className={`space-y-3 pl-1 border-l-2 ${mcp.enabled ? "border-primary/50" : "border-base-300"}`}>
+                    <div className="form-control">
+                      <label className="label">
+                        <span className="label-text">服务器名称</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="input input-bordered w-full"
+                        value={mcp.serverName}
+                        onChange={(e) => updateMCP({ serverName: e.target.value })}
+                        placeholder="MCP 服务器名称"
                         disabled={!mcp.enabled}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                        复制
-                      </button>
+                      />
+                      <label className="label">
+                        <span className="label-text-alt text-base-content/60">显示给连接的 AI 助手</span>
+                      </label>
                     </div>
-                    <p className="text-sm text-secondary mb-3">
-                      将以下配置添加到 Claude Desktop 的配置文件中：
-                    </p>
-                    <pre className="bg-base-300 p-3 rounded text-xs overflow-x-auto font-mono">
+
+                    <div className="form-control">
+                      <label className="label">
+                        <span className="label-text">服务器版本</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="input input-bordered w-full"
+                        value={mcp.serverVersion}
+                        onChange={(e) => updateMCP({ serverVersion: e.target.value })}
+                        placeholder="例如：0.1.0"
+                        disabled={!mcp.enabled}
+                      />
+                    </div>
+
+                    <div className="form-control">
+                      <label className="label">
+                        <span className="label-text">日志级别</span>
+                      </label>
+                      <select
+                        className="select select-bordered w-full select-with-outline"
+                        value={mcp.logLevel}
+                        onChange={(e) => updateMCP({ logLevel: e.target.value as MCPLogLevel })}
+                        disabled={!mcp.enabled}
+                        title="日志级别"
+                        aria-label="日志级别"
+                      >
+                        <option value="debug">Debug（调试）</option>
+                        <option value="info">Info（信息）</option>
+                        <option value="warn">Warn（警告）</option>
+                        <option value="error">Error（错误）</option>
+                      </select>
+                      <label className="label">
+                        <span className="label-text-alt text-base-content/60">控制 MCP 服务器的日志输出级别</span>
+                      </label>
+                    </div>
+
+                    <div className="bg-base-100 rounded-lg p-4 mt-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-medium text-base-content">Claude Desktop 配置示例</h3>
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-xs"
+                          onClick={() => {
+                            const config = {
+                              mcpServers: {
+                                [mcp.serverName]: {
+                                  command: "path/to/openlist-finder",
+                                  args: ["--mcp"]
+                                }
+                              }
+                            };
+                            copyToClipboard(JSON.stringify(config, null, 2));
+                          }}
+                          disabled={!mcp.enabled}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                          复制
+                        </button>
+                      </div>
+                      <p className="text-sm text-base-content/70 mb-3">
+                        将以下配置添加到 Claude Desktop 的配置文件中：
+                      </p>
+                      <pre className="bg-base-300 p-4 rounded-lg text-xs overflow-x-auto font-mono text-base-content border-2 border-base-300 shadow-inner">
 {JSON.stringify({
   mcpServers: {
     [mcp.serverName]: {
@@ -311,26 +365,27 @@ export function SettingsPage() {
     }
   }
 }, null, 2)}
-                    </pre>
-                    <div className="mt-3 text-xs text-secondary">
-                      <p className="font-medium mb-1">配置文件位置：</p>
-                      <p>macOS: <code className="bg-base-300 px-1 rounded">~/Library/Application Support/Claude/claude_desktop_config.json</code></p>
-                      <p className="mt-1">Windows: <code className="bg-base-300 px-1 rounded">%APPDATA%\Claude\claude_desktop_config.json</code></p>
+                      </pre>
+                      <div className="mt-3 text-xs text-base-content/70">
+                        <p className="font-medium mb-1">配置文件位置：</p>
+                        <p>macOS: <code className="bg-base-300 px-1 rounded">~/Library/Application Support/Claude/claude_desktop_config.json</code></p>
+                        <p className="mt-1">Windows: <code className="bg-base-300 px-1 rounded">%APPDATA%\Claude\claude_desktop_config.json</code></p>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        type="button"
+                        className="btn btn-ghost reset-default-btn"
+                        onClick={resetMCP}
+                        disabled={!mcp.enabled}
+                      >
+                        重置为默认
+                      </button>
                     </div>
                   </div>
-
-                  <div className="flex gap-2 pt-2">
-                    <button
-                      type="button"
-                      className="btn btn-ghost"
-                      onClick={resetMCP}
-                      disabled={!mcp.enabled}
-                    >
-                      重置为默认
-                    </button>
-                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </section>
 

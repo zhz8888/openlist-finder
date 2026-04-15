@@ -191,7 +191,12 @@ body {
 }
 
 .input, .select, .textarea {
-  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, border-radius 0.3s ease-in-out;
+  border-radius: 8px;
+}
+
+.input:focus, .select:focus, .textarea:focus {
+  border-radius: 8px;
 }
 
 .badge {
@@ -246,18 +251,73 @@ body {
   border-color: var(--color-border);
   background-color: var(--color-bg);
   color: var(--color-fg);
+  border-radius: 8px;
+  transition: all 0.3s ease-in-out;
+}
+
+.input-bordered:hover {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.1);
+}
+
+[data-theme="github-dark"] .input-bordered:hover {
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
 }
 
 .input-bordered:focus {
   border-color: var(--color-accent);
   background-color: var(--color-bg);
   color: var(--color-fg);
+  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.2);
+  outline: none;
 }
 
-.select-bordered {
-  border-color: var(--color-border);
+[data-theme="github-dark"] .input-bordered:focus {
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.25);
+}
+
+.select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+  transition: all 0.3s ease-in-out;
+  cursor: pointer;
+}
+
+.select:hover {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.1);
+}
+
+[data-theme="github-dark"] .select:hover {
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.2);
+  transition: all 0.3s ease-in-out;
+}
+
+[data-theme="github-dark"] .select:focus {
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.25);
+}
+
+.select option {
   background-color: var(--color-bg);
   color: var(--color-fg);
+  padding: 0.5rem;
+  transition: background-color 0.3s ease-in-out;
+}
+
+.select option:hover,
+.select option:checked {
+  background-color: var(--color-accent);
+  color: #ffffff;
 }
 
 .label-text {
@@ -354,4 +414,275 @@ body {
 
 .sidebar-collapsed .sidebar-content {
   opacity: 0;
+}
+
+.input::-webkit-input-placeholder,
+.textarea::-webkit-input-placeholder {
+  color: var(--color-github-input-placeholder);
+  opacity: 1;
+}
+
+.input::-moz-placeholder,
+.textarea::-moz-placeholder {
+  color: var(--color-github-input-placeholder);
+  opacity: 1;
+}
+
+.input:-ms-input-placeholder,
+.textarea:-ms-input-placeholder {
+  color: var(--color-github-input-placeholder);
+  opacity: 1;
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: var(--color-github-input-placeholder);
+  opacity: 1;
+}
+
+.input::-webkit-outer-spin-button,
+.input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.select::-webkit-scrollbar {
+  width: 8px;
+}
+
+.select::-webkit-scrollbar-track {
+  background: var(--color-github-surface);
+  border-radius: 4px;
+}
+
+.select::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+.select::-webkit-scrollbar-thumb:hover {
+  background: var(--color-neutral);
+}
+
+@media screen and (max-width: 768px) {
+  .input, .select, .textarea {
+    font-size: 16px;
+  }
+  
+  .input-sm, .select-sm {
+    font-size: 14px;
+  }
+  
+  .btn {
+    min-height: 44px;
+  }
+  
+  .btn-sm {
+    min-height: 36px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .card-body {
+    padding: 1rem;
+  }
+  
+  .form-control {
+    margin-bottom: 0.75rem;
+  }
+}
+
+@supports (backdrop-filter: blur(10px)) {
+  .modal-box {
+    backdrop-filter: blur(10px);
+  }
+}
+
+@supports not (backdrop-filter: blur(10px)) {
+  .modal-box {
+    background-color: var(--color-bg);
+  }
+}
+
+.checkbox {
+  border-radius: 4px;
+  transition: all 0.3s ease-in-out;
+}
+
+.checkbox:checked {
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.toggle {
+  transition: all 0.3s ease-in-out;
+}
+
+.progress {
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress::-webkit-progress-bar {
+  background-color: var(--color-github-surface);
+  border-radius: 4px;
+}
+
+.progress::-webkit-progress-value {
+  background-color: var(--color-accent);
+  border-radius: 4px;
+  transition: width 0.3s ease-in-out;
+}
+
+.progress::-moz-progress-bar {
+  background-color: var(--color-accent);
+  border-radius: 4px;
+}
+
+.test-connection-btn {
+  border: 2px solid var(--color-border);
+  border-radius: 8px;
+  transition: all 0.3s ease-in-out;
+  position: relative;
+  overflow: visible;
+}
+
+.test-connection-btn:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.2), 0 0 20px rgba(9, 105, 218, 0.3);
+  transform: translateY(-1px);
+}
+
+[data-theme="github-dark"] .test-connection-btn:hover:not(:disabled) {
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.25), 0 0 20px rgba(88, 166, 255, 0.4);
+}
+
+.test-connection-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 0 0 2px rgba(9, 105, 218, 0.3);
+}
+
+[data-theme="github-dark"] .test-connection-btn:active:not(:disabled) {
+  box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.35);
+}
+
+.test-connection-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.test-connection-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.select-with-outline {
+  border: 2px solid var(--color-border);
+  border-radius: 8px;
+  transition: all 0.3s ease-in-out;
+  position: relative;
+}
+
+.select-with-outline:hover {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.2);
+}
+
+[data-theme="github-dark"] .select-with-outline:hover {
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.25);
+}
+
+.select-with-outline:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.2);
+  outline: none;
+}
+
+[data-theme="github-dark"] .select-with-outline:focus {
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.25);
+}
+
+.form-control {
+  margin-bottom: 0;
+}
+
+.label {
+  padding: 0;
+  margin-bottom: 0.5rem;
+}
+
+.label-text {
+  color: var(--color-fg);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.reset-default-btn {
+  border: 2px solid var(--color-border);
+  border-radius: 8px;
+  transition: all 0.3s ease-in-out;
+  position: relative;
+  overflow: visible;
+}
+
+.reset-default-btn:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.2), 0 0 20px rgba(9, 105, 218, 0.3);
+  transform: translateY(-1px);
+}
+
+[data-theme="github-dark"] .reset-default-btn:hover:not(:disabled) {
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.25), 0 0 20px rgba(88, 166, 255, 0.4);
+}
+
+.reset-default-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 0 0 2px rgba(9, 105, 218, 0.3);
+}
+
+[data-theme="github-dark"] .reset-default-btn:active:not(:disabled) {
+  box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.35);
+}
+
+.reset-default-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.reset-default-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.toggle-status-label {
+  padding: 0.25rem 0.75rem;
+  border: 2px solid var(--color-border);
+  border-radius: 6px;
+  transition: all 0.3s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  user-select: none;
+}
+
+.toggle-status-label:hover {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.2);
+}
+
+[data-theme="github-dark"] .toggle-status-label:hover {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.3);
+}
+
+.toggle-status-label:active {
+  transform: scale(0.98);
+}
+
+.toggle-status-label:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }

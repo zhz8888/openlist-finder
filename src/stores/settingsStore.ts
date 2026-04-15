@@ -35,7 +35,7 @@ export const useSettingsStore = create<SettingsState>()(
       meilisearch: {
         host: "",
         apiKey: "",
-        indexPrefix: "openlist",
+        indexPrefix: "",
         syncStrategy: "manual",
       },
       theme: {

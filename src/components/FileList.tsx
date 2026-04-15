@@ -112,7 +112,8 @@ export function FileList() {
     }
 
     try {
-      const indexUid = `${meilisearch.indexPrefix}-${server.id}`;
+      const prefix = meilisearch.indexPrefix || "openlist";
+      const indexUid = `${prefix}-${server.id}`;
       const stats = await getStats(meilisearch.host, meilisearch.apiKey, indexUid);
       
       if (stats.isIndexing) {
@@ -261,7 +262,8 @@ export function FileList() {
     const server = getActiveServer();
     if (!server) return;
     try {
-      const indexUid = `${meilisearch.indexPrefix}-${server.id}`;
+      const prefix = meilisearch.indexPrefix || "openlist";
+      const indexUid = `${prefix}-${server.id}`;
       const result = await searchMeilisearch(meilisearch.host, meilisearch.apiKey, indexUid, query);
       setResults(result.hits);
       setIsSearchMode(true);

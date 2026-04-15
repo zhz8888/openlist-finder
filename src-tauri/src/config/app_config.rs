@@ -43,7 +43,7 @@ impl Default for AppConfig {
             meilisearch: MeilisearchEntry {
                 host: String::new(),
                 api_key: String::new(),
-                index_prefix: "openlist".to_string(),
+                index_prefix: String::new(),
                 sync_strategy: "manual".to_string(),
             },
             theme: ThemeConfigEntry {
