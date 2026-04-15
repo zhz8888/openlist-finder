@@ -1,146 +1,155 @@
 use crate::models::meilisearch::*;
+use meilisearch_sdk::client::Client;
+use meilisearch_sdk::task_info::TaskInfo as SdkTaskInfo;
+use meilisearch_sdk::tasks::Task as SdkTask;
 
 pub struct MeilisearchService {
-    client: reqwest::Client,
+    client: Client,
 }
 
 impl MeilisearchService {
-    pub fn new() -> Self {
-        Self {
-            client: reqwest::Client::new(),
-        }
+    pub fn new(host: &str, api_key: &str) -> Self {
+        let client = Client::new(host, Some(api_key))
+            .expect("Failed to create Meilisearch client");
+        Self { client }
     }
 
-    pub async fn test_connection(&self, host: &str, api_key: &str) -> Result<bool, String> {
-        let url = format!("{}/health", host.trim_end_matches('/'));
-        let response = self.client
-            .get(&url)
-            .header("Authorization", format!("Bearer {}", api_key))
-            .send()
+    pub async fn test_connection(&self) -> Result<bool, String> {
+        self.client
+            .health()
             .await
             .map_err(|e| format!("Connection failed: {}", e))?;
-
-        Ok(response.status().is_success())
+        Ok(true)
     }
 
-    pub async fn create_or_update_index(&self, host: &str, api_key: &str, index_uid: &str) -> Result<TaskInfo, String> {
-        let url = format!("{}/indexes/{}", host.trim_end_matches('/'), index_uid);
-        let body = serde_json::json!({
-            "uid": index_uid,
-            "primaryKey": "id"
-        });
-
-        let response = self.client
-            .patch(&url)
-            .header("Authorization", format!("Bearer {}", api_key))
-            .header("Content-Type", "application/json")
-            .json(&body)
-            .send()
+    pub async fn create_or_update_index(&self, index_uid: &str) -> Result<TaskInfo, String> {
+        let task = self.client
+            .create_index(index_uid, Some("id"))
             .await
-            .map_err(|e| format!("Request failed: {}", e))?;
-
-        if !response.status().is_success() {
-            let status = response.status();
-            let text = response.text().await.unwrap_or_default();
-            return Err(format!("Failed to create index: {} - {}", status, text));
-        }
-
-        response.json().await.map_err(|e| format!("Parse error: {}", e))
+            .map_err(|e| format!("Failed to create index: {}", e))?;
+        
+        Ok(self.convert_task_info(task))
     }
 
-    pub async fn add_documents(&self, host: &str, api_key: &str, index_uid: &str, docs: Vec<MeilisearchDoc>) -> Result<TaskInfo, String> {
-        let url = format!("{}/indexes/{}/documents", host.trim_end_matches('/'), index_uid);
-
-        let response = self.client
-            .post(&url)
-            .header("Authorization", format!("Bearer {}", api_key))
-            .header("Content-Type", "application/json")
-            .json(&docs)
-            .send()
+    pub async fn add_documents(&self, index_uid: &str, docs: Vec<MeilisearchDoc>) -> Result<TaskInfo, String> {
+        let index = self.client.index(index_uid);
+        let task = index
+            .add_documents(&docs, Some("id"))
             .await
-            .map_err(|e| format!("Request failed: {}", e))?;
-
-        if !response.status().is_success() {
-            let status = response.status();
-            let text = response.text().await.unwrap_or_default();
-            return Err(format!("Failed to add documents: {} - {}", status, text));
-        }
-
-        response.json().await.map_err(|e| format!("Parse error: {}", e))
+            .map_err(|e| format!("Failed to add documents: {}", e))?;
+        
+        Ok(self.convert_task_info(task))
     }
 
-    pub async fn search(&self, host: &str, api_key: &str, index_uid: &str, query: &str, limit: Option<i64>, offset: Option<i64>) -> Result<SearchResult, String> {
-        let url = format!("{}/indexes/{}/search", host.trim_end_matches('/'), index_uid);
-        let body = serde_json::json!({
-            "q": query,
-            "limit": limit.unwrap_or(20),
-            "offset": offset.unwrap_or(0),
-        });
-
-        let response = self.client
-            .post(&url)
-            .header("Authorization", format!("Bearer {}", api_key))
-            .header("Content-Type", "application/json")
-            .json(&body)
-            .send()
+    pub async fn search(&self, index_uid: &str, query: &str, limit: Option<usize>, offset: Option<usize>) -> Result<SearchResult, String> {
+        let index = self.client.index(index_uid);
+        
+        let search_result = index
+            .search()
+            .with_query(query)
+            .with_limit(limit.unwrap_or(20))
+            .with_offset(offset.unwrap_or(0))
+            .execute::<MeilisearchDoc>()
             .await
-            .map_err(|e| format!("Request failed: {}", e))?;
-
-        if !response.status().is_success() {
-            let status = response.status();
-            let text = response.text().await.unwrap_or_default();
-            return Err(format!("Search failed: {} - {}", status, text));
-        }
-
-        let raw: serde_json::Value = response.json().await.map_err(|e| format!("Parse error: {}", e))?;
-
+            .map_err(|e| format!("Search failed: {}", e))?;
+        
+        let hits: Vec<MeilisearchDoc> = search_result.hits.into_iter().map(|h| h.result).collect();
+        
         Ok(SearchResult {
-            hits: serde_json::from_value(raw.get("hits").cloned().unwrap_or_default()).unwrap_or_default(),
-            query: raw.get("query").and_then(|q| q.as_str()).unwrap_or("").to_string(),
-            processing_time_ms: raw.get("processingTimeMs").and_then(|t| t.as_i64()).unwrap_or(0),
-            limit: raw.get("limit").and_then(|l| l.as_i64()).unwrap_or(20),
-            offset: raw.get("offset").and_then(|o| o.as_i64()).unwrap_or(0),
-            estimated_total_hits: raw.get("estimatedTotalHits").and_then(|t| t.as_i64()).unwrap_or(0),
+            hits,
+            query: search_result.query,
+            processing_time_ms: search_result.processing_time_ms as i64,
+            limit: search_result.limit.unwrap_or(20) as i64,
+            offset: search_result.offset.unwrap_or(0) as i64,
+            estimated_total_hits: search_result.estimated_total_hits.unwrap_or(0) as i64,
         })
     }
 
-    pub async fn get_index_stats(&self, host: &str, api_key: &str, index_uid: &str) -> Result<IndexStats, String> {
-        let url = format!("{}/indexes/{}/stats", host.trim_end_matches('/'), index_uid);
-
-        let response = self.client
-            .get(&url)
-            .header("Authorization", format!("Bearer {}", api_key))
-            .send()
+    pub async fn get_index_stats(&self, index_uid: &str) -> Result<IndexStats, String> {
+        let index = self.client.index(index_uid);
+        let stats = index
+            .get_stats()
             .await
-            .map_err(|e| format!("Request failed: {}", e))?;
-
-        if !response.status().is_success() {
-            let status = response.status();
-            return Err(format!("Failed to get stats: {}", status));
-        }
-
-        response.json().await.map_err(|e| format!("Parse error: {}", e))
+            .map_err(|e| format!("Failed to get stats: {}", e))?;
+        
+        Ok(IndexStats {
+            number_of_documents: stats.number_of_documents as i64,
+            is_indexing: stats.is_indexing,
+            field_distribution: stats.field_distribution
+                .into_iter()
+                .map(|(k, v)| (k, v as i64))
+                .collect(),
+        })
     }
 
-    pub async fn update_filterable_attributes(&self, host: &str, api_key: &str, index_uid: &str) -> Result<TaskInfo, String> {
-        let url = format!("{}/indexes/{}/settings/filterable-attributes", host.trim_end_matches('/'), index_uid);
-        let body = serde_json::json!(["name", "dir_path", "type", "is_dir", "server_id"]);
-
-        let response = self.client
-            .post(&url)
-            .header("Authorization", format!("Bearer {}", api_key))
-            .header("Content-Type", "application/json")
-            .json(&body)
-            .send()
+    pub async fn update_filterable_attributes(&self, index_uid: &str) -> Result<TaskInfo, String> {
+        let index = self.client.index(index_uid);
+        let filterable_attributes = ["name", "dir_path", "type", "is_dir", "server_id"];
+        
+        let task = index
+            .set_filterable_attributes(&filterable_attributes)
             .await
-            .map_err(|e| format!("Request failed: {}", e))?;
+            .map_err(|e| format!("Failed to update settings: {}", e))?;
+        
+        Ok(self.convert_task_info(task))
+    }
 
-        if !response.status().is_success() {
-            let status = response.status();
-            let text = response.text().await.unwrap_or_default();
-            return Err(format!("Failed to update settings: {} - {}", status, text));
+    pub async fn delete_index(&self, index_uid: &str) -> Result<TaskInfo, String> {
+        let index = self.client.index(index_uid);
+        let task = index
+            .delete()
+            .await
+            .map_err(|e| format!("Failed to delete index: {}", e))?;
+        
+        Ok(self.convert_task_info(task))
+    }
+
+    pub async fn delete_all_documents(&self, index_uid: &str) -> Result<TaskInfo, String> {
+        let index = self.client.index(index_uid);
+        let task = index
+            .delete_all_documents()
+            .await
+            .map_err(|e| format!("Failed to delete all documents: {}", e))?;
+        
+        Ok(self.convert_task_info(task))
+    }
+
+    pub async fn get_task_status(&self, task_uid: i64) -> Result<String, String> {
+        let tasks = self.client
+            .get_tasks()
+            .await
+            .map_err(|e| format!("Failed to get tasks: {}", e))?;
+        
+        let task_id = task_uid as u32;
+        let task = tasks.results.into_iter().find(|t| {
+            match t {
+                SdkTask::Enqueued { content } => content.uid == task_id,
+                SdkTask::Processing { content } => content.uid == task_id,
+                SdkTask::Succeeded { content } => content.uid == task_id,
+                SdkTask::Failed { content } => content.task.uid == task_id,
+            }
+        });
+        
+        if let Some(task) = task {
+            let status = match task {
+                SdkTask::Enqueued { .. } => "enqueued",
+                SdkTask::Processing { .. } => "processing",
+                SdkTask::Succeeded { .. } => "succeeded",
+                SdkTask::Failed { .. } => "failed",
+            };
+            Ok(status.to_string())
+        } else {
+            Err(format!("Task {} not found", task_uid))
         }
+    }
 
-        response.json().await.map_err(|e| format!("Parse error: {}", e))
+    fn convert_task_info(&self, task: SdkTaskInfo) -> TaskInfo {
+        TaskInfo {
+            uid: task.task_uid as i64,
+            index_uid: task.index_uid.unwrap_or_default(),
+            status: task.status,
+            task_type: "unknown".to_string(),
+            enqueued_at: chrono::Utc::now().to_rfc3339(),
+        }
     }
 }

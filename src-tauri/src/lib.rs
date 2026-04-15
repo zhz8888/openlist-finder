@@ -43,6 +43,9 @@ pub fn run() {
             commands::meilisearch::meilisearch_search,
             commands::meilisearch::meilisearch_get_stats,
             commands::meilisearch::meilisearch_update_filterable,
+            commands::meilisearch::meilisearch_delete_index,
+            commands::meilisearch::meilisearch_delete_all_documents,
+            commands::meilisearch::meilisearch_get_task_status,
         ])
         .setup(|app| {
             let window = app.get_webview_window("main").unwrap();

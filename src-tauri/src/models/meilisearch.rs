@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -36,7 +37,7 @@ pub struct SearchResult {
 pub struct IndexStats {
     pub number_of_documents: i64,
     pub is_indexing: bool,
-    pub field_distribution: std::collections::HashMap<String, i64>,
+    pub field_distribution: HashMap<String, i64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
