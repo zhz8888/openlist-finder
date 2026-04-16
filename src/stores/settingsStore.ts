@@ -1,25 +1,17 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
 import type { MeilisearchConfig, ThemeConfig, MCPConfig } from "@/types";
+import {
+  loadSettings,
+  saveSettings,
+  isTauriStoreAvailable,
+  type StoredSettings,
+} from "@/services/tauriStoreService";
 
 function getSystemTheme(): "light" | "dark" {
   if (typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches) {
     return "dark";
   }
   return "light";
-}
-
-interface SettingsState {
-  meilisearch: MeilisearchConfig;
-  theme: ThemeConfig;
-  sidebarCollapsed: boolean;
-  mcp: MCPConfig;
-  updateMeilisearch: (config: Partial<MeilisearchConfig>) => void;
-  setTheme: (theme: ThemeConfig) => void;
-  setSidebarCollapsed: (collapsed: boolean) => void;
-  getResolvedTheme: () => "light" | "dark";
-  updateMCP: (config: Partial<MCPConfig>) => void;
-  resetMCP: () => void;
 }
 
 const defaultMCPConfig: MCPConfig = {
@@ -29,73 +21,125 @@ const defaultMCPConfig: MCPConfig = {
   logLevel: "info",
 };
 
-export const useSettingsStore = create<SettingsState>()(
-  persist(
-    (set, get) => ({
-      meilisearch: {
-        host: "",
-        apiKey: "",
-        indexPrefix: "",
-        syncStrategy: "manual",
-      },
-      theme: {
-        mode: "system",
-      },
-      sidebarCollapsed: false,
-      mcp: { ...defaultMCPConfig },
+interface SettingsState {
+  meilisearch: MeilisearchConfig;
+  theme: ThemeConfig;
+  sidebarCollapsed: boolean;
+  mcp: MCPConfig;
+  isInitialized: boolean;
+  updateMeilisearch: (config: Partial<MeilisearchConfig>) => Promise<void>;
+  setTheme: (theme: ThemeConfig) => void;
+  setSidebarCollapsed: (collapsed: boolean) => void;
+  getResolvedTheme: () => "light" | "dark";
+  updateMCP: (config: Partial<MCPConfig>) => Promise<void>;
+  resetMCP: () => Promise<void>;
+  initialize: () => Promise<void>;
+}
 
-      updateMeilisearch: (config) => {
-        set((state) => ({
-          meilisearch: { ...state.meilisearch, ...config },
-        }));
-      },
+const defaultSettings: Omit<SettingsState, "initialize" | "updateMeilisearch" | "setTheme" | "setSidebarCollapsed" | "getResolvedTheme" | "updateMCP" | "resetMCP"> = {
+  meilisearch: {
+    host: "",
+    apiKey: "",
+    indexPrefix: "",
+    syncStrategy: "manual",
+  },
+  theme: {
+    mode: "system",
+  },
+  sidebarCollapsed: false,
+  mcp: { ...defaultMCPConfig },
+  isInitialized: false,
+};
 
-      setTheme: (theme) => {
-        set({ theme });
-      },
+export const useSettingsStore = create<SettingsState>()((set, get) => ({
+  ...defaultSettings,
 
-      setSidebarCollapsed: (collapsed) => {
-        set({ sidebarCollapsed: collapsed });
-      },
+  initialize: async () => {
+    if (get().isInitialized) return;
 
-      getResolvedTheme: () => {
-        const { theme } = get();
-        if (theme.mode === "system") {
-          return getSystemTheme();
+    if (isTauriStoreAvailable()) {
+      try {
+        const storedSettings = await loadSettings();
+        if (storedSettings) {
+          set({
+            meilisearch: storedSettings.meilisearch || defaultSettings.meilisearch,
+            theme: storedSettings.theme || defaultSettings.theme,
+            sidebarCollapsed: storedSettings.sidebarCollapsed ?? defaultSettings.sidebarCollapsed,
+            mcp: storedSettings.mcp || defaultSettings.mcp,
+            isInitialized: true,
+          });
+        } else {
+          set({ isInitialized: true });
         }
-        return theme.mode;
-      },
-
-      updateMCP: (config) => {
-        set((state) => ({
-          mcp: { ...state.mcp, ...config },
-        }));
-      },
-
-      resetMCP: () => {
-        set({ mcp: { ...defaultMCPConfig } });
-      },
-    }),
-    {
-      name: "openlist-settings",
-      storage: createJSONStorage(() => localStorage),
+      } catch (error) {
+        console.error("Failed to initialize settings from Tauri Store:", error);
+        set({ isInitialized: true });
+      }
+    } else {
+      set({ isInitialized: true });
     }
-  )
-);
+  },
 
-async function migrateToTauriStore() {
-  try {
-    const { load } = await import("@tauri-apps/plugin-store");
-    const store = await load("settings.json", { defaults: {} });
-    const persistKey = "openlist-settings";
-    const localData = localStorage.getItem(persistKey);
-    if (localData) {
-      await store.set(persistKey, localData);
-      await store.save();
+  updateMeilisearch: async (config) => {
+    const newMeilisearch = { ...get().meilisearch, ...config };
+    set({ meilisearch: newMeilisearch });
+
+    if (isTauriStoreAvailable()) {
+      const currentState = get();
+      const settings: StoredSettings = {
+        meilisearch: newMeilisearch,
+        theme: currentState.theme,
+        sidebarCollapsed: currentState.sidebarCollapsed,
+        mcp: currentState.mcp,
+      };
+      await saveSettings(settings);
     }
-  } catch {}
-}
+  },
 
-if (typeof window !== "undefined" && (window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__) {
-  migrateToTauriStore();
-}
+  setTheme: (theme) => {
+    set({ theme });
+  },
+
+  setSidebarCollapsed: (collapsed) => {
+    set({ sidebarCollapsed: collapsed });
+  },
+
+  getResolvedTheme: () => {
+    const { theme } = get();
+    if (theme.mode === "system") {
+      return getSystemTheme();
+    }
+    return theme.mode;
+  },
+
+  updateMCP: async (config) => {
+    const newMCP = { ...get().mcp, ...config };
+    set({ mcp: newMCP });
+
+    if (isTauriStoreAvailable()) {
+      const currentState = get();
+      const settings: StoredSettings = {
+        meilisearch: currentState.meilisearch,
+        theme: currentState.theme,
+        sidebarCollapsed: currentState.sidebarCollapsed,
+        mcp: newMCP,
+      };
+      await saveSettings(settings);
+    }
+  },
+
+  resetMCP: async () => {
+    set({ mcp: { ...defaultMCPConfig } });
+
+    if (isTauriStoreAvailable()) {
+      const currentState = get();
+      const settings: StoredSettings = {
+        meilisearch: currentState.meilisearch,
+        theme: currentState.theme,
+        sidebarCollapsed: currentState.sidebarCollapsed,
+        mcp: { ...defaultMCPConfig },
+      };
+      await saveSettings(settings);
+    }
+  },
+}));
