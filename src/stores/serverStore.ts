@@ -16,7 +16,6 @@ interface ServerState {
   removeServer: (id: string) => Promise<void>;
   updateServer: (id: string, data: Partial<ServerConfig>) => Promise<void>;
   setActiveServer: (id: string) => void;
-  setDefaultServer: (id: string) => Promise<void>;
   getActiveServer: () => ServerConfig | undefined;
   initialize: () => Promise<void>;
 }
@@ -27,7 +26,6 @@ function toStoredServerConfig(server: ServerConfig): StoredServerConfig {
     name: server.name,
     url: server.url,
     token: server.token,
-    isDefault: server.isDefault,
     createdAt: server.createdAt,
   };
 }
@@ -38,7 +36,6 @@ function toServerConfig(stored: StoredServerConfig): ServerConfig {
     name: stored.name,
     url: stored.url,
     token: stored.token,
-    isDefault: stored.isDefault,
     createdAt: stored.createdAt,
   };
 }
@@ -73,7 +70,6 @@ export const useServerStore = create<ServerState>()((set, get) => ({
       name,
       url: url.replace(/\/+$/, ""),
       token,
-      isDefault: get().servers.length === 0,
       createdAt: new Date().toISOString(),
     };
 
@@ -95,8 +91,7 @@ export const useServerStore = create<ServerState>()((set, get) => ({
     let activeServerId = get().activeServerId;
     
     if (activeServerId === id) {
-      const defaultServer = newServers.find((s) => s.isDefault);
-      activeServerId = defaultServer?.id || newServers[0]?.id || null;
+      activeServerId = newServers[0]?.id || null;
     }
 
     set({ servers: newServers, activeServerId });
@@ -119,22 +114,6 @@ export const useServerStore = create<ServerState>()((set, get) => ({
 
   setActiveServer: (id) => {
     set({ activeServerId: id });
-  },
-
-  setDefaultServer: async (id) => {
-    const newServers = get().servers.map((s) => ({
-      ...s,
-      isDefault: s.id === id,
-    }));
-
-    set({
-      servers: newServers,
-      activeServerId: id,
-    });
-
-    if (isTauriStoreAvailable()) {
-      await saveServers(newServers.map(toStoredServerConfig));
-    }
   },
 
   getActiveServer: () => {

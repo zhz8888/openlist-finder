@@ -6,7 +6,7 @@ import { createIndexesForAllServers, createIndexForServer } from "@/services/ind
 import type { ThemeConfig, MCPLogLevel, ServerConfig } from "@/types";
 
 export function SettingsPage() {
-  const { servers, addServer, removeServer, updateServer, setDefaultServer } = useServerStore();
+  const { servers, addServer, removeServer, updateServer } = useServerStore();
   const { meilisearch, theme, mcp, updateMeilisearch, setTheme, updateMCP, resetMCP } = useSettingsStore();
   const addToast = useToastStore((s) => s.addToast);
 
@@ -74,7 +74,6 @@ export function SettingsPage() {
               name: newServerName,
               url: validation.normalizedUrl || newServerUrl,
               token: newServerToken,
-              isDefault: false,
               createdAt: new Date().toISOString(),
             } as ServerConfig
           );
@@ -216,11 +215,6 @@ export function SettingsPage() {
                           <div className="text-xs text-neutral truncate">{server.url}</div>
                         </div>
                         <div className="flex gap-1 flex-shrink-0 flex-wrap">
-                          {server.isDefault ? (
-                            <span className="badge badge-primary badge-sm">默认</span>
-                          ) : (
-                            <button type="button" className="btn btn-ghost btn-xs" onClick={() => setDefaultServer(server.id)}>设为默认</button>
-                          )}
                           <button type="button" className="btn btn-ghost btn-xs" onClick={() => handleStartEdit(server.id)}>编辑</button>
                           <button type="button" className="btn btn-ghost btn-xs text-error" onClick={() => removeServer(server.id)}>删除</button>
                         </div>

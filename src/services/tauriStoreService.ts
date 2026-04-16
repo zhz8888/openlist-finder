@@ -29,7 +29,6 @@ export interface StoredServerConfig extends Record<string, unknown> {
   name: string;
   url: string;
   token: string;
-  isDefault: boolean;
   createdAt: string;
 }
 

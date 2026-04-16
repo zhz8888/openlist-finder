@@ -3,7 +3,6 @@ export interface ServerConfig {
   name: string;
   url: string;
   token: string;
-  isDefault: boolean;
   createdAt: string;
 }
 
