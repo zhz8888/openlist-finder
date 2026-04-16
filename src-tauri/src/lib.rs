@@ -46,6 +46,10 @@ pub fn run() {
             commands::meilisearch::meilisearch_delete_index,
             commands::meilisearch::meilisearch_delete_all_documents,
             commands::meilisearch::meilisearch_get_task_status,
+            commands::keyring::keyring_get_key,
+            commands::keyring::keyring_set_key,
+            commands::keyring::keyring_delete_key,
+            commands::keyring::keyring_generate_key,
         ])
         .setup(|app| {
             let window = app.get_webview_window("main").unwrap();

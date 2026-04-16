@@ -1,8 +1,5 @@
 import CryptoJS from "crypto-js";
-import { load } from "@tauri-apps/plugin-store";
-
-const ENCRYPTION_KEY_STORE_FILE = "encryption-key.json";
-const ENCRYPTION_KEY_KEY = "openlist-encryption-key";
+import { getKey, generateKey } from "@/services/keyringService";
 
 let cachedKey: string | null = null;
 
@@ -12,16 +9,14 @@ async function getOrCreateEncryptionKey(): Promise<string> {
   }
 
   try {
-    const store = await load(ENCRYPTION_KEY_STORE_FILE, { defaults: {} });
-    let key = await store.get<string>(ENCRYPTION_KEY_KEY);
+    let key = await getKey();
     
     if (!key) {
-      key = CryptoJS.lib.WordArray.random(256 / 8).toString();
-      await store.set(ENCRYPTION_KEY_KEY, key);
-      await store.save();
-      console.log("[Crypto] 生成并保存新的加密密钥");
+      console.log("[Crypto] 未找到加密密钥，正在生成新密钥");
+      key = await generateKey();
+      console.log("[Crypto] 新密钥已生成并保存到系统密钥链");
     } else {
-      console.log("[Crypto] 从 Tauri Store 加载加密密钥");
+      console.log("[Crypto] 从系统密钥链加载加密密钥");
     }
 
     cachedKey = key;
