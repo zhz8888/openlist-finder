@@ -199,6 +199,42 @@ body {
   outline-offset: 2px;
 }
 
+.toast-item {
+  transition: opacity 300ms ease-in-out, transform 300ms ease-in-out;
+}
+
+.toast-fade-in {
+  opacity: 0;
+  animation: toastFadeIn 300ms ease-in-out forwards;
+}
+
+.toast-fade-out {
+  opacity: 1;
+  animation: toastFadeOut 300ms ease-in-out forwards;
+}
+
+@keyframes toastFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes toastFadeOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+}
+
 [data-theme="github-dark"] .input-bordered {
   background-color: #0d1117;
   border-color: #444c56;

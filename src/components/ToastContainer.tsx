@@ -10,7 +10,7 @@ export function ToastContainer() {
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className={`alert shadow-lg animate-in slide-in-from-right ${
+          className={`alert shadow-lg toast-item ${
             toast.type === "success"
               ? "alert-success"
               : toast.type === "error"
@@ -18,7 +18,8 @@ export function ToastContainer() {
                 : toast.type === "warning"
                   ? "alert-warning"
                   : "alert-info"
-          }`}
+          } ${toast.isFading ? "toast-fade-out" : "toast-fade-in"}`}
+          style={{ borderRadius: "8px" }}
         >
           <span className="text-sm flex-1">{toast.message}</span>
           <button
