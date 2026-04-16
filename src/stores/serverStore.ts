@@ -12,7 +12,7 @@ interface ServerState {
   servers: ServerConfig[];
   activeServerId: string | null;
   isInitialized: boolean;
-  addServer: (name: string, url: string, token: string) => Promise<void>;
+  addServer: (name: string, url: string, token: string) => Promise<string>;
   removeServer: (id: string) => Promise<void>;
   updateServer: (id: string, data: Partial<ServerConfig>) => Promise<void>;
   setActiveServer: (id: string) => void;
@@ -86,6 +86,8 @@ export const useServerStore = create<ServerState>()((set, get) => ({
     if (isTauriStoreAvailable()) {
       await saveServers(newServers.map(toStoredServerConfig));
     }
+
+    return newServer.id;
   },
 
   removeServer: async (id) => {
