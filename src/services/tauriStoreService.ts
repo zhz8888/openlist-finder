@@ -49,11 +49,20 @@ export async function loadServers(): Promise<StoredServerConfig[]> {
       return [];
     }
 
-    return data.map(server => 
-      decryptObject<StoredServerConfig>(server, ["token"])
+    const decryptedServers = await Promise.all(
+      data.map(async (server) => {
+        try {
+          return await decryptObject<StoredServerConfig>(server, ["token"]);
+        } catch (error) {
+          console.error("[TauriStore] 服务器数据解密失败:", error, server);
+          return server as StoredServerConfig;
+        }
+      })
     );
+
+    return decryptedServers;
   } catch (error) {
-    console.error("Failed to load servers from Tauri Store:", error);
+    console.error("[TauriStore] 加载服务器数据失败:", error);
     return [];
   }
 }
@@ -62,14 +71,17 @@ export async function saveServers(servers: StoredServerConfig[]): Promise<void> 
   try {
     const store = await getServersStore();
     
-    const encryptedServers = servers.map(server => 
-      encryptObject<StoredServerConfig>(server, ["token"])
+    const encryptedServers = await Promise.all(
+      servers.map(async (server) => 
+        await encryptObject<StoredServerConfig>(server, ["token"])
+      )
     );
 
     await store.set(SERVERS_KEY, encryptedServers);
     await store.save();
+    console.log("[TauriStore] 服务器数据保存成功");
   } catch (error) {
-    console.error("Failed to save servers to Tauri Store:", error);
+    console.error("[TauriStore] 保存服务器数据失败:", error);
     throw error;
   }
 }
@@ -88,16 +100,16 @@ export async function loadSettings(): Promise<StoredSettings | null> {
       try {
         decrypted.meilisearch = {
           ...decrypted.meilisearch,
-          apiKey: decrypt(decrypted.meilisearch.apiKey),
+          apiKey: await decrypt(decrypted.meilisearch.apiKey),
         };
-      } catch {
-        // 如果解密失败，保留原始值
+      } catch (error) {
+        console.error("[TauriStore] Meilisearch API Key 解密失败:", error);
       }
     }
 
     return decrypted;
   } catch (error) {
-    console.error("Failed to load settings from Tauri Store:", error);
+    console.error("[TauriStore] 加载设置数据失败:", error);
     return null;
   }
 }
@@ -110,14 +122,15 @@ export async function saveSettings(settings: StoredSettings): Promise<void> {
       ...settings,
       meilisearch: settings.meilisearch ? {
         ...settings.meilisearch,
-        apiKey: settings.meilisearch.apiKey ? encrypt(settings.meilisearch.apiKey) : "",
+        apiKey: settings.meilisearch.apiKey ? await encrypt(settings.meilisearch.apiKey) : "",
       } : settings.meilisearch,
     };
 
     await store.set(SETTINGS_KEY, encryptedSettings);
     await store.save();
+    console.log("[TauriStore] 设置数据保存成功");
   } catch (error) {
-    console.error("Failed to save settings to Tauri Store:", error);
+    console.error("[TauriStore] 保存设置数据失败:", error);
     throw error;
   }
 }
