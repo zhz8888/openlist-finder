@@ -330,53 +330,75 @@ export function FileList() {
         </div>
 
       {indexStatus === "checking" && (
-        <div className="alert alert-info mx-4 mt-2">
-          <span className="loading loading-spinner loading-xs"></span>
-          <span>正在检查索引状态...</span>
+        <div className="result-message result-info mx-4 mt-2">
+          <div className="result-icon">
+            <span className="loading loading-spinner loading-xs"></span>
+          </div>
+          <div className="result-text">正在检查索引状态...</div>
         </div>
       )}
 
       {indexStatus === "indexing" && (
-        <div className="alert alert-warning mx-4 mt-2">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-          <span>搜索功能暂时不可用，请等待索引构建完成后再试</span>
+        <div className="result-message result-warning mx-4 mt-2">
+          <div className="result-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <div className="result-text">搜索功能暂时不可用，请等待索引构建完成后再试</div>
         </div>
       )}
 
       {indexStatus === "unavailable" && (
-        <div className="alert alert-warning mx-4 mt-2">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-          <span>搜索功能暂时不可用，请等待索引构建完成后再试</span>
+        <div className="result-message result-warning mx-4 mt-2">
+          <div className="result-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <div className="result-text">搜索功能暂时不可用，请等待索引构建完成后再试</div>
         </div>
       )}
 
       {indexStatus === "error" && (
-        <div className="alert alert-error mx-4 mt-2">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <div className="flex flex-col">
-            <span>Meilisearch 服务不可用</span>
-            {indexErrorMessage && <span className="text-xs opacity-70">{indexErrorMessage}</span>}
+        <div className="result-message result-error mx-4 mt-2">
+          <div className="result-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div className="result-text">
+            <div>Meilisearch 服务不可用</div>
+            {indexErrorMessage && <div className="text-xs opacity-70 mt-1">{indexErrorMessage}</div>}
           </div>
         </div>
       )}
 
       {searchError && (
-        <div className="alert alert-error mx-4 mt-2">
-          <span>{searchError}</span>
-          <button type="button" className="btn btn-sm btn-ghost" onClick={() => setSearchError(null)}>关闭</button>
+        <div className="result-message result-error mx-4 mt-2">
+          <div className="result-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div className="result-text">
+            <div>{searchError}</div>
+            <button type="button" className="btn btn-sm btn-ghost mt-2" onClick={() => setSearchError(null)}>关闭</button>
+          </div>
         </div>
       )}
 
       {error && (
-        <div className="alert alert-error mx-4 mt-2">
-          <span>{error}</span>
-          <button type="button" className="btn btn-sm btn-ghost" onClick={() => loadFiles()}>重试</button>
+        <div className="result-message result-error mx-4 mt-2">
+          <div className="result-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div className="result-text">
+            <div>{error}</div>
+            <button type="button" className="btn btn-sm btn-ghost mt-2" onClick={() => loadFiles()}>重试</button>
+          </div>
         </div>
       )}
 
