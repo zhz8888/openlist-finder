@@ -60,11 +60,13 @@ impl McpServer {
                 input_schema: serde_json::json!({
                     "type": "object",
                     "properties": {
+                        "server_id": { "type": "string", "description": "Server ID for index name construction" },
                         "query": { "type": "string", "description": "Search query" },
                         "limit": { "type": "integer", "description": "Max results" },
-                        "offset": { "type": "integer", "description": "Result offset" }
+                        "offset": { "type": "integer", "description": "Result offset" },
+                        "index_prefix": { "type": "string", "description": "Index prefix (default: openlist)" }
                     },
-                    "required": ["query"]
+                    "required": ["server_id", "query"]
                 }),
             },
             McpTool {
@@ -281,11 +283,16 @@ impl McpServer {
                     Some(q) => q.to_string(),
                     None => return Self::handle_invalid_params(id, "Missing query"),
                 };
+                let server_id = match arguments.get("server_id").and_then(|v| v.as_str()) {
+                    Some(s) => s.to_string(),
+                    None => return Self::handle_invalid_params(id, "Missing server_id"),
+                };
                 let limit = Some(arguments.get("limit").and_then(|v| v.as_u64()).unwrap_or(20) as i64);
                 let offset = Some(arguments.get("offset").and_then(|v| v.as_u64()).unwrap_or(0) as i64);
                 let host = arguments.get("host").and_then(|v| v.as_str()).unwrap_or("http://localhost:7700");
                 let api_key = arguments.get("api_key").and_then(|v| v.as_str()).unwrap_or("");
-                let index_uid = arguments.get("index_uid").and_then(|v| v.as_str()).unwrap_or("openlist");
+                let index_prefix = arguments.get("index_prefix").and_then(|v| v.as_str()).unwrap_or("openlist");
+                let index_uid = format!("{}-{}", index_prefix, server_id);
                 match meilisearch::meilisearch_search(host.to_string(), api_key.to_string(), index_uid.to_string(), query, limit, offset).await {
                     Ok(resp) => serde_json::json!({
                         "content": [{ "type": "text", "text": serde_json::to_string_pretty(&resp).unwrap_or_default() }]
