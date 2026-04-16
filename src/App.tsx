@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { HashRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider, ErrorBoundary, ToastContainer } from "@/components";
 import { MainLayout, SettingsPage } from "@/pages";
+import { LogViewerPage } from "@/pages/LogViewerPage";
 import { useServerStore, useSettingsStore } from "@/stores";
 
 function AppInitializer() {
@@ -25,6 +26,7 @@ function App() {
           <Routes>
             <Route path="/" element={<MainLayout />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/logs" element={<LogViewerPage />} />
           </Routes>
         </HashRouter>
         <ToastContainer />

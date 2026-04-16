@@ -577,6 +577,25 @@ export function SettingsPage() {
               </p>
             </div>
           </section>
+
+          <section className="card bg-base-200">
+            <div className="card-body">
+              <h2 className="card-title text-lg">系统工具</h2>
+              <p className="text-sm text-secondary mb-4">查看应用程序日志和诊断信息</p>
+              <a
+                href="#/logs"
+                className="btn btn-outline gap-3 justify-start h-auto py-4 px-4 log-viewer-btn"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <div className="text-left">
+                  <div className="font-medium">查看程序日志</div>
+                  <div className="text-xs text-base-content/60 font-normal">查看 DEBUG、INFO、WARNING、ERROR 等各级日志</div>
+                </div>
+              </a>
+            </div>
+          </section>
         </div>
       </div>
     </div>

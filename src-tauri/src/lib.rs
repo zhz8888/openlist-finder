@@ -4,6 +4,7 @@ mod models;
 mod services;
 
 use tauri::Manager;
+use services::log_manager::LogManager;
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -20,6 +21,8 @@ async fn start_mcp_server() -> Result<String, String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let log_manager = LogManager::new();
+    
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_http::init())
@@ -27,6 +30,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
+        .manage(log_manager)
         .invoke_handler(tauri::generate_handler![
             greet,
             start_mcp_server,
@@ -50,6 +54,8 @@ pub fn run() {
             commands::keyring::keyring_set_key,
             commands::keyring::keyring_delete_key,
             commands::keyring::keyring_generate_key,
+            commands::log::get_logs,
+            commands::log::clear_logs,
         ])
         .setup(|app| {
             let window = app.get_webview_window("main").unwrap();
