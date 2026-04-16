@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useServerStore, useSettingsStore, useToastStore } from "@/stores";
-import { testConnection } from "@/services/openlist";
+import { testConnection, validateServerUrl } from "@/services/openlist";
 import { testConnection as testMeilisearchConnection } from "@/services/meilisearch";
 import type { ThemeConfig, MCPLogLevel } from "@/types";
 
@@ -50,9 +50,14 @@ export function SettingsPage() {
   const handleAddServer = async () => {
     if (!newServerName || !newServerUrl || !newServerToken) return;
     try {
-      const result = await testConnection(newServerUrl, newServerToken);
+      const validation = validateServerUrl(newServerUrl);
+      if (!validation.valid) {
+        setTestResult(`错误：${validation.error}`);
+        return;
+      }
+      const result = await testConnection(validation.normalizedUrl || newServerUrl, newServerToken);
       if (result.success) {
-        addServer(newServerName, newServerUrl, newServerToken);
+        addServer(newServerName, validation.normalizedUrl || newServerUrl, newServerToken);
         setNewServerName("");
         setNewServerUrl("");
         setNewServerToken("");
@@ -68,7 +73,12 @@ export function SettingsPage() {
   const handleTestConnection = async () => {
     if (!newServerUrl || !newServerToken) return;
     try {
-      const result = await testConnection(newServerUrl, newServerToken);
+      const validation = validateServerUrl(newServerUrl);
+      if (!validation.valid) {
+        setTestResult(`错误：${validation.error}`);
+        return;
+      }
+      const result = await testConnection(validation.normalizedUrl || newServerUrl, newServerToken);
       setTestResult(result.success ? "连接成功！" : `失败：${result.message}`);
     } catch (err) {
       setTestResult(`错误：${err instanceof Error ? err.message : String(err)}`);

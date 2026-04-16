@@ -6,30 +6,73 @@ import type {
   FileInfo,
 } from "@/types";
 
+function isTauriAvailable(): boolean {
+  return typeof window !== "undefined" && 
+    "__TAURI_INTERNALS__" in window;
+}
+
+function checkTauriEnvironment(): void {
+  if (!isTauriAvailable()) {
+    throw new Error("Tauri API 不可用。请在 Tauri 环境中运行此应用，或使用 `npm run tauri dev` 启动开发模式。");
+  }
+}
+
+export function validateServerUrl(url: string): { valid: boolean; error?: string; normalizedUrl?: string } {
+  if (!url || url.trim() === "") {
+    return { valid: false, error: "服务器地址不能为空" };
+  }
+
+  let normalizedUrl = url.trim();
+  
+  if (!normalizedUrl.startsWith("http://") && !normalizedUrl.startsWith("https://")) {
+    normalizedUrl = "https://" + normalizedUrl;
+  }
+
+  try {
+    const urlObj = new URL(normalizedUrl);
+    if (urlObj.protocol !== "http:" && urlObj.protocol !== "https:") {
+      return { valid: false, error: "仅支持 HTTP 或 HTTPS 协议" };
+    }
+    if (!urlObj.hostname || urlObj.hostname === "") {
+      return { valid: false, error: "服务器地址格式不正确，缺少主机名" };
+    }
+    return { valid: true, normalizedUrl: normalizedUrl.replace(/\/+$/, "") };
+  } catch {
+    return { valid: false, error: "服务器地址格式不正确，请使用有效的 URL（如 https://example.com）" };
+  }
+}
+
 export async function testConnection(url: string, token: string): Promise<ServerTestResult> {
+  checkTauriEnvironment();
   return invoke("test_openlist_connection", { url, token });
 }
 
 export async function listDirectory(url: string, token: string, path: string): Promise<FileListResponse> {
+  checkTauriEnvironment();
   return invoke("list_directory", { url, token, path });
 }
 
 export async function renameFile(url: string, token: string, dir: string, oldName: string, newName: string): Promise<FileOperationResult> {
+  checkTauriEnvironment();
   return invoke("rename_file", { url, token, dir, oldName, newName });
 }
 
 export async function deleteFiles(url: string, token: string, dir: string, names: string[]): Promise<FileOperationResult> {
+  checkTauriEnvironment();
   return invoke("delete_files", { url, token, dir, names });
 }
 
 export async function copyFiles(url: string, token: string, srcDir: string, dstDir: string, names: string[]): Promise<FileOperationResult> {
+  checkTauriEnvironment();
   return invoke("copy_files", { url, token, srcDir, dstDir, names });
 }
 
 export async function moveFiles(url: string, token: string, srcDir: string, dstDir: string, names: string[]): Promise<FileOperationResult> {
+  checkTauriEnvironment();
   return invoke("move_files", { url, token, srcDir, dstDir, names });
 }
 
 export async function getFileInfo(url: string, token: string, path: string): Promise<FileInfo> {
+  checkTauriEnvironment();
   return invoke("get_file_info", { url, token, path });
 }
