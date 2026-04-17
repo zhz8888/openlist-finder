@@ -45,18 +45,35 @@ export async function loadServers(): Promise<StoredServerConfig[]> {
     const data = await store.get<StoredServerConfig[]>(SERVERS_KEY);
     
     if (!data || !Array.isArray(data)) {
+      console.log("[TauriStore] 未找到服务器数据");
       return [];
     }
 
-    const decryptedServers = await Promise.all(
-      data.map(async (server) => {
-        try {
-          return await decryptObject<StoredServerConfig>(server, ["token"]);
-        } catch (error) {
-          console.error("[TauriStore] 服务器数据解密失败:", error, server);
-          return server as StoredServerConfig;
-        }
-      })
+    console.log(`[TauriStore] 找到 ${data.length} 个服务器配置，开始解密`);
+    
+    const decryptedServers: StoredServerConfig[] = [];
+    let decryptSuccessCount = 0;
+    let decryptFailedCount = 0;
+
+    for (const server of data) {
+      try {
+        const decrypted = await decryptObject<StoredServerConfig>(server, ["token"]);
+        decryptedServers.push(decrypted);
+        decryptSuccessCount++;
+        console.log(`[TauriStore] 服务器 "${server.name}" 解密成功`);
+      } catch (error) {
+        decryptFailedCount++;
+        console.error(
+          `[TauriStore] 服务器 "${server.name}" (ID: ${server.id}) 解密失败:`,
+          error
+        );
+        console.error("[TauriStore] 原始数据:", JSON.stringify(server, null, 2));
+        decryptedServers.push(server as StoredServerConfig);
+      }
+    }
+
+    console.log(
+      `[TauriStore] 解密完成: 成功 ${decryptSuccessCount} 个, 失败 ${decryptFailedCount} 个`
     );
 
     return decryptedServers;
