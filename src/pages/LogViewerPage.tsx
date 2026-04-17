@@ -11,12 +11,12 @@ interface LogEntry {
 const LOG_LEVELS = ["ALL", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"];
 
 const LEVEL_COLORS: Record<string, string> = {
-  TRACE: "text-base-content/50",
-  DEBUG: "text-base-content/70",
+  TRACE: "text-gray-500",
+  DEBUG: "text-purple-600",
   INFO: "text-blue-600",
-  WARN: "text-yellow-600",
+  WARN: "text-amber-600",
   ERROR: "text-red-600",
-  CRITICAL: "text-red-700 font-bold",
+  CRITICAL: "text-red-800 font-bold",
 };
 
 const LEVEL_BADGE: Record<string, string> = {
@@ -160,7 +160,7 @@ export function LogViewerPage() {
 
         <div
           ref={logContainerRef}
-          className="bg-base-200 rounded-lg overflow-y-auto"
+          className="bg-base-200 rounded-lg overflow-y-auto scrollbar-always"
           style={{ height: "calc(100vh - 280px)" }}
         >
           {logs.length === 0 && !loading ? (
@@ -174,7 +174,7 @@ export function LogViewerPage() {
             </div>
           ) : (
             <div className="divide-y divide-base-300">
-              {logs.map((log, index) => (
+              {[...logs].reverse().map((log, index) => (
                 <div
                   key={`${log.timestamp}-${index}`}
                   className="px-4 py-2 hover:bg-base-300/50 transition-colors group"

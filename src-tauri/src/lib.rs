@@ -78,6 +78,7 @@ pub fn run() {
             commands::keyring::keyring_generate_key,
             commands::log::get_logs,
             commands::log::clear_logs,
+            commands::log::forward_frontend_log,
         ])
         .setup(|app| {
             let window = app.get_webview_window("main").unwrap();

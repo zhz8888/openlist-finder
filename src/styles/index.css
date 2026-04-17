@@ -45,6 +45,9 @@
   --color-log-trace-bg: #f3f4f6;
   --color-log-trace-text: #000000;
   --color-log-trace-border: #d1d5db;
+  --color-log-log-bg: #f0fdf4;
+  --color-log-log-text: #000000;
+  --color-log-log-border: #86efac;
   --color-log-debug-bg: #f5f3ff;
   --color-log-debug-text: #000000;
   --color-log-debug-border: #c4b5fd;
@@ -105,6 +108,9 @@
   --color-log-trace-bg: #1e2328;
   --color-log-trace-text: #9ca3af;
   --color-log-trace-border: #374151;
+  --color-log-log-bg: #1a2317;
+  --color-log-log-text: #86efac;
+  --color-log-log-border: #166534;
   --color-log-debug-bg: #1f1a2e;
   --color-log-debug-text: #c4b5fd;
   --color-log-debug-border: #6d28d9;
@@ -237,6 +243,57 @@ body {
   outline-offset: 2px;
 }
 
+/* 滚动条始终显示 */
+.scrollbar-always {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) var(--color-github-surface);
+}
+
+.scrollbar-always::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.scrollbar-always::-webkit-scrollbar-track {
+  background: var(--color-github-surface);
+  border-radius: 6px;
+}
+
+.scrollbar-always::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 6px;
+  border: 2px solid var(--color-github-surface);
+}
+
+.scrollbar-always::-webkit-scrollbar-thumb:hover {
+  background: var(--color-neutral);
+}
+
+.scrollbar-always::-webkit-scrollbar-corner {
+  background: var(--color-github-surface);
+}
+
+[data-theme="github-dark"] .scrollbar-always {
+  scrollbar-color: #8b949e #161b22;
+}
+
+[data-theme="github-dark"] .scrollbar-always::-webkit-scrollbar-track {
+  background: #161b22;
+}
+
+[data-theme="github-dark"] .scrollbar-always::-webkit-scrollbar-thumb {
+  background: #8b949e;
+  border: 2px solid #161b22;
+}
+
+[data-theme="github-dark"] .scrollbar-always::-webkit-scrollbar-thumb:hover {
+  background: #c9d1d9;
+}
+
+[data-theme="github-dark"] .scrollbar-always::-webkit-scrollbar-corner {
+  background: #161b22;
+}
+
 /* 日志等级徽章样式优化 - 符合WCAG AA标准 */
 .badge-sm {
   min-width: 70px;
@@ -259,6 +316,17 @@ body {
 }
 
 [data-theme="github-light"] .badge-trace {
+  color: #000000;
+}
+
+/* LOG 等级样式 - 绿色 */
+.badge-log {
+  background-color: var(--color-log-log-bg);
+  color: var(--color-log-log-text);
+  border-color: var(--color-log-log-border);
+}
+
+[data-theme="github-light"] .badge-log {
   color: #000000;
 }
 
