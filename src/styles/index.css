@@ -498,6 +498,7 @@ body {
   align-self: center;
   min-height: auto;
   height: auto;
+  line-height: normal;
 }
 
 @keyframes slideIn {
@@ -579,6 +580,17 @@ body {
 .btn-ghost.btn-xs {
   min-height: 1.5rem;
   padding: 0.25rem 0.5rem;
+}
+
+.btn-xs {
+  min-height: 1.5rem !important;
+  height: auto !important;
+  padding: 0.25rem 0.5rem !important;
+  line-height: 1 !important;
+}
+
+.btn-xs:focus-visible {
+  outline-offset: 1px !important;
 }
 
 .card {
