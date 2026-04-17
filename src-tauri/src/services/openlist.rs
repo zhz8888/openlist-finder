@@ -13,11 +13,11 @@ impl OpenListService {
 
     pub async fn login(&self, url: &str, username: &str, password: &str, otp_code: Option<String>) -> Result<String, String> {
         let api_path = format!("{}/api/auth/login", url.trim_end_matches('/'));
-        let body = serde_json::json!({
-            "username": username,
-            "password": password,
-            "otp_code": otp_code,
-        });
+        let body = LoginRequest {
+            username: username.to_string(),
+            password: password.to_string(),
+            otp_code,
+        };
 
         let response = self.client
             .post(&api_path)
