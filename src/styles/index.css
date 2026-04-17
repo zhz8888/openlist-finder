@@ -199,6 +199,105 @@ body {
   outline-offset: 2px;
 }
 
+/* 日志等级徽章样式优化 */
+.badge-sm {
+  min-width: 70px;
+  justify-content: center;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+  border-width: 1px;
+  border-style: solid;
+}
+
+/* TRACE 等级样式 - 浅灰色 */
+.badge-trace {
+  background-color: #f3f4f6;
+  color: #6b7280;
+  border-color: #e5e7eb;
+}
+
+[data-theme="github-dark"] .badge-trace {
+  background-color: #1e2328;
+  color: #8b949e;
+  border-color: #30363d;
+}
+
+/* DEBUG 等级样式 - 紫灰色 */
+.badge-debug {
+  background-color: #f5f3ff;
+  color: #7c3aed;
+  border-color: #e9d5ff;
+}
+
+[data-theme="github-dark"] .badge-debug {
+  background-color: #1f1a2e;
+  color: #a78bfa;
+  border-color: #4c1d95;
+}
+
+/* INFO 等级样式 - 蓝色 */
+.badge-info {
+  background-color: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+}
+
+[data-theme="github-dark"] .badge-info {
+  background-color: #1a2332;
+  color: #60a5fa;
+  border-color: #1e3a5f;
+}
+
+/* WARN 等级样式 - 琥珀色 */
+.badge-warning {
+  background-color: #fffbeb;
+  color: #d97706;
+  border-color: #fde68a;
+}
+
+[data-theme="github-dark"] .badge-warning {
+  background-color: #2a2217;
+  color: #fbbf24;
+  border-color: #78350f;
+}
+
+/* ERROR 等级样式 - 红色 */
+.badge-error {
+  background-color: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+[data-theme="github-dark"] .badge-error {
+  background-color: #2d1b1b;
+  color: #f87171;
+  border-color: #7f1d1d;
+}
+
+/* CRITICAL 等级样式 - 深红色 */
+.badge-critical {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border-color: #fca5a5;
+  font-weight: 700;
+}
+
+[data-theme="github-dark"] .badge-critical {
+  background-color: #3d1515;
+  color: #fca5a5;
+  border-color: #991b1b;
+  font-weight: 700;
+}
+
+/* 日志行悬停效果 */
+.group:hover .badge {
+  transform: scale(1.05);
+}
+
 .log-viewer-btn {
   border: 1px solid var(--color-border);
   border-radius: 8px;

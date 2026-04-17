@@ -8,23 +8,25 @@ interface LogEntry {
   message: string;
 }
 
-const LOG_LEVELS = ["ALL", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"];
+const LOG_LEVELS = ["ALL", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"];
 const PAGE_SIZE = 50;
 
 const LEVEL_COLORS: Record<string, string> = {
-  DEBUG: "text-base-content/60",
-  INFO: "text-info",
-  WARN: "text-warning",
-  ERROR: "text-error",
-  CRITICAL: "text-error font-bold",
+  TRACE: "text-base-content/50",
+  DEBUG: "text-base-content/70",
+  INFO: "text-blue-600",
+  WARN: "text-yellow-600",
+  ERROR: "text-red-600",
+  CRITICAL: "text-red-700 font-bold",
 };
 
 const LEVEL_BADGE: Record<string, string> = {
-  DEBUG: "badge-ghost",
+  TRACE: "badge-trace",
+  DEBUG: "badge-debug",
   INFO: "badge-info",
   WARN: "badge-warning",
   ERROR: "badge-error",
-  CRITICAL: "badge-error",
+  CRITICAL: "badge-critical",
 };
 
 export function LogViewerPage() {
