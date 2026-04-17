@@ -15,10 +15,27 @@ impl MeilisearchService {
     }
 
     pub async fn test_connection(&self) -> Result<bool, String> {
+        // 首先测试健康端点（不需要认证）
         self.client
             .health()
             .await
-            .map_err(|e| format!("Connection failed: {}", e))?;
+            .map_err(|e: meilisearch_sdk::errors::Error| format!("Meilisearch 服务不可用: {}", e))?;
+        
+        // 然后测试 API Key 权限（通过获取版本信息来验证）
+        let version = self.client
+            .get_version()
+            .await
+            .map_err(|e: meilisearch_sdk::errors::Error| {
+                let error_msg = e.to_string();
+                if error_msg.contains("403") || error_msg.contains("Forbidden") || error_msg.contains("invalid API key") {
+                    format!("API Key 无效或权限不足，请检查配置")
+                } else {
+                    format!("连接测试失败: {}", error_msg)
+                }
+            })?;
+        
+        // 验证成功，返回版本信息
+        tracing::info!("Meilisearch 连接成功，版本: {}", version.pkg_version);
         Ok(true)
     }
 
