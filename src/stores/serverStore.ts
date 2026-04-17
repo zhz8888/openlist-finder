@@ -16,6 +16,7 @@ interface ServerState {
   addServer: (name: string, url: string, username: string, password: string) => Promise<string>;
   removeServer: (id: string) => Promise<void>;
   updateServer: (id: string, data: Partial<ServerConfig>) => Promise<void>;
+  updateServerToken: (id: string, newToken: string) => Promise<void>;
   setActiveServer: (id: string) => void;
   getActiveServer: () => ServerConfig | undefined;
   initialize: () => Promise<void>;
@@ -170,6 +171,17 @@ export const useServerStore = create<ServerState>()((set, get) => ({
   updateServer: async (id, data) => {
     const newServers = get().servers.map((s) =>
       s.id === id ? { ...s, ...data } : s
+    );
+    set({ servers: newServers });
+
+    if (isTauriStoreAvailable()) {
+      await saveServers(newServers.map(toStoredServerConfig));
+    }
+  },
+
+  updateServerToken: async (id, newToken) => {
+    const newServers = get().servers.map((s) =>
+      s.id === id ? { ...s, token: newToken } : s
     );
     set({ servers: newServers });
 

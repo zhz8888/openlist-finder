@@ -1,9 +1,9 @@
 import { useCallback } from "react";
 import { useServerStore, useFileBrowserStore } from "@/stores";
-import { listDirectory } from "@/services/openlist";
+import { listDirectory, executeWithTokenRefresh } from "@/services/openlist";
 
 export function useFileBrowser() {
-  const { getActiveServer } = useServerStore();
+  const { getActiveServer, updateServerToken } = useServerStore();
   const {
     currentPath,
     files,
@@ -36,7 +36,14 @@ export function useFileBrowser() {
     setError(null);
 
     try {
-      const response = await listDirectory(server.url, server.token, targetPath);
+      const response = await executeWithTokenRefresh(
+        () => listDirectory(server.url, server.token, targetPath),
+        server.id,
+        server.url,
+        server.username || "",
+        server.password || "",
+        updateServerToken
+      );
       setFiles(response.content);
       if (path) {
         setCurrentPath(path);
@@ -46,7 +53,7 @@ export function useFileBrowser() {
     } finally {
       setLoading(false);
     }
-  }, [getActiveServer, currentPath, setFiles, setLoading, setError, setCurrentPath]);
+  }, [getActiveServer, currentPath, setFiles, setLoading, setError, setCurrentPath, updateServerToken]);
 
   return {
     currentPath,
