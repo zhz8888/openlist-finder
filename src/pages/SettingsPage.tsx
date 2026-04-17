@@ -248,14 +248,19 @@ export function SettingsPage() {
                           className="edit-input"
                         />
                         {editTestResult && (
-                          <div
-                            className={`text-sm px-3 py-2 rounded-lg border ${
-                              editTestResult.includes("成功")
-                                ? "text-success bg-success/10 border-success/30"
-                                : "text-error bg-error/10 border-error/30"
-                            }`}
-                          >
-                            {editTestResult}
+                          <div className={`result-message ${editTestResult.includes("成功") ? "result-success" : "result-error"}`}>
+                            <div className="result-icon">
+                              {editTestResult.includes("成功") ? (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              )}
+                            </div>
+                            <div className="result-text">{editTestResult}</div>
                           </div>
                         )}
                         <div className="flex gap-2 pt-1">
