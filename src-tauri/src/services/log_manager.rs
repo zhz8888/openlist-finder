@@ -11,6 +11,7 @@ pub struct LogEntry {
 }
 
 #[derive(Clone)]
+#[allow(dead_code)]
 pub struct LogManager {
     logs: Arc<Mutex<Vec<LogEntry>>>,
     max_logs: usize,
@@ -24,6 +25,7 @@ impl LogManager {
         }
     }
 
+    #[allow(dead_code)]
     pub fn add_log(&self, level: &str, target: &str, message: &str) {
         let mut logs = self.logs.lock().unwrap();
         
