@@ -5,13 +5,21 @@ import { useServerStore } from "@/stores";
 
 export function HomePage() {
   const { loadFiles } = useFileBrowser();
-  const { activeServerId, servers } = useServerStore();
+  const { activeServerId, servers, getActiveServer } = useServerStore();
 
   useEffect(() => {
     if (activeServerId) {
       loadFiles("/");
     }
   }, [activeServerId, loadFiles]);
+
+  const activeServer = getActiveServer();
+
+  useEffect(() => {
+    if (activeServerId && activeServer) {
+      loadFiles("/");
+    }
+  }, [activeServer?.url, activeServer?.token, activeServerId, loadFiles]);
 
   if (!activeServerId || servers.length === 0) {
     return (

@@ -3,6 +3,7 @@ import { useServerStore, useSettingsStore, useToastStore } from "@/stores";
 import { testConnection, validateServerUrl } from "@/services/openlist";
 import { testConnection as testMeilisearchConnection } from "@/services/meilisearch";
 import { createIndexesForAllServers, createIndexForServer } from "@/services/indexManager";
+import { PasswordInput } from "@/components";
 import type { ThemeConfig, MCPLogLevel, ServerConfig } from "@/types";
 
 export function SettingsPage() {
@@ -19,6 +20,7 @@ export function SettingsPage() {
   const [editName, setEditName] = useState("");
   const [editUrl, setEditUrl] = useState("");
   const [editToken, setEditToken] = useState("");
+  const [editTestResult, setEditTestResult] = useState<string | null>(null);
   const [mcpExpanded, setMcpExpanded] = useState(false);
 
   const copyToClipboard = async (text: string) => {
@@ -165,6 +167,22 @@ export function SettingsPage() {
     setEditName(server.name);
     setEditUrl(server.url);
     setEditToken(server.token);
+    setEditTestResult(null);
+  };
+
+  const handleTestEditConnection = async () => {
+    if (!editUrl || !editToken) return;
+    try {
+      const validation = validateServerUrl(editUrl);
+      if (!validation.valid) {
+        setEditTestResult(`错误：${validation.error}`);
+        return;
+      }
+      const result = await testConnection(validation.normalizedUrl || editUrl, editToken);
+      setEditTestResult(result.success ? "连接成功！" : `失败：${result.message}`);
+    } catch (err) {
+      setEditTestResult(`错误：${err instanceof Error ? err.message : String(err)}`);
+    }
   };
 
   const handleSaveEdit = () => {
@@ -200,12 +218,52 @@ export function SettingsPage() {
                   <div key={server.id} className="flex items-center gap-2 bg-base-100 rounded-lg p-3">
                     {editingServer === server.id ? (
                       <div className="flex-1 space-y-2">
-                        <input type="text" className="input input-bordered input-sm w-full" value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="名称" />
-                        <input type="text" className="input input-bordered input-sm w-full" value={editUrl} onChange={(e) => setEditUrl(e.target.value)} placeholder="地址" />
-                        <input type="password" className="input input-bordered input-sm w-full" value={editToken} onChange={(e) => setEditToken(e.target.value)} placeholder="令牌" />
-                        <div className="flex gap-2">
-                          <button type="button" className="btn btn-primary btn-sm" onClick={handleSaveEdit}>保存</button>
-                          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditingServer(null)}>取消</button>
+                        <input
+                          type="text"
+                          className="input input-bordered input-sm w-full edit-input"
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          placeholder="名称"
+                        />
+                        <input
+                          type="text"
+                          className="input input-bordered input-sm w-full edit-input"
+                          value={editUrl}
+                          onChange={(e) => setEditUrl(e.target.value)}
+                          placeholder="地址"
+                        />
+                        <PasswordInput
+                          value={editToken}
+                          onChange={setEditToken}
+                          placeholder="令牌"
+                          className="edit-input"
+                        />
+                        {editTestResult && (
+                          <div
+                            className={`text-sm px-3 py-2 rounded-lg border ${
+                              editTestResult.includes("成功")
+                                ? "text-success bg-success/10 border-success/30"
+                                : "text-error bg-error/10 border-error/30"
+                            }`}
+                          >
+                            {editTestResult}
+                          </div>
+                        )}
+                        <div className="flex gap-2 pt-1">
+                          <button type="button" className="btn btn-primary btn-sm" onClick={handleSaveEdit}>
+                            保存
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-ghost btn-sm"
+                            onClick={handleTestEditConnection}
+                            disabled={!editUrl || !editToken}
+                          >
+                            测试连接
+                          </button>
+                          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditingServer(null)}>
+                            取消
+                          </button>
                         </div>
                       </div>
                     ) : (
@@ -265,11 +323,9 @@ export function SettingsPage() {
                     onChange={(e) => updateMeilisearch({ host: e.target.value })}
                     placeholder="Meilisearch 地址（例如：http://localhost:7700）"
                   />
-                  <input
-                    type="password"
-                    className="input input-bordered w-full"
+                  <PasswordInput
                     value={meilisearch.apiKey}
-                    onChange={(e) => updateMeilisearch({ apiKey: e.target.value })}
+                    onChange={(value) => updateMeilisearch({ apiKey: value })}
                     placeholder="API 密钥"
                   />
                   <input

@@ -1017,6 +1017,163 @@ body {
   transform: scale(0.98);
 }
 
+/* 统一输入框基础样式 - 适用于所有输入框 */
+.input,
+.input-bordered,
+.select,
+.select-bordered,
+.textarea {
+  border-width: 2px !important;
+  border-radius: 10px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 输入框悬停效果 */
+.input:hover,
+.input-bordered:hover,
+.select:hover,
+.select-bordered:hover,
+.textarea:hover {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.1);
+}
+
+/* 输入框焦点效果 */
+.input:focus,
+.input-bordered:focus,
+.select:focus,
+.select-bordered:focus,
+.textarea:focus {
+  border-width: 2px !important;
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 4px rgba(9, 105, 218, 0.2);
+  outline: none;
+}
+
+/* 编辑模式下输入框的增强样式 */
+.edit-input {
+  border-width: 2px !important;
+  border-color: var(--color-accent);
+  background-color: var(--color-github-surface);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.edit-input:hover {
+  border-color: var(--color-accent-hover);
+  box-shadow: 0 0 0 4px rgba(9, 105, 218, 0.15);
+  background-color: var(--color-bg);
+}
+
+.edit-input:focus {
+  border-width: 2px !important;
+  border-color: var(--color-accent-hover) !important;
+  box-shadow: 0 0 0 5px rgba(9, 105, 218, 0.25);
+  background-color: var(--color-bg);
+  outline: none;
+}
+
+/* 深色模式下的统一输入框样式 */
+[data-theme="github-dark"] .input,
+[data-theme="github-dark"] .input-bordered,
+[data-theme="github-dark"] .select,
+[data-theme="github-dark"] .select-bordered,
+[data-theme="github-dark"] .textarea {
+  border-width: 2px !important;
+  border-color: #444c56;
+  background-color: #0d1117;
+  color: #f0f6fc;
+}
+
+[data-theme="github-dark"] .input:hover,
+[data-theme="github-dark"] .input-bordered:hover,
+[data-theme="github-dark"] .select:hover,
+[data-theme="github-dark"] .select-bordered:hover,
+[data-theme="github-dark"] .textarea:hover {
+  border-color: #58a6ff;
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+}
+
+[data-theme="github-dark"] .input:focus,
+[data-theme="github-dark"] .input-bordered:focus,
+[data-theme="github-dark"] .select:focus,
+[data-theme="github-dark"] .select-bordered:focus,
+[data-theme="github-dark"] .textarea:focus {
+  border-width: 2px !important;
+  border-color: #58a6ff !important;
+  box-shadow: 0 0 0 4px rgba(88, 166, 255, 0.25);
+  outline: none;
+}
+
+/* 深色模式下编辑输入框的增强样式 */
+[data-theme="github-dark"] .edit-input {
+  border-width: 2px !important;
+  border-color: #58a6ff;
+  background-color: #161b22;
+}
+
+[data-theme="github-dark"] .edit-input:hover {
+  border-color: #79c0ff;
+  box-shadow: 0 0 0 4px rgba(88, 166, 255, 0.2);
+  background-color: #0d1117;
+}
+
+[data-theme="github-dark"] .edit-input:focus {
+  border-width: 2px !important;
+  border-color: #79c0ff !important;
+  box-shadow: 0 0 0 5px rgba(88, 166, 255, 0.35);
+  background-color: #0d1117;
+  outline: none;
+}
+
+/* 密码输入框内部按钮样式 */
+.password-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  color: var(--color-github-text-tertiary);
+}
+
+.password-toggle-btn:hover {
+  background-color: var(--color-github-surface-hover);
+  color: var(--color-github-text-secondary);
+}
+
+[data-theme="github-dark"] .password-toggle-btn {
+  color: #8b949e;
+}
+
+[data-theme="github-dark"] .password-toggle-btn:hover {
+  background-color: #21262d;
+  color: #c9d1d9;
+}
+
+/* 深色模式下密码输入框的优化 */
+[data-theme="github-dark"] .input[type="text"],
+[data-theme="github-dark"] .input[type="password"] {
+  background-color: #0d1117;
+  color: #f0f6fc;
+}
+
+[data-theme="github-dark"] .input[type="text"]::placeholder,
+[data-theme="github-dark"] .input[type="password"]::placeholder {
+  color: #8b949e;
+}
+
+/* 确保密码输入框容器在深色模式下的正确样式 */
+[data-theme="github-dark"] .relative .input {
+  background-color: #0d1117;
+  border-color: #444c56;
+}
+
+[data-theme="github-dark"] .relative .input:focus {
+  border-color: #58a6ff;
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.25);
+}
+
+
 [data-theme="github-dark"] .reset-default-btn:active:not(:disabled) {
   background-color: #21262d;
 }
