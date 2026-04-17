@@ -206,7 +206,7 @@ export function FileList() {
       loadFiles();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      addToast("error", `重命名失败：${msg}`);
+      addToast("error", `[OpenList] 重命名失败：${msg}`);
     }
   }, [renameModal, getActiveServer, loadFiles, addToast]);
 
@@ -222,7 +222,7 @@ export function FileList() {
       loadFiles();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      addToast("error", `删除失败：${msg}`);
+      addToast("error", `[OpenList] 删除失败：${msg}`);
     }
   }, [deleteModal, getActiveServer, loadFiles, clearSelection, addToast]);
 
@@ -243,7 +243,7 @@ export function FileList() {
       loadFiles();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      addToast("error", `${pathModal.operation === "copy" ? "复制" : "移动"}失败：${msg}`);
+      addToast("error", `[OpenList] ${pathModal.operation === "copy" ? "复制" : "移动"}失败：${msg}`);
     }
   }, [pathModal, getActiveServer, loadFiles, addToast]);
 
@@ -255,7 +255,7 @@ export function FileList() {
     }
 
     if (indexStatus !== "available") {
-      addToast("warning", "搜索功能暂时不可用，请等待索引构建完成后再试");
+      addToast("warning", "[Meilisearch] 搜索功能暂时不可用，请等待索引构建完成后再试");
       return;
     }
 
@@ -270,7 +270,7 @@ export function FileList() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setSearchError(msg);
-      addToast("error", `搜索失败：${msg}`);
+      addToast("error", `[Meilisearch] 搜索失败：${msg}`);
     }
   }, [meilisearch, query, getActiveServer, setResults, setSearchError, addToast, indexStatus]);
 
@@ -345,7 +345,7 @@ export function FileList() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
-          <div className="result-text">搜索功能暂时不可用，请等待索引构建完成后再试</div>
+          <div className="result-text">[Meilisearch] 搜索功能暂时不可用，请等待索引构建完成后再试</div>
         </div>
       )}
 
@@ -356,7 +356,7 @@ export function FileList() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
-          <div className="result-text">搜索功能暂时不可用，请等待索引构建完成后再试</div>
+          <div className="result-text">[Meilisearch] 搜索功能暂时不可用，请等待索引构建完成后再试</div>
         </div>
       )}
 
@@ -382,7 +382,7 @@ export function FileList() {
             </svg>
           </div>
           <div className="result-text">
-            <div>{searchError}</div>
+            <div>[Meilisearch] {searchError}</div>
             <button type="button" className="btn btn-sm btn-ghost mt-2" onClick={() => setSearchError(null)}>关闭</button>
           </div>
         </div>

@@ -27,7 +27,7 @@ export function useFileBrowser() {
   const loadFiles = useCallback(async (path?: string) => {
     const server = getActiveServer();
     if (!server) {
-      setError("No active server selected");
+      setError("[OpenList] 未选择活动服务器");
       return;
     }
 
@@ -42,7 +42,7 @@ export function useFileBrowser() {
         setCurrentPath(path);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(`[OpenList] ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setLoading(false);
     }
