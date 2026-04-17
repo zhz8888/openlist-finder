@@ -272,7 +272,7 @@ export function SettingsPage() {
                           <div className="font-medium truncate">{server.name}</div>
                           <div className="text-xs text-neutral truncate">{server.url}</div>
                         </div>
-                        <div className="flex gap-1 flex-shrink-0 flex-wrap">
+                        <div className="flex gap-1 shrink-0 flex-wrap">
                           <button type="button" className="btn btn-ghost btn-xs" onClick={() => handleStartEdit(server.id)}>编辑</button>
                           <button type="button" className="btn btn-ghost btn-xs text-error" onClick={() => removeServer(server.id)}>删除</button>
                         </div>
@@ -636,7 +636,7 @@ export function SettingsPage() {
                 href="#/logs"
                 className="btn btn-outline gap-3 justify-start h-auto py-4 px-4 log-viewer-btn"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 <div className="text-left">
