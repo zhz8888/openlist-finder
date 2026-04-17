@@ -235,11 +235,12 @@ export function SettingsPage() {
                           onChange={(e) => setEditUrl(e.target.value)}
                           placeholder="地址"
                         />
-                        <PasswordInput
+                        <input
+                          type="text"
+                          className="input input-bordered input-sm w-full edit-input"
                           value={editUsername}
-                          onChange={setEditUsername}
+                          onChange={(e) => setEditUsername(e.target.value)}
                           placeholder="用户名"
-                          className="edit-input"
                         />
                         <PasswordInput
                           value={editPassword}
