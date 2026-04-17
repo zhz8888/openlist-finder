@@ -8,6 +8,8 @@
 - **Meilisearch 搜索** — 将文件元数据同步至 Meilisearch 索引，实现快速全文检索
 - **MCP 服务** — 通过 stdio 暴露文件操作与搜索能力，供 AI 工具集成调用
 - **多服务器管理** — 支持配置多个 OpenList 服务器，Token 认证
+- **安全凭证存储** — 使用系统钥匙串安全存储敏感信息（Token、API Key）
+- **日志查看器** — 实时查看应用运行日志，支持按等级筛选和分页加载
 - **主题系统** — GitHub Light / GitHub Dark / 跟随系统，基于 DaisyUI 主题
 - **文件编辑** — 在线预览与编辑文本文件，支持图片预览
 - **跨平台** — 支持 Windows（NSIS/MSI）和 macOS（DMG）
@@ -23,8 +25,9 @@
 | 状态管理 | Zustand 5 |
 | 路由 | React Router DOM 7 |
 | Hooks | ahooks 3 |
-| 后端 | Rust（reqwest、serde、tokio、meilisearch-sdk） |
+| 后端 | Rust（reqwest、serde、tokio、chrono、keyring） |
 | 持久化 | Tauri Plugin Store |
+| Tauri 插件 | opener、http、store、dialog、shell、fs |
 
 ## 项目结构
 
@@ -47,6 +50,7 @@ openlist-finder/
 │   ├── pages/                    # 页面
 │   │   ├── HomePage.tsx          # 主页（文件浏览）
 │   │   ├── SettingsPage.tsx      # 设置页
+│   │   ├── LogViewerPage.tsx     # 日志查看器
 │   │   └── index.ts              # 页面导出
 │   ├── services/                 # API 服务
 │   │   ├── openlist.ts           # OpenList API 客户端
@@ -75,6 +79,8 @@ openlist-finder/
 │       │   ├── openlist.rs       # OpenList 操作命令
 │       │   ├── meilisearch.rs    # Meilisearch 操作命令
 │       │   ├── mcp_server.rs     # MCP 服务实现
+│       │   ├── keyring.rs        # 系统钥匙串操作命令
+│       │   ├── log.rs            # 日志操作命令
 │       │   └── mod.rs            # 命令模块导出
 │       ├── config/               # 应用配置
 │       │   ├── app_config.rs     # 配置定义
@@ -86,6 +92,7 @@ openlist-finder/
 │       ├── services/             # 后端服务层
 │       │   ├── meilisearch.rs    # Meilisearch 服务
 │       │   ├── openlist.rs       # OpenList 服务
+│       │   ├── log_manager.rs    # 日志管理服务
 │       │   └── mod.rs            # 服务模块导出
 │       ├── lib.rs                # Tauri 库入口
 │       └── main.rs               # Rust 主入口
