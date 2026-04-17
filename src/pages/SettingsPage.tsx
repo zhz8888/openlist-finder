@@ -196,8 +196,8 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="flex h-screen bg-base-100">
-      <div className="flex-1 overflow-auto p-6 max-w-3xl mx-auto w-full">
+    <div className="flex h-screen bg-base-100 overflow-y-auto">
+      <div className="flex-1 p-6 max-w-3xl mx-auto w-full">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-base-content">设置</h1>
           <a href="#/" className="btn btn-ghost btn-sm">
