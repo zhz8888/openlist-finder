@@ -212,7 +212,7 @@ export function SettingsPage() {
         </div>
 
         <div className="space-y-8">
-          <section className="card bg-base-200">
+          <section className="card bg-base-200 mb-12">
             <div className="card-body">
               <h2 className="card-title text-lg">OpenList 服务器</h2>
 
@@ -332,7 +332,7 @@ export function SettingsPage() {
             </div>
           </section>
 
-          <section className="card bg-base-200">
+          <section className="card bg-base-200 mb-12">
             <div className="card-body">
               <h2 className="card-title text-lg">Meilisearch 配置</h2>
                 <div className="space-y-2 mt-2">
@@ -398,7 +398,7 @@ export function SettingsPage() {
               </div>
             </section>
 
-          <section className="card bg-base-200">
+          <section className="card bg-base-200 mb-12">
             <div className="card-body">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex-1">
@@ -555,7 +555,7 @@ export function SettingsPage() {
             </div>
           </section>
 
-          <section className="card bg-base-200" role="region" aria-labelledby="theme-heading">
+          <section className="card bg-base-200 mb-12" role="region" aria-labelledby="theme-heading">
             <div className="card-body">
               <h2 className="card-title text-lg" id="theme-heading">主题</h2>
               <p className="text-sm text-secondary mb-4">选择您偏好的颜色主题</p>
@@ -648,7 +648,7 @@ export function SettingsPage() {
             </div>
           </section>
 
-          <section className="card bg-base-200">
+          <section className="card bg-base-200 mb-12">
             <div className="card-body">
               <h2 className="card-title text-lg">系统工具</h2>
               <p className="text-sm text-secondary mb-4">查看应用程序日志和诊断信息</p>
