@@ -24,6 +24,11 @@ async function getSettingsStore() {
   return settingsStore;
 }
 
+function maskSensitiveData(data: string): string {
+  if (!data || data.length <= 8) return "***";
+  return `${data.substring(0, 4)}...${data.substring(data.length - 4)}`;
+}
+
 export interface StoredServerConfig extends Record<string, unknown> {
   id: string;
   name: string;
@@ -47,11 +52,11 @@ export async function loadServers(): Promise<StoredServerConfig[]> {
     const data = await store.get<StoredServerConfig[]>(SERVERS_KEY);
     
     if (!data || !Array.isArray(data)) {
-      console.log("[TauriStore] 未找到服务器数据");
+      console.log("[TauriStore] No server data found");
       return [];
     }
 
-    console.log(`[TauriStore] 找到 ${data.length} 个服务器配置，开始解密`);
+    console.log(`[TauriStore] Found ${data.length} server configurations, starting decryption`);
     
     const decryptedServers: StoredServerConfig[] = [];
     let decryptSuccessCount = 0;
@@ -65,25 +70,30 @@ export async function loadServers(): Promise<StoredServerConfig[]> {
         const decrypted = await decryptObject<StoredServerConfig>(server, fieldsToDecrypt);
         decryptedServers.push(decrypted);
         decryptSuccessCount++;
-        console.log(`[TauriStore] 服务器 "${server.name}" 解密成功`);
+        console.log(`[TauriStore] Server "${server.name}" decrypted successfully`);
       } catch (error) {
         decryptFailedCount++;
         console.error(
-          `[TauriStore] 服务器 "${server.name}" (ID: ${server.id}) 解密失败:`,
+          `[TauriStore] Server "${server.name}" (ID: ${server.id}) decryption failed:`,
           error
         );
-        console.error("[TauriStore] 原始数据:", JSON.stringify(server, null, 2));
+        console.error("[TauriStore] Raw data:", JSON.stringify({
+          ...server,
+          token: server.token ? maskSensitiveData(String(server.token)) : undefined,
+          username: server.username ? maskSensitiveData(String(server.username)) : undefined,
+          password: server.password ? maskSensitiveData(String(server.password)) : undefined,
+        }, null, 2));
         decryptedServers.push(server as StoredServerConfig);
       }
     }
 
     console.log(
-      `[TauriStore] 解密完成: 成功 ${decryptSuccessCount} 个, 失败 ${decryptFailedCount} 个`
+      `[TauriStore] Decryption complete: ${decryptSuccessCount} succeeded, ${decryptFailedCount} failed`
     );
 
     return decryptedServers;
   } catch (error) {
-    console.error("[TauriStore] 加载服务器数据失败:", error);
+    console.error("[TauriStore] Failed to load server data:", error);
     return [];
   }
 }
@@ -103,9 +113,9 @@ export async function saveServers(servers: StoredServerConfig[]): Promise<void> 
 
     await store.set(SERVERS_KEY, encryptedServers);
     await store.save();
-    console.log("[TauriStore] 服务器数据保存成功");
+    console.log(`[TauriStore] Server data saved successfully (${servers.length} servers)`);
   } catch (error) {
-    console.error("[TauriStore] 保存服务器数据失败:", error);
+    console.error("[TauriStore] Failed to save server data:", error);
     throw error;
   }
 }
@@ -127,13 +137,13 @@ export async function loadSettings(): Promise<StoredSettings | null> {
           apiKey: await decrypt(decrypted.meilisearch.apiKey),
         };
       } catch (error) {
-        console.error("[TauriStore] Meilisearch API Key 解密失败:", error);
+        console.error("[TauriStore] Failed to decrypt Meilisearch API Key:", error);
       }
     }
 
     return decrypted;
   } catch (error) {
-    console.error("[TauriStore] 加载设置数据失败:", error);
+    console.error("[TauriStore] Failed to load settings data:", error);
     return null;
   }
 }
@@ -152,9 +162,9 @@ export async function saveSettings(settings: StoredSettings): Promise<void> {
 
     await store.set(SETTINGS_KEY, encryptedSettings);
     await store.save();
-    console.log("[TauriStore] 设置数据保存成功");
+    console.log("[TauriStore] Settings data saved successfully");
   } catch (error) {
-    console.error("[TauriStore] 保存设置数据失败:", error);
+    console.error("[TauriStore] Failed to save settings data:", error);
     throw error;
   }
 }

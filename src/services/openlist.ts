@@ -37,14 +37,14 @@ export async function executeWithTokenRefresh<T>(
     return await operation();
   } catch (error) {
     if (isTokenInvalidatedError(error) && username && password) {
-      console.log(`[OpenList] Token 已失效，正在重新登录服务器: ${serverUrl}`);
+      console.log(`[OpenList] Token expired, re-authenticating to server: ${serverUrl}`);
       try {
         const newToken = await loginToOpenlist(serverUrl, username, password);
         await updateServerToken(serverId, newToken);
-        console.log(`[OpenList] Token 刷新成功，重试操作`);
+        console.log(`[OpenList] Token refreshed successfully, retrying operation`);
         return await operation();
       } catch (loginError) {
-        console.error(`[OpenList] Token 刷新失败:`, loginError);
+        console.error(`[OpenList] Token refresh failed:`, loginError);
         throw loginError;
       }
     }

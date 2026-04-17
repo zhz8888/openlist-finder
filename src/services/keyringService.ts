@@ -20,7 +20,7 @@ export async function getKey(): Promise<string | null> {
     throw new Error(result.error || "获取密钥失败");
   }
   if (result.fallback_used) {
-    console.warn("[Keyring] 使用降级方案存储密钥（安全性较低）");
+    console.warn("[Keyring] Using fallback key storage (lower security)");
   }
   return result.data;
 }
@@ -29,10 +29,10 @@ export async function setKey(key: string): Promise<boolean> {
   checkTauriEnvironment();
   const result = await invoke<KeyringResult>("keyring_set_key", { key });
   if (!result.success) {
-    throw new Error(result.error || "设置密钥失败");
+    throw new Error(result.error || "Failed to set key");
   }
   if (result.fallback_used) {
-    console.warn("[Keyring] 使用降级方案存储密钥（安全性较低）");
+    console.warn("[Keyring] Using fallback key storage (lower security)");
   }
   return result.fallback_used;
 }
@@ -41,7 +41,7 @@ export async function deleteKey(): Promise<void> {
   checkTauriEnvironment();
   const result = await invoke<KeyringResult>("keyring_delete_key");
   if (!result.success) {
-    throw new Error(result.error || "删除密钥失败");
+    throw new Error(result.error || "Failed to delete key");
   }
 }
 
@@ -49,10 +49,10 @@ export async function generateKey(): Promise<string> {
   checkTauriEnvironment();
   const result = await invoke<KeyringResult>("keyring_generate_key");
   if (!result.success || !result.data) {
-    throw new Error(result.error || "生成密钥失败");
+    throw new Error(result.error || "Failed to generate key");
   }
   if (result.fallback_used) {
-    console.warn("[Keyring] 使用降级方案存储密钥（安全性较低）");
+    console.warn("[Keyring] Using fallback key storage (lower security)");
   }
   return result.data;
 }

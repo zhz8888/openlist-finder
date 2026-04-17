@@ -3,6 +3,11 @@ import { getKey, generateKey } from "@/services/keyringService";
 
 let cachedKey: string | null = null;
 
+function maskSensitiveData(data: string): string {
+  if (!data || data.length <= 8) return "***";
+  return `${data.substring(0, 4)}...${data.substring(data.length - 4)}`;
+}
+
 function looksLikeEncryptedToken(token: string): boolean {
   if (!token || token.length < 10) {
     return false;
@@ -32,36 +37,36 @@ export async function tryDecryptToken(token: string): Promise<string> {
   try {
     return await decrypt(token);
   } catch (error) {
-    console.warn("[Crypto] Token 解密失败，返回原始值:", error);
+    console.warn("[Crypto] Token decryption failed, returning original value:", error);
     return token;
   }
 }
 
 async function getOrCreateEncryptionKey(): Promise<string> {
   if (cachedKey) {
-    console.log("[Crypto] 使用缓存的加密密钥");
+    console.log("[Crypto] Using cached encryption key");
     return cachedKey;
   }
 
   try {
-    console.log("[Crypto] 开始获取加密密钥");
+    console.log("[Crypto] Fetching encryption key");
     let key = await getKey();
     
     if (!key) {
-      console.log("[Crypto] 未找到加密密钥，正在生成新密钥");
+      console.log("[Crypto] No encryption key found, generating new key");
       key = await generateKey();
-      console.log("[Crypto] 新密钥已生成，长度:", key.length);
-      console.log("[Crypto] 新密钥前缀:", key.substring(0, 8) + "...");
+      console.log("[Crypto] New key generated, length:", key.length);
+      console.log("[Crypto] Key prefix:", maskSensitiveData(key));
     } else {
-      console.log("[Crypto] 从系统密钥链加载加密密钥，长度:", key.length);
-      console.log("[Crypto] 密钥前缀:", key.substring(0, 8) + "...");
+      console.log("[Crypto] Loaded encryption key from keychain, length:", key.length);
+      console.log("[Crypto] Key prefix:", maskSensitiveData(key));
     }
 
     cachedKey = key;
     return key;
   } catch (error) {
-    console.error("[Crypto] 加密密钥操作失败:", error);
-    throw new Error("加密密钥初始化失败");
+    console.error("[Crypto] Encryption key operation failed:", error);
+    throw new Error("Encryption key initialization failed");
   }
 }
 
@@ -71,7 +76,7 @@ function deriveKey(password: string): CryptoJS.lib.WordArray {
 
 export async function encrypt(plainText: string): Promise<string> {
   const key = await getOrCreateEncryptionKey();
-  console.log("[Crypto] 开始加密数据");
+  console.log("[Crypto] Starting data encryption");
   
   try {
     const derivedKey = deriveKey(key);
@@ -84,19 +89,19 @@ export async function encrypt(plainText: string): Promise<string> {
     });
     
     const result = iv.toString() + ":" + encrypted.ciphertext.toString();
-    console.log("[Crypto] 数据加密完成");
+    console.log("[Crypto] Data encryption completed");
     return result;
   } catch (error) {
-    console.error("[Crypto] 加密失败:", error);
-    throw new Error(`数据加密失败: ${error instanceof Error ? error.message : "未知错误"}`);
+    console.error("[Crypto] Encryption failed:", error);
+    throw new Error(`Data encryption failed: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
 
 export async function decrypt(cipherText: string): Promise<string> {
   const key = await getOrCreateEncryptionKey();
-  console.log("[Crypto] 开始解密数据");
-  console.log("[Crypto] 密文:", cipherText.substring(0, 50) + "...");
-  console.log("[Crypto] 密钥前缀:", key.substring(0, 8) + "...");
+  console.log("[Crypto] Starting data decryption");
+  console.log("[Crypto] Ciphertext:", maskSensitiveData(cipherText));
+  console.log("[Crypto] Key prefix:", maskSensitiveData(key));
   
   try {
     const parts = cipherText.split(":");
@@ -119,24 +124,24 @@ export async function decrypt(cipherText: string): Promise<string> {
       const decrypted = bytes.toString(CryptoJS.enc.Utf8);
       
       if (!decrypted) {
-        console.error("[Crypto] 解密失败：密钥不匹配或数据已损坏");
-        console.error("[Crypto] 密文长度:", cipherText.length);
-        throw new Error("解密失败：密钥不匹配或数据已损坏");
+        console.error("[Crypto] Decryption failed: key mismatch or corrupted data");
+        console.error("[Crypto] Ciphertext length:", cipherText.length);
+        throw new Error("Decryption failed: key mismatch or corrupted data");
       }
       
       // 检查解密结果是否包含非打印字符（可能是密钥不匹配导致的乱码）
       const hasNonPrintableChars = /[^\x20-\x7E\s]/.test(decrypted);
       if (hasNonPrintableChars) {
-        console.error("[Crypto] 解密结果包含非打印字符，可能是密钥不匹配");
-        console.error("[Crypto] 解密结果预览:", decrypted.substring(0, 50));
-        throw new Error("解密失败：密钥不匹配或数据已损坏");
+        console.error("[Crypto] Decryption result contains non-printable characters, possible key mismatch");
+        console.error("[Crypto] Decryption result preview:", maskSensitiveData(decrypted));
+        throw new Error("Decryption failed: key mismatch or corrupted data");
       }
       
-      console.log("[Crypto] 数据解密完成");
-      console.log("[Crypto] 明文长度:", decrypted.length);
+      console.log("[Crypto] Data decryption completed");
+      console.log("[Crypto] Plaintext length:", decrypted.length);
       return decrypted;
     } else {
-      console.log("[Crypto] 检测到旧格式密文，尝试兼容解密");
+      console.log("[Crypto] Detected legacy format ciphertext, attempting compatible decryption");
       const derivedKey = deriveKey(key);
       const bytes = CryptoJS.AES.decrypt(cipherText, derivedKey, {
         mode: CryptoJS.mode.CBC,
@@ -146,27 +151,27 @@ export async function decrypt(cipherText: string): Promise<string> {
       const decrypted = bytes.toString(CryptoJS.enc.Utf8);
       
       if (!decrypted) {
-        console.error("[Crypto] 旧格式解密失败");
-        throw new Error("解密失败：密钥不匹配或数据已损坏");
+        console.error("[Crypto] Legacy format decryption failed");
+        throw new Error("Decryption failed: key mismatch or corrupted data");
       }
       
       // 检查解密结果是否包含非打印字符
       const hasNonPrintableChars = /[^\x20-\x7E\s]/.test(decrypted);
       if (hasNonPrintableChars) {
-        console.error("[Crypto] 旧格式解密结果包含非打印字符，可能是密钥不匹配");
-        console.error("[Crypto] 解密结果预览:", decrypted.substring(0, 50));
-        throw new Error("解密失败：密钥不匹配或数据已损坏");
+        console.error("[Crypto] Legacy format decryption result contains non-printable characters, possible key mismatch");
+        console.error("[Crypto] Decryption result preview:", maskSensitiveData(decrypted));
+        throw new Error("Decryption failed: key mismatch or corrupted data");
       }
       
-      console.log("[Crypto] 旧格式数据解密完成");
+      console.log("[Crypto] Legacy format data decryption completed");
       return decrypted;
     }
   } catch (error) {
-    if (error instanceof Error && error.message.includes("解密失败")) {
+    if (error instanceof Error && error.message.includes("Decryption failed")) {
       throw error;
     }
-    console.error("[Crypto] 解密过程异常:", error);
-    throw new Error(`解密过程异常，请检查数据完整性: ${error instanceof Error ? error.message : "未知错误"}`);
+    console.error("[Crypto] Decryption process exception:", error);
+    throw new Error(`Decryption process exception, please check data integrity: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }
 
@@ -179,7 +184,7 @@ export async function encryptObject<T extends Record<string, unknown>>(
   for (const field of fieldsToEncrypt) {
     const value = obj[field];
     if (value !== undefined && value !== null) {
-      console.log(`[Crypto] 加密字段: ${String(field)}`);
+      console.log(`[Crypto] Encrypting field: ${String(field)}`);
       (encrypted[field] as unknown) = await encrypt(String(value));
     }
   }
@@ -197,11 +202,11 @@ export async function decryptObject<T extends Record<string, unknown>>(
     const value = obj[field];
     if (value !== undefined && value !== null) {
       try {
-        console.log(`[Crypto] 解密字段: ${String(field)}`);
+        console.log(`[Crypto] Decrypting field: ${String(field)}`);
         (decrypted[field] as unknown) = await decrypt(String(value));
       } catch (error) {
-        console.error(`[Crypto] 字段 ${String(field)} 解密失败:`, error);
-        throw new Error(`字段 ${String(field)} 解密失败: ${error instanceof Error ? error.message : "未知错误"}`);
+        console.error(`[Crypto] Failed to decrypt field ${String(field)}:`, error);
+        throw new Error(`Failed to decrypt field ${String(field)}: ${error instanceof Error ? error.message : "Unknown error"}`);
       }
     }
   }

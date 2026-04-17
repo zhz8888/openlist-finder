@@ -49,12 +49,12 @@ function toServerConfig(stored: StoredServerConfig): ServerConfig {
 
 async function loginAndGetToken(url: string, username: string, password: string): Promise<string | null> {
   try {
-    console.log(`[ServerStore] 正在登录服务器: ${url}, 用户: ${username}`);
+    console.log(`[ServerStore] Logging in to server: ${url}, user: ${username}`);
     const token = await loginToOpenlist(url, username, password);
-    console.log(`[ServerStore] 登录成功，获取到新 token`);
+    console.log(`[ServerStore] Login successful, obtained new token`);
     return token;
   } catch (error) {
-    console.error(`[ServerStore] 登录服务器 ${url} 失败:`, error);
+    console.error(`[ServerStore] Failed to login to server ${url}:`, error);
     return null;
   }
 }
@@ -122,7 +122,7 @@ export const useServerStore = create<ServerState>()((set, get) => ({
     if (hasChanges) {
       set({ servers: refreshedServers });
       await saveServers(refreshedServers.map(toStoredServerConfig));
-      console.log("[ServerStore] Token 刷新完成");
+      console.log("[ServerStore] Token refresh completed");
     }
   },
 

@@ -35,19 +35,19 @@ async function createIndexWithRetry(
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      console.log(`[IndexManager] 为服务器 "${serverName}" (${serverId}) 创建索引 "${indexUid}"，尝试 ${attempt}/${maxRetries}`);
+      console.log(`[IndexManager] Creating index "${indexUid}" for server "${serverName}" (${serverId}), attempt ${attempt}/${maxRetries}`);
 
       const taskInfo = await createIndex(host, apiKey, indexUid);
 
-      console.log(`[IndexManager] 索引 "${indexUid}" 创建请求已提交，任务 UID: ${taskInfo.uid}`);
+      console.log(`[IndexManager] Index "${indexUid}" creation request submitted, task UID: ${taskInfo.uid}`);
 
       await delay(1000);
 
       try {
         await updateFilterable(host, apiKey, indexUid);
-        console.log(`[IndexManager] 索引 "${indexUid}" 的可过滤属性已更新`);
+        console.log(`[IndexManager] Filterable attributes for index "${indexUid}" updated`);
       } catch (filterError) {
-        console.warn(`[IndexManager] 更新可过滤属性失败（非致命错误）:`, filterError);
+        console.warn(`[IndexManager] Failed to update filterable attributes (non-fatal):`, filterError);
       }
 
       return {
@@ -60,10 +60,10 @@ async function createIndexWithRetry(
       };
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      console.warn(`[IndexManager] 索引 "${indexUid}" 创建失败（尝试 ${attempt}/${maxRetries}）:`, lastError.message);
+      console.warn(`[IndexManager] Index "${indexUid}" creation failed (attempt ${attempt}/${maxRetries}):`, lastError.message);
 
       if (attempt < maxRetries) {
-        console.log(`[IndexManager] 等待 ${RETRY_DELAY_MS / 1000} 秒后重试...`);
+        console.log(`[IndexManager] Waiting ${RETRY_DELAY_MS / 1000} seconds before retry...`);
         await delay(RETRY_DELAY_MS);
       }
     }
@@ -86,11 +86,11 @@ export async function createIndexesForAllServers(
   servers: ServerConfig[]
 ): Promise<IndexCreationResult[]> {
   if (!host || !apiKey || servers.length === 0) {
-    console.log("[IndexManager] 跳过索引创建：参数不完整");
+    console.log("[IndexManager] Skipping index creation: incomplete parameters");
     return [];
   }
 
-  console.log(`[IndexManager] 开始为 ${servers.length} 个服务器创建索引`);
+  console.log(`[IndexManager] Starting index creation for ${servers.length} servers`);
 
   const results: IndexCreationResult[] = [];
 
@@ -103,7 +103,7 @@ export async function createIndexesForAllServers(
   const successCount = results.filter((r) => r.success).length;
   const failCount = results.filter((r) => !r.success).length;
 
-  console.log(`[IndexManager] 索引创建完成：成功 ${successCount} 个，失败 ${failCount} 个`);
+  console.log(`[IndexManager] Index creation completed: ${successCount} succeeded, ${failCount} failed`);
 
   return results;
 }
@@ -115,26 +115,26 @@ export async function createIndexForServer(
   server: ServerConfig
 ): Promise<IndexCreationResult> {
   if (!host || !apiKey) {
-    console.log("[IndexManager] 跳过索引创建：Meilisearch 配置不完整");
+    console.log("[IndexManager] Skipping index creation: Meilisearch configuration incomplete");
     return {
       serverId: server.id,
       serverName: server.name,
       indexUid: "",
       success: false,
-      error: "Meilisearch 配置不完整",
+      error: "Meilisearch configuration incomplete",
       retryCount: 0,
     };
   }
 
   const indexUid = generateIndexUid(indexPrefix, server.id);
-  console.log(`[IndexManager] 为新服务器 "${server.name}" 创建索引 "${indexUid}"`);
+  console.log(`[IndexManager] Creating index "${indexUid}" for new server "${server.name}"`);
 
   const result = await createIndexWithRetry(host, apiKey, indexUid, server.id, server.name);
 
   if (result.success) {
-    console.log(`[IndexManager] 服务器 "${server.name}" 索引创建成功`);
+    console.log(`[IndexManager] Index creation successful for server "${server.name}"`);
   } else {
-    console.error(`[IndexManager] 服务器 "${server.name}" 索引创建失败:`, result.error);
+    console.error(`[IndexManager] Index creation failed for server "${server.name}":`, result.error);
   }
 
   return result;
