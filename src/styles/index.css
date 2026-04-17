@@ -43,22 +43,22 @@
   --color-warning: #9a6700;
 
   --color-log-trace-bg: #f3f4f6;
-  --color-log-trace-text: #374151;
+  --color-log-trace-text: #000000;
   --color-log-trace-border: #d1d5db;
   --color-log-debug-bg: #f5f3ff;
-  --color-log-debug-text: #5b21b6;
+  --color-log-debug-text: #000000;
   --color-log-debug-border: #c4b5fd;
   --color-log-info-bg: #eff6ff;
-  --color-log-info-text: #1e3a8a;
+  --color-log-info-text: #000000;
   --color-log-info-border: #93c5fd;
   --color-log-warn-bg: #fffbeb;
-  --color-log-warn-text: #92400e;
+  --color-log-warn-text: #000000;
   --color-log-warn-border: #fcd34d;
   --color-log-error-bg: #fef2f2;
-  --color-log-error-text: #991b1b;
+  --color-log-error-text: #000000;
   --color-log-error-border: #fca5a5;
   --color-log-critical-bg: #fef2f2;
-  --color-log-critical-text: #7f1d1d;
+  --color-log-critical-text: #000000;
   --color-log-critical-border: #f87171;
 
   color-scheme: light;
@@ -258,11 +258,19 @@ body {
   border-color: var(--color-log-trace-border);
 }
 
+[data-theme="github-light"] .badge-trace {
+  color: #000000;
+}
+
 /* DEBUG 等级样式 - 紫色 */
 .badge-debug {
   background-color: var(--color-log-debug-bg);
   color: var(--color-log-debug-text);
   border-color: var(--color-log-debug-border);
+}
+
+[data-theme="github-light"] .badge-debug {
+  color: #000000;
 }
 
 /* INFO 等级样式 - 蓝色 */
@@ -272,11 +280,19 @@ body {
   border-color: var(--color-log-info-border);
 }
 
+[data-theme="github-light"] .badge-info {
+  color: #000000;
+}
+
 /* WARN 等级样式 - 琥珀色 */
 .badge-warning {
   background-color: var(--color-log-warn-bg);
   color: var(--color-log-warn-text);
   border-color: var(--color-log-warn-border);
+}
+
+[data-theme="github-light"] .badge-warning {
+  color: #000000;
 }
 
 /* ERROR 等级样式 - 红色 */
@@ -286,12 +302,20 @@ body {
   border-color: var(--color-log-error-border);
 }
 
+[data-theme="github-light"] .badge-error {
+  color: #000000;
+}
+
 /* CRITICAL 等级样式 - 深红色 */
 .badge-critical {
   background-color: var(--color-log-critical-bg);
   color: var(--color-log-critical-text);
   border-color: var(--color-log-critical-border);
   font-weight: 700;
+}
+
+[data-theme="github-light"] .badge-critical {
+  color: #000000;
 }
 
 /* 日志行悬停效果 */
