@@ -9,7 +9,6 @@ interface LogEntry {
 }
 
 const LOG_LEVELS = ["ALL", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "CRITICAL"];
-const PAGE_SIZE = 50;
 
 const LEVEL_COLORS: Record<string, string> = {
   TRACE: "text-base-content/50",
@@ -32,37 +31,28 @@ const LEVEL_BADGE: Record<string, string> = {
 export function LogViewerPage() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [selectedLevel, setSelectedLevel] = useState("ALL");
-  const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const logContainerRef = useRef<HTMLDivElement>(null);
-  const autoScrollRef = useRef(true);
 
-  const loadLogs = useCallback(async (reset = false) => {
+  const loadLogs = useCallback(async () => {
     if (loading) return;
     setLoading(true);
     setError(null);
     try {
-      const currentOffset = reset ? 0 : offset;
       const levelFilter = selectedLevel === "ALL" ? null : selectedLevel;
       
       const result = await invoke<{ logs: LogEntry[]; total: number }>("get_logs", {
         request: {
           level: levelFilter,
-          offset: currentOffset,
-          limit: PAGE_SIZE,
+          offset: 0,
+          limit: 10000,
         },
       });
       
-      if (reset) {
-        setLogs(result.logs);
-        setOffset(PAGE_SIZE);
-      } else {
-        setLogs((prev) => [...prev, ...result.logs]);
-        setOffset((prev) => prev + PAGE_SIZE);
-      }
+      setLogs(result.logs);
       setTotal(result.total);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
@@ -71,25 +61,11 @@ export function LogViewerPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedLevel, offset, loading]);
+  }, [selectedLevel, loading]);
 
   useEffect(() => {
-    setOffset(0);
-    loadLogs(true);
+    loadLogs();
   }, [selectedLevel]);
-
-  const handleScroll = useCallback(() => {
-    const container = logContainerRef.current;
-    if (!container) return;
-    
-    const { scrollTop, scrollHeight, clientHeight } = container;
-    const isNearBottom = scrollHeight - scrollTop - clientHeight < 200;
-    autoScrollRef.current = isNearBottom;
-    
-    if (isNearBottom && offset < total && !loading) {
-      loadLogs();
-    }
-  }, [offset, total, loading, loadLogs]);
 
   const copyLog = async (log: LogEntry, index: number) => {
     try {
@@ -107,7 +83,6 @@ export function LogViewerPage() {
       setError(null);
       await invoke("clear_logs");
       setLogs([]);
-      setOffset(0);
       setTotal(0);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
@@ -115,8 +90,6 @@ export function LogViewerPage() {
       console.error("Failed to clear logs:", err);
     }
   };
-
-  const hasMore = offset < total;
 
   return (
     <div className="flex h-screen bg-base-100">
@@ -187,72 +160,64 @@ export function LogViewerPage() {
 
         <div
           ref={logContainerRef}
-          className="bg-base-200 rounded-lg overflow-hidden"
+          className="bg-base-200 rounded-lg overflow-y-auto"
           style={{ height: "calc(100vh - 280px)" }}
-          onScroll={handleScroll}
         >
-          <div className="overflow-y-auto h-full">
-            {logs.length === 0 && !loading ? (
-              <div className="flex items-center justify-center h-full text-base-content/50">
-                <div className="text-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto mb-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <p>暂无日志记录</p>
+          {logs.length === 0 && !loading ? (
+            <div className="flex items-center justify-center h-full text-base-content/50">
+              <div className="text-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto mb-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <p>暂无日志记录</p>
+              </div>
+            </div>
+          ) : (
+            <div className="divide-y divide-base-300">
+              {logs.map((log, index) => (
+                <div
+                  key={`${log.timestamp}-${index}`}
+                  className="px-4 py-2 hover:bg-base-300/50 transition-colors group"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="text-xs text-base-content/50 font-mono shrink-0 pt-0.5">
+                      {log.timestamp}
+                    </span>
+                    <span className={`badge badge-sm ${LEVEL_BADGE[log.level] || "badge-ghost"} shrink-0`}>
+                      {log.level}
+                    </span>
+                    <span className="text-xs text-base-content/60 font-mono shrink-0 max-w-[150px] truncate" title={log.target}>
+                      {log.target}
+                    </span>
+                    <span className={`text-sm flex-1 break-all ${LEVEL_COLORS[log.level] || "text-base-content"}`}>
+                      {log.message}
+                    </span>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-xs opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                      onClick={() => copyLog(log, index)}
+                      title="复制日志"
+                    >
+                      {copiedIndex === index ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="divide-y divide-base-300">
-                {logs.map((log, index) => (
-                  <div
-                    key={`${log.timestamp}-${index}`}
-                    className="px-4 py-2 hover:bg-base-300/50 transition-colors group"
-                  >
-                    <div className="flex items-start gap-3">
-                      <span className="text-xs text-base-content/50 font-mono shrink-0 pt-0.5">
-                        {log.timestamp}
-                      </span>
-                      <span className={`badge badge-sm ${LEVEL_BADGE[log.level] || "badge-ghost"} shrink-0`}>
-                        {log.level}
-                      </span>
-                      <span className="text-xs text-base-content/60 font-mono shrink-0 max-w-[150px] truncate" title={log.target}>
-                        {log.target}
-                      </span>
-                      <span className={`text-sm flex-1 break-all ${LEVEL_COLORS[log.level] || "text-base-content"}`}>
-                        {log.message}
-                      </span>
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-xs opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-                        onClick={() => copyLog(log, index)}
-                        title="复制日志"
-                      >
-                        {copiedIndex === index ? (
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        ) : (
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                          </svg>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-                {loading && (
-                  <div className="px-4 py-4 text-center">
-                    <span className="loading loading-spinner loading-sm"></span>
-                  </div>
-                )}
-                {!hasMore && logs.length > 0 && (
-                  <div className="px-4 py-4 text-center text-sm text-base-content/50">
-                    已加载全部日志
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+              ))}
+              {loading && (
+                <div className="px-4 py-4 text-center">
+                  <span className="loading loading-spinner loading-sm"></span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
