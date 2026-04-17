@@ -51,8 +51,10 @@ export const useServerStore = create<ServerState>()((set, get) => ({
     if (isTauriStoreAvailable()) {
       try {
         const storedServers = await loadServers();
+        const servers = storedServers.map(toServerConfig);
         set({
-          servers: storedServers.map(toServerConfig),
+          servers,
+          activeServerId: servers.length > 0 ? servers[0].id : null,
           isInitialized: true,
         });
       } catch (error) {
