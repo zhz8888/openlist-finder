@@ -42,6 +42,25 @@
   --color-danger: #cf222e;
   --color-warning: #9a6700;
 
+  --color-log-trace-bg: #f3f4f6;
+  --color-log-trace-text: #374151;
+  --color-log-trace-border: #d1d5db;
+  --color-log-debug-bg: #f5f3ff;
+  --color-log-debug-text: #5b21b6;
+  --color-log-debug-border: #c4b5fd;
+  --color-log-info-bg: #eff6ff;
+  --color-log-info-text: #1e3a8a;
+  --color-log-info-border: #93c5fd;
+  --color-log-warn-bg: #fffbeb;
+  --color-log-warn-text: #92400e;
+  --color-log-warn-border: #fcd34d;
+  --color-log-error-bg: #fef2f2;
+  --color-log-error-text: #991b1b;
+  --color-log-error-border: #fca5a5;
+  --color-log-critical-bg: #fef2f2;
+  --color-log-critical-text: #7f1d1d;
+  --color-log-critical-border: #f87171;
+
   color-scheme: light;
 }
 
@@ -82,6 +101,25 @@
   --color-success: #3fb950;
   --color-danger: #f85149;
   --color-warning: #d29922;
+
+  --color-log-trace-bg: #1e2328;
+  --color-log-trace-text: #9ca3af;
+  --color-log-trace-border: #374151;
+  --color-log-debug-bg: #1f1a2e;
+  --color-log-debug-text: #c4b5fd;
+  --color-log-debug-border: #6d28d9;
+  --color-log-info-bg: #1a2332;
+  --color-log-info-text: #93c5fd;
+  --color-log-info-border: #1e40af;
+  --color-log-warn-bg: #2a2217;
+  --color-log-warn-text: #fcd34d;
+  --color-log-warn-border: #92400e;
+  --color-log-error-bg: #2d1b1b;
+  --color-log-error-text: #fca5a5;
+  --color-log-error-border: #991b1b;
+  --color-log-critical-bg: #3d1515;
+  --color-log-critical-text: #fca5a5;
+  --color-log-critical-border: #7f1d1d;
 
   color-scheme: dark;
 }
@@ -199,7 +237,7 @@ body {
   outline-offset: 2px;
 }
 
-/* 日志等级徽章样式优化 */
+/* 日志等级徽章样式优化 - 符合WCAG AA标准 */
 .badge-sm {
   min-width: 70px;
   justify-content: center;
@@ -215,81 +253,44 @@ body {
 
 /* TRACE 等级样式 - 浅灰色 */
 .badge-trace {
-  background-color: #f3f4f6;
-  color: #6b7280;
-  border-color: #e5e7eb;
+  background-color: var(--color-log-trace-bg);
+  color: var(--color-log-trace-text);
+  border-color: var(--color-log-trace-border);
 }
 
-[data-theme="github-dark"] .badge-trace {
-  background-color: #1e2328;
-  color: #8b949e;
-  border-color: #30363d;
-}
-
-/* DEBUG 等级样式 - 紫灰色 */
+/* DEBUG 等级样式 - 紫色 */
 .badge-debug {
-  background-color: #f5f3ff;
-  color: #7c3aed;
-  border-color: #e9d5ff;
-}
-
-[data-theme="github-dark"] .badge-debug {
-  background-color: #1f1a2e;
-  color: #a78bfa;
-  border-color: #4c1d95;
+  background-color: var(--color-log-debug-bg);
+  color: var(--color-log-debug-text);
+  border-color: var(--color-log-debug-border);
 }
 
 /* INFO 等级样式 - 蓝色 */
 .badge-info {
-  background-color: #eff6ff;
-  color: #2563eb;
-  border-color: #bfdbfe;
-}
-
-[data-theme="github-dark"] .badge-info {
-  background-color: #1a2332;
-  color: #60a5fa;
-  border-color: #1e3a5f;
+  background-color: var(--color-log-info-bg);
+  color: var(--color-log-info-text);
+  border-color: var(--color-log-info-border);
 }
 
 /* WARN 等级样式 - 琥珀色 */
 .badge-warning {
-  background-color: #fffbeb;
-  color: #d97706;
-  border-color: #fde68a;
-}
-
-[data-theme="github-dark"] .badge-warning {
-  background-color: #2a2217;
-  color: #fbbf24;
-  border-color: #78350f;
+  background-color: var(--color-log-warn-bg);
+  color: var(--color-log-warn-text);
+  border-color: var(--color-log-warn-border);
 }
 
 /* ERROR 等级样式 - 红色 */
 .badge-error {
-  background-color: #fef2f2;
-  color: #dc2626;
-  border-color: #fecaca;
-}
-
-[data-theme="github-dark"] .badge-error {
-  background-color: #2d1b1b;
-  color: #f87171;
-  border-color: #7f1d1d;
+  background-color: var(--color-log-error-bg);
+  color: var(--color-log-error-text);
+  border-color: var(--color-log-error-border);
 }
 
 /* CRITICAL 等级样式 - 深红色 */
 .badge-critical {
-  background-color: #fef2f2;
-  color: #991b1b;
-  border-color: #fca5a5;
-  font-weight: 700;
-}
-
-[data-theme="github-dark"] .badge-critical {
-  background-color: #3d1515;
-  color: #fca5a5;
-  border-color: #991b1b;
+  background-color: var(--color-log-critical-bg);
+  color: var(--color-log-critical-text);
+  border-color: var(--color-log-critical-border);
   font-weight: 700;
 }
 
@@ -483,7 +484,7 @@ body {
 
 .result-message {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
   border-radius: 8px;
@@ -491,6 +492,12 @@ body {
   margin-top: 0.75rem;
   transition: all 0.3s ease-in-out;
   animation: slideIn 0.3s ease-out;
+}
+
+.result-message .btn {
+  align-self: center;
+  min-height: auto;
+  height: auto;
 }
 
 @keyframes slideIn {
@@ -566,6 +573,7 @@ body {
   font-size: 0.875rem;
   line-height: 1.5;
   font-weight: 500;
+  align-self: center;
 }
 
 .btn-ghost.btn-xs {
