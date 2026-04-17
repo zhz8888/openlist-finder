@@ -33,6 +33,7 @@ export function LogViewerPage() {
   const [offset, setOffset] = useState(0);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const logContainerRef = useRef<HTMLDivElement>(null);
   const autoScrollRef = useRef(true);
@@ -40,6 +41,7 @@ export function LogViewerPage() {
   const loadLogs = useCallback(async (reset = false) => {
     if (loading) return;
     setLoading(true);
+    setError(null);
     try {
       const currentOffset = reset ? 0 : offset;
       const levelFilter = selectedLevel === "ALL" ? null : selectedLevel;
@@ -60,8 +62,10 @@ export function LogViewerPage() {
         setOffset((prev) => prev + PAGE_SIZE);
       }
       setTotal(result.total);
-    } catch (error) {
-      console.error("Failed to load logs:", error);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      setError(`加载日志失败: ${errorMsg}`);
+      console.error("Failed to load logs:", err);
     } finally {
       setLoading(false);
     }
@@ -98,12 +102,15 @@ export function LogViewerPage() {
 
   const clearLogs = async () => {
     try {
+      setError(null);
       await invoke("clear_logs");
       setLogs([]);
       setOffset(0);
       setTotal(0);
-    } catch (error) {
-      console.error("Failed to clear logs:", error);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      setError(`清空日志失败: ${errorMsg}`);
+      console.error("Failed to clear logs:", err);
     }
   };
 
@@ -134,6 +141,18 @@ export function LogViewerPage() {
             </a>
           </div>
         </div>
+
+        {error && (
+          <div className="alert alert-error mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>{error}</span>
+            <button type="button" className="btn btn-sm btn-ghost" onClick={() => setError(null)}>
+              关闭
+            </button>
+          </div>
+        )}
 
         <div className="card bg-base-200 mb-4">
           <div className="card-body py-3 px-4">
@@ -186,13 +205,13 @@ export function LogViewerPage() {
                     className="px-4 py-2 hover:bg-base-300/50 transition-colors group"
                   >
                     <div className="flex items-start gap-3">
-                      <span className="text-xs text-base-content/50 font-mono flex-shrink-0 pt-0.5">
+                      <span className="text-xs text-base-content/50 font-mono shrink-0 pt-0.5">
                         {log.timestamp}
                       </span>
-                      <span className={`badge badge-sm ${LEVEL_BADGE[log.level] || "badge-ghost"} flex-shrink-0`}>
+                      <span className={`badge badge-sm ${LEVEL_BADGE[log.level] || "badge-ghost"} shrink-0`}>
                         {log.level}
                       </span>
-                      <span className="text-xs text-base-content/60 font-mono flex-shrink-0 max-w-[150px] truncate" title={log.target}>
+                      <span className="text-xs text-base-content/60 font-mono shrink-0 max-w-[150px] truncate" title={log.target}>
                         {log.target}
                       </span>
                       <span className={`text-sm flex-1 break-all ${LEVEL_COLORS[log.level] || "text-base-content"}`}>
@@ -200,7 +219,7 @@ export function LogViewerPage() {
                       </span>
                       <button
                         type="button"
-                        className="btn btn-ghost btn-xs opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                        className="btn btn-ghost btn-xs opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
                         onClick={() => copyLog(log, index)}
                         title="复制日志"
                       >

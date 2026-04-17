@@ -4,7 +4,9 @@ mod models;
 mod services;
 
 use tauri::Manager;
-use services::log_manager::LogManager;
+use services::log_manager::{LogManager, LogManagerLayer};
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -22,6 +24,25 @@ async fn start_mcp_server() -> Result<String, String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let log_manager = LogManager::new();
+    let log_manager_for_layer = log_manager.clone();
+    
+    let log_layer = LogManagerLayer::new(
+        log_manager_for_layer.get_log_manager(),
+        10000,
+    );
+    
+    tracing_subscriber::registry()
+        .with(log_layer)
+        .with(
+            tracing_subscriber::fmt::layer()
+                .with_target(false)
+                .compact(),
+        )
+        .init();
+    
+    tracing::info!("OpenList Finder application starting");
+    tracing::debug!("Initializing Tauri builder with plugins");
+    tracing::info!("Loading application configuration");
     
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
