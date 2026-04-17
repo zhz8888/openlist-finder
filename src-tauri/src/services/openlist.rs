@@ -11,6 +11,37 @@ impl OpenListService {
         }
     }
 
+    pub async fn login(&self, url: &str, username: &str, password: &str, otp_code: Option<String>) -> Result<String, String> {
+        let api_path = format!("{}/api/auth/login", url.trim_end_matches('/'));
+        let body = serde_json::json!({
+            "username": username,
+            "password": password,
+            "otp_code": otp_code,
+        });
+
+        let response = self.client
+            .post(&api_path)
+            .header("Content-Type", "application/json")
+            .json(&body)
+            .send()
+            .await
+            .map_err(|e| format!("登录请求失败: {}", e))?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let error_text = response.text().await.unwrap_or_default();
+            return Err(format!("登录失败 (HTTP {}): {}", status, error_text));
+        }
+
+        let data: LoginResponse = response.json().await.map_err(|e| format!("解析登录响应失败: {}", e))?;
+        
+        if data.code != 200 {
+            return Err(format!("登录失败: {}", data.message));
+        }
+
+        Ok(data.data.token)
+    }
+
     pub async fn test_connection(&self, url: &str, token: &str) -> Result<ServerTestResult, String> {
         let response = self.client
             .get(format!("{}/api/me", url.trim_end_matches('/')))

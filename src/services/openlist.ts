@@ -47,6 +47,11 @@ export async function testConnection(url: string, token: string): Promise<Server
   return invoke("test_openlist_connection", { url, token });
 }
 
+export async function loginToOpenlist(url: string, username: string, password: string, otpCode?: string): Promise<string> {
+  checkTauriEnvironment();
+  return invoke("login_to_openlist", { url, username, password, otpCode: otpCode || null });
+}
+
 export async function listDirectory(url: string, token: string, path: string): Promise<FileListResponse> {
   checkTauriEnvironment();
   return invoke("list_directory", { url, token, path });

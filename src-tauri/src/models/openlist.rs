@@ -7,8 +7,30 @@ pub struct ServerConfig {
     pub name: String,
     pub url: String,
     pub token: String,
+    pub username: Option<String>,
+    pub password: Option<String>,
     pub is_default: bool,
     pub created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LoginRequest {
+    pub username: String,
+    pub password: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub otp_code: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LoginResponse {
+    pub code: i64,
+    pub message: String,
+    pub data: LoginData,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LoginData {
+    pub token: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

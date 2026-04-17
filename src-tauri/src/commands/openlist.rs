@@ -2,6 +2,12 @@ use crate::models::openlist::*;
 use crate::services::openlist::OpenListService;
 
 #[tauri::command]
+pub async fn login_to_openlist(url: String, username: String, password: String, otp_code: Option<String>) -> Result<String, String> {
+    let service = OpenListService::new();
+    service.login(&url, &username, &password, otp_code).await
+}
+
+#[tauri::command]
 pub async fn test_openlist_connection(url: String, token: String) -> Result<ServerTestResult, String> {
     let service = OpenListService::new();
     service.test_connection(&url, &token).await

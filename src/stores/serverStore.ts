@@ -7,17 +7,19 @@ import {
   isTauriStoreAvailable,
   type StoredServerConfig,
 } from "@/services/tauriStoreService";
+import { loginToOpenlist } from "@/services/openlist";
 
 interface ServerState {
   servers: ServerConfig[];
   activeServerId: string | null;
   isInitialized: boolean;
-  addServer: (name: string, url: string, token: string) => Promise<string>;
+  addServer: (name: string, url: string, username: string, password: string) => Promise<string>;
   removeServer: (id: string) => Promise<void>;
   updateServer: (id: string, data: Partial<ServerConfig>) => Promise<void>;
   setActiveServer: (id: string) => void;
   getActiveServer: () => ServerConfig | undefined;
   initialize: () => Promise<void>;
+  refreshTokens: () => Promise<void>;
 }
 
 function toStoredServerConfig(server: ServerConfig): StoredServerConfig {
@@ -26,6 +28,8 @@ function toStoredServerConfig(server: ServerConfig): StoredServerConfig {
     name: server.name,
     url: server.url,
     token: server.token,
+    username: server.username,
+    password: server.password,
     createdAt: server.createdAt,
   };
 }
@@ -36,8 +40,22 @@ function toServerConfig(stored: StoredServerConfig): ServerConfig {
     name: stored.name,
     url: stored.url,
     token: stored.token,
+    username: stored.username,
+    password: stored.password,
     createdAt: stored.createdAt,
   };
+}
+
+async function loginAndGetToken(url: string, username: string, password: string): Promise<string | null> {
+  try {
+    console.log(`[ServerStore] 正在登录服务器: ${url}, 用户: ${username}`);
+    const token = await loginToOpenlist(url, username, password);
+    console.log(`[ServerStore] 登录成功，获取到新 token`);
+    return token;
+  } catch (error) {
+    console.error(`[ServerStore] 登录服务器 ${url} 失败:`, error);
+    return null;
+  }
 }
 
 export const useServerStore = create<ServerState>()((set, get) => ({
@@ -52,9 +70,26 @@ export const useServerStore = create<ServerState>()((set, get) => ({
       try {
         const storedServers = await loadServers();
         const servers = storedServers.map(toServerConfig);
+        
+        // 自动登录刷新 token
+        const refreshedServers = await Promise.all(
+          servers.map(async (server) => {
+            if (server.username && server.password) {
+              const newToken = await loginAndGetToken(server.url, server.username, server.password);
+              if (newToken) {
+                return { ...server, token: newToken };
+              }
+            }
+            return server;
+          })
+        );
+
+        // 保存刷新后的 token
+        await saveServers(refreshedServers.map(toStoredServerConfig));
+
         set({
-          servers,
-          activeServerId: servers.length > 0 ? servers[0].id : null,
+          servers: refreshedServers,
+          activeServerId: refreshedServers.length > 0 ? refreshedServers[0].id : null,
           isInitialized: true,
         });
       } catch (error) {
@@ -66,12 +101,41 @@ export const useServerStore = create<ServerState>()((set, get) => ({
     }
   },
 
-  addServer: async (name, url, token) => {
+  refreshTokens: async () => {
+    const currentServers = get().servers;
+    let hasChanges = false;
+
+    const refreshedServers = await Promise.all(
+      currentServers.map(async (server) => {
+        if (server.username && server.password) {
+          const newToken = await loginAndGetToken(server.url, server.username, server.password);
+          if (newToken && newToken !== server.token) {
+            hasChanges = true;
+            return { ...server, token: newToken };
+          }
+        }
+        return server;
+      })
+    );
+
+    if (hasChanges) {
+      set({ servers: refreshedServers });
+      await saveServers(refreshedServers.map(toStoredServerConfig));
+      console.log("[ServerStore] Token 刷新完成");
+    }
+  },
+
+  addServer: async (name, url, username, password) => {
+    // 先登录获取 token
+    const token = await loginToOpenlist(url, username, password);
+    
     const newServer: ServerConfig = {
       id: uuidv4(),
       name,
       url: url.replace(/\/+$/, ""),
       token,
+      username,
+      password,
       createdAt: new Date().toISOString(),
     };
 

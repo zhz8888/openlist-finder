@@ -29,6 +29,8 @@ export interface StoredServerConfig extends Record<string, unknown> {
   name: string;
   url: string;
   token: string;
+  username?: string;
+  password?: string;
   createdAt: string;
 }
 
@@ -57,7 +59,10 @@ export async function loadServers(): Promise<StoredServerConfig[]> {
 
     for (const server of data) {
       try {
-        const decrypted = await decryptObject<StoredServerConfig>(server, ["token"]);
+        const fieldsToDecrypt = ["token"];
+        if (server.username) fieldsToDecrypt.push("username");
+        if (server.password) fieldsToDecrypt.push("password");
+        const decrypted = await decryptObject<StoredServerConfig>(server, fieldsToDecrypt);
         decryptedServers.push(decrypted);
         decryptSuccessCount++;
         console.log(`[TauriStore] 服务器 "${server.name}" 解密成功`);
@@ -88,9 +93,12 @@ export async function saveServers(servers: StoredServerConfig[]): Promise<void> 
     const store = await getServersStore();
     
     const encryptedServers = await Promise.all(
-      servers.map(async (server) => 
-        await encryptObject<StoredServerConfig>(server, ["token"])
-      )
+      servers.map(async (server) => {
+        const fieldsToEncrypt = ["token"];
+        if (server.username) fieldsToEncrypt.push("username");
+        if (server.password) fieldsToEncrypt.push("password");
+        return await encryptObject<StoredServerConfig>(server, fieldsToEncrypt);
+      })
     );
 
     await store.set(SERVERS_KEY, encryptedServers);

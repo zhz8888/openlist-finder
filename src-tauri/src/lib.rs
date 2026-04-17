@@ -55,6 +55,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet,
             start_mcp_server,
+            commands::openlist::login_to_openlist,
             commands::openlist::test_openlist_connection,
             commands::openlist::list_directory,
             commands::openlist::rename_file,
