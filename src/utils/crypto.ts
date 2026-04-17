@@ -39,18 +39,22 @@ export async function tryDecryptToken(token: string): Promise<string> {
 
 async function getOrCreateEncryptionKey(): Promise<string> {
   if (cachedKey) {
+    console.log("[Crypto] 使用缓存的加密密钥");
     return cachedKey;
   }
 
   try {
+    console.log("[Crypto] 开始获取加密密钥");
     let key = await getKey();
     
     if (!key) {
       console.log("[Crypto] 未找到加密密钥，正在生成新密钥");
       key = await generateKey();
-      console.log("[Crypto] 新密钥已生成并保存到系统密钥链");
+      console.log("[Crypto] 新密钥已生成，长度:", key.length);
+      console.log("[Crypto] 新密钥前缀:", key.substring(0, 8) + "...");
     } else {
-      console.log("[Crypto] 从系统密钥链加载加密密钥");
+      console.log("[Crypto] 从系统密钥链加载加密密钥，长度:", key.length);
+      console.log("[Crypto] 密钥前缀:", key.substring(0, 8) + "...");
     }
 
     cachedKey = key;
@@ -91,6 +95,8 @@ export async function encrypt(plainText: string): Promise<string> {
 export async function decrypt(cipherText: string): Promise<string> {
   const key = await getOrCreateEncryptionKey();
   console.log("[Crypto] 开始解密数据");
+  console.log("[Crypto] 密文:", cipherText.substring(0, 50) + "...");
+  console.log("[Crypto] 密钥前缀:", key.substring(0, 8) + "...");
   
   try {
     const parts = cipherText.split(":");
@@ -118,7 +124,16 @@ export async function decrypt(cipherText: string): Promise<string> {
         throw new Error("解密失败：密钥不匹配或数据已损坏");
       }
       
+      // 检查解密结果是否包含非打印字符（可能是密钥不匹配导致的乱码）
+      const hasNonPrintableChars = /[^\x20-\x7E\s]/.test(decrypted);
+      if (hasNonPrintableChars) {
+        console.error("[Crypto] 解密结果包含非打印字符，可能是密钥不匹配");
+        console.error("[Crypto] 解密结果预览:", decrypted.substring(0, 50));
+        throw new Error("解密失败：密钥不匹配或数据已损坏");
+      }
+      
       console.log("[Crypto] 数据解密完成");
+      console.log("[Crypto] 明文长度:", decrypted.length);
       return decrypted;
     } else {
       console.log("[Crypto] 检测到旧格式密文，尝试兼容解密");
@@ -132,6 +147,14 @@ export async function decrypt(cipherText: string): Promise<string> {
       
       if (!decrypted) {
         console.error("[Crypto] 旧格式解密失败");
+        throw new Error("解密失败：密钥不匹配或数据已损坏");
+      }
+      
+      // 检查解密结果是否包含非打印字符
+      const hasNonPrintableChars = /[^\x20-\x7E\s]/.test(decrypted);
+      if (hasNonPrintableChars) {
+        console.error("[Crypto] 旧格式解密结果包含非打印字符，可能是密钥不匹配");
+        console.error("[Crypto] 解密结果预览:", decrypted.substring(0, 50));
         throw new Error("解密失败：密钥不匹配或数据已损坏");
       }
       

@@ -29,8 +29,12 @@ fn read_fallback_key() -> Result<Option<String>, String> {
     if path.exists() {
         let content = fs::read_to_string(&path)
             .map_err(|e| format!("读取密钥文件失败: {}", e))?;
-        Ok(Some(content))
+        // 去除可能的空白字符（换行符、空格等）
+        let trimmed = content.trim().to_string();
+        eprintln!("[Keyring] 从降级方案读取密钥，长度: {}", trimmed.len());
+        Ok(Some(trimmed))
     } else {
+        eprintln!("[Keyring] 降级方案密钥文件不存在");
         Ok(None)
     }
 }
@@ -39,6 +43,7 @@ fn write_fallback_key(key: &str) -> Result<(), String> {
     let path = get_fallback_path()?;
     fs::write(&path, key)
         .map_err(|e| format!("写入密钥文件失败: {}", e))?;
+    eprintln!("[Keyring] 密钥已写入降级方案文件，长度: {}", key.len());
     Ok(())
 }
 
@@ -61,37 +66,72 @@ pub struct KeyringResult {
 
 #[tauri::command]
 pub fn keyring_get_key() -> Result<KeyringResult, String> {
+    // 首先尝试从系统密钥链获取
     match get_entry() {
         Ok(entry) => {
             match entry.get_password() {
-                Ok(password) => Ok(KeyringResult {
-                    success: true,
-                    data: Some(password),
-                    error: None,
-                    fallback_used: false,
-                }),
-                Err(keyring::Error::NoEntry) => Ok(KeyringResult {
-                    success: true,
-                    data: None,
-                    error: None,
-                    fallback_used: false,
-                }),
+                Ok(password) => {
+                    eprintln!("[Keyring] 从系统密钥链成功获取密钥");
+                    Ok(KeyringResult {
+                        success: true,
+                        data: Some(password),
+                        error: None,
+                        fallback_used: false,
+                    })
+                }
+                Err(keyring::Error::NoEntry) => {
+                    eprintln!("[Keyring] 系统密钥链中无条目，尝试降级方案");
+                    // 系统密钥链中没有条目，尝试 fallback
+                    match read_fallback_key() {
+                        Ok(Some(key)) => {
+                            eprintln!("[Keyring] 从降级方案成功获取密钥");
+                            Ok(KeyringResult {
+                                success: true,
+                                data: Some(key),
+                                error: None,
+                                fallback_used: true,
+                            })
+                        }
+                        Ok(None) => {
+                            eprintln!("[Keyring] 降级方案中也无密钥");
+                            Ok(KeyringResult {
+                                success: true,
+                                data: None,
+                                error: None,
+                                fallback_used: true,
+                            })
+                        }
+                        Err(fallback_err) => {
+                            eprintln!("[Keyring] 降级方案读取失败: {}", fallback_err);
+                            Err(format!("获取密钥失败，降级方案也失败: {}", fallback_err))
+                        }
+                    }
+                }
                 Err(e) => {
                     eprintln!("[Keyring] 系统密钥链不可用: {}，尝试降级方案", e);
                     match read_fallback_key() {
-                        Ok(Some(key)) => Ok(KeyringResult {
-                            success: true,
-                            data: Some(key),
-                            error: None,
-                            fallback_used: true,
-                        }),
-                        Ok(None) => Ok(KeyringResult {
-                            success: true,
-                            data: None,
-                            error: None,
-                            fallback_used: true,
-                        }),
-                        Err(fallback_err) => Err(format!("获取密钥失败，降级方案也失败: {} (原始错误: {})", fallback_err, e)),
+                        Ok(Some(key)) => {
+                            eprintln!("[Keyring] 从降级方案成功获取密钥");
+                            Ok(KeyringResult {
+                                success: true,
+                                data: Some(key),
+                                error: None,
+                                fallback_used: true,
+                            })
+                        }
+                        Ok(None) => {
+                            eprintln!("[Keyring] 降级方案中也无密钥");
+                            Ok(KeyringResult {
+                                success: true,
+                                data: None,
+                                error: None,
+                                fallback_used: true,
+                            })
+                        }
+                        Err(fallback_err) => {
+                            eprintln!("[Keyring] 降级方案读取失败: {}", fallback_err);
+                            Err(format!("获取密钥失败，降级方案也失败: {} (原始错误: {})", fallback_err, e))
+                        }
                     }
                 }
             }
@@ -99,19 +139,28 @@ pub fn keyring_get_key() -> Result<KeyringResult, String> {
         Err(e) => {
             eprintln!("[Keyring] 创建密钥链条目失败: {}，尝试降级方案", e);
             match read_fallback_key() {
-                Ok(Some(key)) => Ok(KeyringResult {
-                    success: true,
-                    data: Some(key),
-                    error: None,
-                    fallback_used: true,
-                }),
-                Ok(None) => Ok(KeyringResult {
-                    success: true,
-                    data: None,
-                    error: None,
-                    fallback_used: true,
-                }),
-                Err(fallback_err) => Err(format!("获取密钥失败，降级方案也失败: {} (原始错误: {})", fallback_err, e)),
+                Ok(Some(key)) => {
+                    eprintln!("[Keyring] 从降级方案成功获取密钥");
+                    Ok(KeyringResult {
+                        success: true,
+                        data: Some(key),
+                        error: None,
+                        fallback_used: true,
+                    })
+                }
+                Ok(None) => {
+                    eprintln!("[Keyring] 降级方案中也无密钥");
+                    Ok(KeyringResult {
+                        success: true,
+                        data: None,
+                        error: None,
+                        fallback_used: true,
+                    })
+                }
+                Err(fallback_err) => {
+                    eprintln!("[Keyring] 降级方案读取失败: {}", fallback_err);
+                    Err(format!("获取密钥失败，降级方案也失败: {} (原始错误: {})", fallback_err, e))
+                }
             }
         }
     }
@@ -119,15 +168,21 @@ pub fn keyring_get_key() -> Result<KeyringResult, String> {
 
 #[tauri::command]
 pub fn keyring_set_key(key: String) -> Result<KeyringResult, String> {
+    eprintln!("[Keyring] 开始设置密钥，长度: {}", key.len());
+    eprintln!("[Keyring] 密钥前缀: {}...", &key[..8.min(key.len())]);
+    
     match get_entry() {
         Ok(entry) => {
             match entry.set_password(&key) {
-                Ok(()) => Ok(KeyringResult {
-                    success: true,
-                    data: None,
-                    error: None,
-                    fallback_used: false,
-                }),
+                Ok(()) => {
+                    eprintln!("[Keyring] 密钥已成功写入系统密钥链");
+                    Ok(KeyringResult {
+                        success: true,
+                        data: None,
+                        error: None,
+                        fallback_used: false,
+                    })
+                }
                 Err(e) => {
                     eprintln!("[Keyring] 系统密钥链写入失败: {}，使用降级方案", e);
                     write_fallback_key(&key)?;
