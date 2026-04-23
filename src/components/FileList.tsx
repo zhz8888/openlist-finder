@@ -39,13 +39,13 @@ function isImageFile(file: FileInfo): boolean {
 function getFileIcon(file: FileInfo) {
   if (file.isDir) {
     return (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-warning" fill="currentColor" viewBox="0 0 24 24">
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[var(--color-warning)]" fill="currentColor" viewBox="0 0 24 24">
         <path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
       </svg>
     );
   }
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-info" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[var(--color-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
     </svg>
   );
@@ -338,7 +338,7 @@ export function FileList() {
     <div className="flex-1 flex flex-col overflow-hidden">
       <Breadcrumb />
 
-      <div className="px-4 py-2 bg-base-100 border-b border-base-300 flex gap-2">
+      <div className="px-4 py-2 bg-[var(--color-bg)] border-b border-[var(--color-border)] flex gap-2">
           <input
             type="text"
             placeholder={indexStatus === "available" ? "搜索文件..." : "搜索功能暂时不可用..."}
@@ -440,13 +440,13 @@ export function FileList() {
       <div className="flex-1 overflow-auto">
         {isSearchMode ? (
           results.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-neutral-muted">
+            <div className="flex flex-col items-center justify-center h-full text-[var(--color-neutral-muted)]">
               <p>未找到匹配 "{query}" 的文件</p>
               <button type="button" className="btn btn-ghost btn-sm mt-2" onClick={handleClearSearch}>返回文件列表</button>
             </div>
           ) : (
             <div>
-              <div className="px-4 py-2 text-sm text-neutral">
+              <div className="px-4 py-2 text-sm text-[var(--color-neutral)]">
                 搜索结果：找到 {results.length} 个匹配项
               </div>
               <table className="table table-sm">
@@ -485,10 +485,10 @@ export function FileList() {
                             <span className={file.isDir ? "font-medium" : ""}>{file.name}</span>
                           </div>
                         </td>
-                        <td className="text-xs text-neutral">{doc.dir_path || "/"}</td>
-                        <td className="text-xs text-neutral">{file.isDir ? "—" : formatFileSize(file.size)}</td>
-                        <td className="text-xs text-neutral">{formatDate(file.modified)}</td>
-                        <td className="text-xs text-neutral">{file.isDir ? "文件夹" : "文件"}</td>
+                        <td className="text-xs text-[var(--color-neutral)]">{doc.dir_path || "/"}</td>
+                        <td className="text-xs text-[var(--color-neutral)]">{file.isDir ? "—" : formatFileSize(file.size)}</td>
+                        <td className="text-xs text-[var(--color-neutral)]">{formatDate(file.modified)}</td>
+                        <td className="text-xs text-[var(--color-neutral)]">{file.isDir ? "文件夹" : "文件"}</td>
                       </tr>
                     );
                   })}
@@ -501,7 +501,7 @@ export function FileList() {
             <span className="loading loading-spinner loading-lg"></span>
           </div>
         ) : files.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-neutral-muted">
+          <div className="flex items-center justify-center h-full text-[var(--color-neutral-muted)]">
             <p>未找到文件</p>
           </div>
         ) : (
@@ -559,9 +559,9 @@ export function FileList() {
                       <span className={file.isDir ? "font-medium" : ""}>{file.name}</span>
                     </div>
                   </td>
-                  <td className="text-xs text-neutral">{file.isDir ? "—" : formatFileSize(file.size)}</td>
-                  <td className="text-xs text-neutral">{formatDate(file.modified)}</td>
-                  <td className="text-xs text-neutral">{file.isDir ? "文件夹" : file.type || "文件"}</td>
+                  <td className="text-xs text-[var(--color-neutral)]">{file.isDir ? "—" : formatFileSize(file.size)}</td>
+                  <td className="text-xs text-[var(--color-neutral)]">{formatDate(file.modified)}</td>
+                  <td className="text-xs text-[var(--color-neutral)]">{file.isDir ? "文件夹" : file.type || "文件"}</td>
                 </tr>
               ))}
             </tbody>
@@ -571,7 +571,7 @@ export function FileList() {
 
       {contextMenu && (
         <div
-          className="dropdown-content menu bg-base-100 rounded-box z-50 w-52 p-2 shadow-lg border border-base-300 fixed context-menu"
+          className="dropdown-content menu bg-[var(--color-bg)] rounded-lg z-50 w-52 p-2 shadow-lg border border-[var(--color-border)] fixed context-menu"
           style={{ "--ctx-x": `${contextMenu.x}px`, "--ctx-y": `${contextMenu.y}px` } as React.CSSProperties}
           role="menu"
           aria-label="文件右键菜单"
@@ -591,7 +591,7 @@ export function FileList() {
         <dialog className="modal modal-open">
           <div className="modal-box">
             <h3 className="font-bold text-lg">重命名文件</h3>
-            <p className="py-2 text-sm text-neutral">当前名称：{renameModal.file.name}</p>
+            <p className="py-2 text-sm text-[var(--color-neutral)]">当前名称：{renameModal.file.name}</p>
             <input
               type="text"
               className="input input-bordered w-full"
@@ -612,7 +612,7 @@ export function FileList() {
       {deleteModal && (
         <dialog className="modal modal-open">
           <div className="modal-box">
-            <h3 className="font-bold text-lg text-error">确认删除</h3>
+            <h3 className="font-bold text-lg text-[var(--color-danger)]">确认删除</h3>
             <p className="py-2">确定要删除以下文件吗？</p>
             <ul className="list-disc list-inside text-sm">
               {deleteModal.map((f) => <li key={f.name}>{f.name}</li>)}
@@ -661,7 +661,7 @@ export function FileList() {
               </div>
 
               {isImageFile(previewModal) && (
-                <div className="border border-base-300 rounded-lg p-2 bg-base-200">
+                <div className="border border-[var(--color-border)] rounded-lg p-2 bg-[var(--color-github-surface)]">
                   <img
                     src={`${getActiveServer()?.url}/d${previewModal.path}`}
                     alt={previewModal.name}
@@ -675,7 +675,7 @@ export function FileList() {
               )}
 
               {isTextFile(previewModal) && (
-                <div className="border border-base-300 rounded-lg bg-base-200">
+                <div className="border border-[var(--color-border)] rounded-lg bg-[var(--color-github-surface)]">
                   {previewLoading ? (
                     <div className="flex items-center justify-center py-8">
                       <span className="loading loading-spinner loading-sm"></span>
@@ -692,7 +692,7 @@ export function FileList() {
               )}
 
               {!isTextFile(previewModal) && !isImageFile(previewModal) && (
-                <div className="border border-base-300 rounded-lg p-4 bg-base-200 text-center">
+                <div className="border border-[var(--color-border)] rounded-lg p-4 bg-[var(--color-github-surface)] text-center">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>

@@ -10,7 +10,7 @@
 - **多服务器管理** — 支持配置多个 OpenList 服务器，Token 认证
 - **安全凭证存储** — 使用系统钥匙串安全存储敏感信息（Token、API Key）
 - **日志查看器** — 实时查看应用运行日志，支持按等级筛选和分页加载
-- **主题系统** — GitHub Light / GitHub Dark / 跟随系统，基于 DaisyUI 主题
+- **主题系统** — GitHub Light / GitHub Dark / 跟随系统，基于 Tailwind CSS 自定义主题
 - **文件编辑** — 在线预览与编辑文本文件，支持图片预览
 - **跨平台** — 支持 Windows（NSIS/MSI）和 macOS（DMG）
 
@@ -21,7 +21,7 @@
 | 桌面框架 | Tauri 2 |
 | 前端 | React 19 + TypeScript 5.8 |
 | 构建 | Vite 7 |
-| UI | DaisyUI 5 + Tailwind CSS 4 |
+| UI | Tailwind CSS 4 |
 | 状态管理 | Zustand 5 |
 | 路由 | React Router DOM 7 |
 | Hooks | ahooks 3 |
@@ -70,7 +70,7 @@ openlist-finder/
 │   │   ├── openlist.ts           # OpenList 类型
 │   │   └── index.ts              # 类型导出
 │   ├── styles/
-│   │   └── index.css             # 全局样式与 DaisyUI 主题
+│   │   └── index.css             # 全局样式与 Tailwind CSS 自定义主题
 │   ├── App.tsx                   # 应用入口
 │   └── main.tsx                  # React 入口
 ├── src-tauri/                    # Rust 后端

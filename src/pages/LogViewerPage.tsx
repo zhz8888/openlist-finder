@@ -92,10 +92,10 @@ export function LogViewerPage() {
   };
 
   return (
-    <div className="flex h-screen bg-base-100">
+    <div className="flex h-screen bg-[var(--color-bg)]">
       <div className="flex-1 overflow-hidden p-6 max-w-7xl mx-auto w-full">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-base-content">日志查看器</h1>
+          <h1 className="text-2xl font-bold text-[var(--color-fg)]">日志查看器</h1>
           <div className="flex gap-2">
             <button
               type="button"
@@ -131,10 +131,10 @@ export function LogViewerPage() {
           </div>
         )}
 
-        <div className="card bg-base-200 mb-4">
+        <div className="card bg-[var(--color-github-surface)] mb-4">
           <div className="card-body py-3 px-4">
             <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-sm font-medium text-base-content/70">日志等级：</span>
+              <span className="text-sm font-medium text-[var(--color-fg)]/70">日志等级：</span>
               <div className="flex gap-2 flex-wrap">
                 {LOG_LEVELS.map((level) => (
                   <button
@@ -151,7 +151,7 @@ export function LogViewerPage() {
                   </button>
                 ))}
               </div>
-              <div className="ml-auto text-sm text-base-content/60">
+              <div className="ml-auto text-sm text-[var(--color-fg)]/60">
                 共 {total} 条日志
               </div>
             </div>
@@ -160,11 +160,11 @@ export function LogViewerPage() {
 
         <div
           ref={logContainerRef}
-          className="bg-base-200 rounded-lg overflow-y-auto scrollbar-always"
+          className="bg-[var(--color-github-surface)] rounded-lg overflow-y-auto scrollbar-always"
           style={{ height: "calc(100vh - 280px)" }}
         >
           {logs.length === 0 && !loading ? (
-            <div className="flex items-center justify-center h-full text-base-content/50">
+            <div className="flex items-center justify-center h-full text-[var(--color-fg)]/50">
               <div className="text-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto mb-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -173,23 +173,23 @@ export function LogViewerPage() {
               </div>
             </div>
           ) : (
-            <div className="divide-y divide-base-300">
+            <div className="divide-y divide-[var(--color-border)]">
               {[...logs].reverse().map((log, index) => (
                 <div
                   key={`${log.timestamp}-${index}`}
-                  className="px-4 py-2 hover:bg-base-300/50 transition-colors group"
+                  className="px-4 py-2 hover:bg-[var(--color-github-surface-hover)]/50 transition-colors group"
                 >
                   <div className="flex items-start gap-3">
-                    <span className="text-xs text-base-content/50 font-mono shrink-0 pt-0.5">
+                    <span className="text-xs text-[var(--color-fg)]/50 font-mono shrink-0 pt-0.5">
                       {log.timestamp}
                     </span>
                     <span className={`badge badge-sm ${LEVEL_BADGE[log.level] || "badge-ghost"} shrink-0`}>
                       {log.level}
                     </span>
-                    <span className="text-xs text-base-content/60 font-mono shrink-0 max-w-[150px] truncate" title={log.target}>
+                    <span className="text-xs text-[var(--color-fg)]/60 font-mono shrink-0 max-w-[150px] truncate" title={log.target}>
                       {log.target}
                     </span>
-                    <span className={`text-sm flex-1 break-all ${LEVEL_COLORS[log.level] || "text-base-content"}`}>
+                    <span className={`text-sm flex-1 break-all ${LEVEL_COLORS[log.level] || "text-[var(--color-fg)]"}`}>
                       {log.message}
                     </span>
                     <button
@@ -199,7 +199,7 @@ export function LogViewerPage() {
                       title="复制日志"
                     >
                       {copiedIndex === index ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[var(--color-success)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
                       ) : (

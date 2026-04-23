@@ -7,7 +7,7 @@ export function Breadcrumb() {
   const segments = currentPath.split("/").filter(Boolean);
 
   return (
-    <div className="breadcrumbs text-sm px-4 py-2 bg-base-100 border-b border-base-300">
+    <div className="breadcrumbs text-sm px-4 py-2 bg-[var(--color-bg)] border-b border-[var(--color-border)]">
       <ul>
         <li>
           <button
@@ -42,7 +42,7 @@ export function SortHeader({ field, label, currentSort, onSort }: { field: SortF
   const isActive = currentSort.field === field;
   return (
     <th
-      className="cursor-pointer select-none hover:bg-base-200"
+      className="cursor-pointer select-none hover:bg-[var(--color-github-surface-hover)]"
       onClick={() => onSort(field)}
     >
       <div className="flex items-center gap-1">

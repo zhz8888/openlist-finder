@@ -199,10 +199,10 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="flex h-screen bg-base-100 overflow-y-auto">
+    <div className="flex h-screen bg-[var(--color-bg)] overflow-y-auto">
       <div className="flex-1 p-6 max-w-3xl mx-auto w-full">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-base-content">设置</h1>
+          <h1 className="text-2xl font-bold text-[var(--color-fg)]">设置</h1>
           <a href="#/" className="btn btn-ghost btn-sm">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -212,32 +212,32 @@ export function SettingsPage() {
         </div>
 
         <div className="space-y-8">
-          <section className="card bg-base-200 mb-12">
+          <section className="card bg-[var(--color-github-surface)] mb-12">
             <div className="card-body">
               <h2 className="card-title text-lg">OpenList 服务器</h2>
 
               <div className="space-y-3 mt-2">
                 {servers.map((server) => (
-                  <div key={server.id} className="flex items-center gap-2 bg-base-100 rounded-lg p-3">
+                  <div key={server.id} className="flex items-center gap-2 bg-[var(--color-bg)] rounded-lg p-3">
                     {editingServer === server.id ? (
                       <div className="flex-1 space-y-2">
                         <input
                           type="text"
-                          className="input input-bordered input-sm w-full edit-input"
+                          className="input input-bordered w-full"
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
                           placeholder="名称"
                         />
                         <input
                           type="text"
-                          className="input input-bordered input-sm w-full edit-input"
+                          className="input input-bordered w-full"
                           value={editUrl}
                           onChange={(e) => setEditUrl(e.target.value)}
                           placeholder="地址"
                         />
                         <input
                           type="text"
-                          className="input input-bordered input-sm w-full edit-input"
+                          className="input input-bordered w-full"
                           value={editUsername}
                           onChange={(e) => setEditUsername(e.target.value)}
                           placeholder="用户名"
@@ -246,7 +246,6 @@ export function SettingsPage() {
                           value={editPassword}
                           onChange={setEditPassword}
                           placeholder="密码"
-                          className="edit-input"
                         />
                         {editTestResult && (
                           <div className={`result-message ${editTestResult.includes("成功") ? "result-success" : "result-error"}`}>
@@ -285,11 +284,11 @@ export function SettingsPage() {
                       <>
                         <div className="flex-1 min-w-0">
                           <div className="font-medium truncate">{server.name}</div>
-                          <div className="text-xs text-neutral truncate">{server.url}</div>
+                          <div className="text-xs text-[var(--color-neutral)] truncate">{server.url}</div>
                         </div>
                         <div className="flex gap-1 shrink-0 flex-wrap">
                           <button type="button" className="btn btn-ghost btn-xs" onClick={() => handleStartEdit(server.id)}>编辑</button>
-                          <button type="button" className="btn btn-ghost btn-xs text-error" onClick={() => removeServer(server.id)}>删除</button>
+                          <button type="button" className="btn btn-ghost btn-xs text-[var(--color-danger)]" onClick={() => removeServer(server.id)}>删除</button>
                         </div>
                       </>
                     )}
@@ -297,7 +296,7 @@ export function SettingsPage() {
                 ))}
               </div>
 
-              <div className="divider divider-start text-base-content font-medium">添加新服务器</div>
+              <div className="divider divider-start text-[var(--color-fg)] font-medium">添加新服务器</div>
 
               <div className="space-y-2 mt-2">
                 <input type="text" className="input input-bordered w-full" value={newServerName} onChange={(e) => setNewServerName(e.target.value)} placeholder="服务器名称" />
@@ -332,7 +331,7 @@ export function SettingsPage() {
             </div>
           </section>
 
-          <section className="card bg-base-200 mb-12">
+          <section className="card bg-[var(--color-github-surface)] mb-12">
             <div className="card-body">
               <h2 className="card-title text-lg">Meilisearch 配置</h2>
                 <div className="space-y-2 mt-2">
@@ -398,12 +397,12 @@ export function SettingsPage() {
               </div>
             </section>
 
-          <section className="card bg-base-200 mb-12">
+          <section className="card bg-[var(--color-github-surface)] mb-12">
             <div className="card-body">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex-1">
                   <h2 className="card-title text-lg">MCP 服务器配置</h2>
-                  <p className="text-sm text-base-content/70">
+                  <p className="text-sm text-[var(--color-fg)]/70">
                     配置 Model Context Protocol 服务器，供 AI 助手通过 stdio 连接使用
                   </p>
                 </div>
@@ -419,7 +418,7 @@ export function SettingsPage() {
                   </button>
                   <button
                     type="button"
-                    className="btn btn-sm btn-ghost border border-base-300"
+                    className="btn btn-sm btn-ghost border border-[var(--color-border)]"
                     onClick={() => setMcpExpanded(!mcpExpanded)}
                     aria-expanded={mcpExpanded ? "true" : "false"}
                     aria-label={mcpExpanded ? "收起配置" : "展开配置"}
@@ -439,7 +438,7 @@ export function SettingsPage() {
               </div>
 
               {mcpExpanded && (
-                <div className="space-y-4 mt-4 pt-4 border-t border-base-300">
+                <div className="space-y-4 mt-4 pt-4 border-t border-[var(--color-border)]">
                   <div className="space-y-3">
                     <div className="form-control">
                       <label className="label">
@@ -454,7 +453,7 @@ export function SettingsPage() {
                         disabled={!mcp.enabled}
                       />
                       <label className="label">
-                        <span className="label-text-alt text-base-content/60">显示给连接的 AI 助手</span>
+                        <span className="label-text-alt text-[var(--color-fg)]/60">显示给连接的 AI 助手</span>
                       </label>
                     </div>
 
@@ -490,13 +489,13 @@ export function SettingsPage() {
                         <option value="error">Error（错误）</option>
                       </select>
                       <label className="label">
-                        <span className="label-text-alt text-base-content/60">控制 MCP 服务器的日志输出级别</span>
+                        <span className="label-text-alt text-[var(--color-fg)]/60">控制 MCP 服务器的日志输出级别</span>
                       </label>
                     </div>
 
-                    <div className="bg-base-100 rounded-lg p-4 mt-4">
+                    <div className="bg-[var(--color-bg)] rounded-lg p-4 mt-4">
                       <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-medium text-base-content">Claude Desktop 配置示例</h3>
+                        <h3 className="font-medium text-[var(--color-fg)]">Claude Desktop 配置示例</h3>
                         <button
                           type="button"
                           className="btn btn-ghost btn-xs"
@@ -519,10 +518,10 @@ export function SettingsPage() {
                           复制
                         </button>
                       </div>
-                      <p className="text-sm text-base-content/70 mb-3">
+                      <p className="text-sm text-[var(--color-fg)]/70 mb-3">
                         将以下配置添加到 Claude Desktop 的配置文件中：
                       </p>
-                      <pre className="bg-base-300 p-4 rounded-lg text-xs overflow-x-auto font-mono text-base-content border-2 border-base-300 shadow-inner">
+                      <pre className="bg-[var(--color-github-surface-hover)] p-4 rounded-lg text-xs overflow-x-auto font-mono text-[var(--color-fg)] border-2 border-[var(--color-border)] shadow-inner">
 {JSON.stringify({
   mcpServers: {
     [mcp.serverName]: {
@@ -532,10 +531,10 @@ export function SettingsPage() {
   }
 }, null, 2)}
                       </pre>
-                      <div className="mt-3 text-xs text-base-content/70">
+                      <div className="mt-3 text-xs text-[var(--color-fg)]/70">
                         <p className="font-medium mb-1">配置文件位置：</p>
-                        <p>macOS: <code className="bg-base-300 px-1 rounded">~/Library/Application Support/Claude/claude_desktop_config.json</code></p>
-                        <p className="mt-1">Windows: <code className="bg-base-300 px-1 rounded">%APPDATA%\Claude\claude_desktop_config.json</code></p>
+                        <p>macOS: <code className="bg-[var(--color-github-surface-hover)] px-1 rounded">~/Library/Application Support/Claude/claude_desktop_config.json</code></p>
+                        <p className="mt-1">Windows: <code className="bg-[var(--color-github-surface-hover)] px-1 rounded">%APPDATA%\Claude\claude_desktop_config.json</code></p>
                       </div>
                     </div>
 
@@ -555,10 +554,10 @@ export function SettingsPage() {
             </div>
           </section>
 
-          <section className="card bg-base-200 mb-12" role="region" aria-labelledby="theme-heading">
+          <section className="card bg-[var(--color-github-surface)] mb-12" role="region" aria-labelledby="theme-heading">
             <div className="card-body">
               <h2 className="card-title text-lg" id="theme-heading">主题</h2>
-              <p className="text-sm text-secondary mb-4">选择您偏好的颜色主题</p>
+              <p className="text-sm text-[var(--color-neutral)] mb-4">选择您偏好的颜色主题</p>
               <div
                 role="radiogroup"
                 aria-label="主题选择"
@@ -642,16 +641,16 @@ export function SettingsPage() {
                   <span className="theme-label">跟随系统</span>
                 </button>
               </div>
-              <p className="text-xs text-secondary mt-2" aria-live="polite">
+              <p className="text-xs text-[var(--color-neutral)] mt-2" aria-live="polite">
                 当前：{theme.mode === "system" ? "跟随系统设置" : `使用${theme.mode === "light" ? "浅色" : "深色"}主题`}
               </p>
             </div>
           </section>
 
-          <section className="card bg-base-200 mb-12">
+          <section className="card bg-[var(--color-github-surface)] mb-12">
             <div className="card-body">
               <h2 className="card-title text-lg">系统工具</h2>
-              <p className="text-sm text-secondary mb-4">查看应用程序日志和诊断信息</p>
+              <p className="text-sm text-[var(--color-neutral)] mb-4">查看应用程序日志和诊断信息</p>
               <a
                 href="#/logs"
                 className="btn btn-outline gap-3 justify-start h-auto py-4 px-4 log-viewer-btn"
@@ -661,7 +660,7 @@ export function SettingsPage() {
                 </svg>
                 <div className="text-left">
                   <div className="font-medium">查看程序日志</div>
-                  <div className="text-xs text-base-content/60 font-normal">查看 DEBUG、INFO、WARNING、ERROR 等各级日志</div>
+                  <div className="text-xs text-[var(--color-fg)]/60 font-normal">查看 DEBUG、INFO、WARNING、ERROR 等各级日志</div>
                 </div>
               </a>
             </div>
