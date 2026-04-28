@@ -1,6 +1,5 @@
 import { load } from "@tauri-apps/plugin-store";
 import type { MeilisearchConfig, ThemeConfig, MCPConfig } from "@/types";
-import { encrypt, decrypt, encryptObject, decryptObject } from "@/utils/crypto";
 
 const SERVERS_STORE_FILE = "servers.json";
 const SETTINGS_STORE_FILE = "settings.json";
@@ -22,11 +21,6 @@ async function getSettingsStore() {
     settingsStore = load(SETTINGS_STORE_FILE, { defaults: {} });
   }
   return settingsStore;
-}
-
-function maskSensitiveData(data: string): string {
-  if (!data || data.length <= 8) return "***";
-  return `${data.substring(0, 4)}...${data.substring(data.length - 4)}`;
 }
 
 export interface StoredServerConfig extends Record<string, unknown> {
@@ -56,42 +50,8 @@ export async function loadServers(): Promise<StoredServerConfig[]> {
       return [];
     }
 
-    console.log(`[TauriStore] Found ${data.length} server configurations, starting decryption`);
-    
-    const decryptedServers: StoredServerConfig[] = [];
-    let decryptSuccessCount = 0;
-    let decryptFailedCount = 0;
-
-    for (const server of data) {
-      try {
-        const fieldsToDecrypt = ["token"];
-        if (server.username) fieldsToDecrypt.push("username");
-        if (server.password) fieldsToDecrypt.push("password");
-        const decrypted = await decryptObject<StoredServerConfig>(server, fieldsToDecrypt);
-        decryptedServers.push(decrypted);
-        decryptSuccessCount++;
-        console.log(`[TauriStore] Server "${server.name}" decrypted successfully`);
-      } catch (error) {
-        decryptFailedCount++;
-        console.error(
-          `[TauriStore] Server "${server.name}" (ID: ${server.id}) decryption failed:`,
-          error
-        );
-        console.error("[TauriStore] Raw data:", JSON.stringify({
-          ...server,
-          token: server.token ? maskSensitiveData(String(server.token)) : undefined,
-          username: server.username ? maskSensitiveData(String(server.username)) : undefined,
-          password: server.password ? maskSensitiveData(String(server.password)) : undefined,
-        }, null, 2));
-        decryptedServers.push(server as StoredServerConfig);
-      }
-    }
-
-    console.log(
-      `[TauriStore] Decryption complete: ${decryptSuccessCount} succeeded, ${decryptFailedCount} failed`
-    );
-
-    return decryptedServers;
+    console.log(`[TauriStore] Found ${data.length} server configurations`);
+    return data;
   } catch (error) {
     console.error("[TauriStore] Failed to load server data:", error);
     return [];
@@ -101,17 +61,7 @@ export async function loadServers(): Promise<StoredServerConfig[]> {
 export async function saveServers(servers: StoredServerConfig[]): Promise<void> {
   try {
     const store = await getServersStore();
-    
-    const encryptedServers = await Promise.all(
-      servers.map(async (server) => {
-        const fieldsToEncrypt = ["token"];
-        if (server.username) fieldsToEncrypt.push("username");
-        if (server.password) fieldsToEncrypt.push("password");
-        return await encryptObject<StoredServerConfig>(server, fieldsToEncrypt);
-      })
-    );
-
-    await store.set(SERVERS_KEY, encryptedServers);
+    await store.set(SERVERS_KEY, servers);
     await store.save();
     console.log(`[TauriStore] Server data saved successfully (${servers.length} servers)`);
   } catch (error) {
@@ -129,19 +79,7 @@ export async function loadSettings(): Promise<StoredSettings | null> {
       return null;
     }
 
-    const decrypted = { ...data };
-    if (decrypted.meilisearch && decrypted.meilisearch.apiKey) {
-      try {
-        decrypted.meilisearch = {
-          ...decrypted.meilisearch,
-          apiKey: await decrypt(decrypted.meilisearch.apiKey),
-        };
-      } catch (error) {
-        console.error("[TauriStore] Failed to decrypt Meilisearch API Key:", error);
-      }
-    }
-
-    return decrypted;
+    return data;
   } catch (error) {
     console.error("[TauriStore] Failed to load settings data:", error);
     return null;
@@ -151,16 +89,7 @@ export async function loadSettings(): Promise<StoredSettings | null> {
 export async function saveSettings(settings: StoredSettings): Promise<void> {
   try {
     const store = await getSettingsStore();
-    
-    const encryptedSettings = {
-      ...settings,
-      meilisearch: settings.meilisearch ? {
-        ...settings.meilisearch,
-        apiKey: settings.meilisearch.apiKey ? await encrypt(settings.meilisearch.apiKey) : "",
-      } : settings.meilisearch,
-    };
-
-    await store.set(SETTINGS_KEY, encryptedSettings);
+    await store.set(SETTINGS_KEY, settings);
     await store.save();
     console.log("[TauriStore] Settings data saved successfully");
   } catch (error) {
