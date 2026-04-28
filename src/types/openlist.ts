@@ -3,8 +3,6 @@ export interface ServerConfig {
   name: string;
   url: string;
   token: string;
-  username?: string;
-  password?: string;
   createdAt: string;
 }
 

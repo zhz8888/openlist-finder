@@ -28,8 +28,6 @@ export interface StoredServerConfig extends Record<string, unknown> {
   name: string;
   url: string;
   token: string;
-  username?: string;
-  password?: string;
   createdAt: string;
 }
 

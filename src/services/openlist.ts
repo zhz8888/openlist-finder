@@ -26,27 +26,13 @@ function isTokenInvalidatedError(error: unknown): boolean {
 }
 
 export async function executeWithTokenRefresh<T>(
-  operation: () => Promise<T>,
-  serverId: string,
-  serverUrl: string,
-  username: string,
-  password: string,
-  updateServerToken: (serverId: string, newToken: string) => Promise<void>
+  operation: () => Promise<T>
 ): Promise<T> {
   try {
     return await operation();
   } catch (error) {
-    if (isTokenInvalidatedError(error) && username && password) {
-      console.log(`[OpenList] Token expired, re-authenticating to server: ${serverUrl}`);
-      try {
-        const newToken = await loginToOpenlist(serverUrl, username, password);
-        await updateServerToken(serverId, newToken);
-        console.log(`[OpenList] Token refreshed successfully, retrying operation`);
-        return await operation();
-      } catch (loginError) {
-        console.error(`[OpenList] Token refresh failed:`, loginError);
-        throw loginError;
-      }
+    if (isTokenInvalidatedError(error)) {
+      throw new Error("Token 已过期，请重新添加服务器");
     }
     throw error;
   }

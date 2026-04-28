@@ -178,12 +178,7 @@ export function FileList() {
     setPreviewLoading(true);
     try {
       const info = await executeWithTokenRefresh(
-        () => getFileInfo(server.url, server.token, file.path!),
-        server.id,
-        server.url,
-        server.username || "",
-        server.password || "",
-        useServerStore.getState().updateServerToken
+        () => getFileInfo(server.url, server.token, file.path!)
       );
       if (info.content) {
         setPreviewContent(info.content);
@@ -208,12 +203,7 @@ export function FileList() {
     if (!server) return;
     try {
       await executeWithTokenRefresh(
-        () => renameFile(server.url, server.token, renameModal.file.path!.replace(/\/[^/]+$/, "") || "/", renameModal.file.name, renameModal.newName),
-        server.id,
-        server.url,
-        server.username || "",
-        server.password || "",
-        useServerStore.getState().updateServerToken
+        () => renameFile(server.url, server.token, renameModal.file.path!.replace(/\/[^/]+$/, "") || "/", renameModal.file.name, renameModal.newName)
       );
       setRenameModal(null);
       addToast("success", `已重命名文件 "${renameModal.file.name}" 为 "${renameModal.newName}"`);
@@ -230,12 +220,7 @@ export function FileList() {
     if (!server) return;
     try {
       await executeWithTokenRefresh(
-        () => deleteFiles(server.url, server.token, deleteModal[0].path!.replace(/\/[^/]+$/, "") || "/", deleteModal.map((f) => f.name)),
-        server.id,
-        server.url,
-        server.username || "",
-        server.password || "",
-        useServerStore.getState().updateServerToken
+        () => deleteFiles(server.url, server.token, deleteModal[0].path!.replace(/\/[^/]+$/, "") || "/", deleteModal.map((f) => f.name))
       );
       setDeleteModal(null);
       clearSelection();
@@ -255,22 +240,12 @@ export function FileList() {
       const srcDir = pathModal.files[0].path.replace(/\/[^/]+$/, "") || "/";
       if (pathModal.operation === "copy") {
         await executeWithTokenRefresh(
-          () => copyFiles(server.url, server.token, srcDir, pathModal.targetPath, pathModal.files.map((f) => f.name)),
-          server.id,
-          server.url,
-          server.username || "",
-          server.password || "",
-          useServerStore.getState().updateServerToken
+          () => copyFiles(server.url, server.token, srcDir, pathModal.targetPath, pathModal.files.map((f) => f.name))
         );
         addToast("success", `已复制 ${pathModal.files.length} 个文件到 ${pathModal.targetPath}`);
       } else {
         await executeWithTokenRefresh(
-          () => moveFiles(server.url, server.token, srcDir, pathModal.targetPath, pathModal.files.map((f) => f.name)),
-          server.id,
-          server.url,
-          server.username || "",
-          server.password || "",
-          useServerStore.getState().updateServerToken
+          () => moveFiles(server.url, server.token, srcDir, pathModal.targetPath, pathModal.files.map((f) => f.name))
         );
         addToast("success", `已移动 ${pathModal.files.length} 个文件到 ${pathModal.targetPath}`);
       }

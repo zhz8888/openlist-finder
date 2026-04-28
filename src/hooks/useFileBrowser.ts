@@ -3,7 +3,7 @@ import { useServerStore, useFileBrowserStore } from "@/stores";
 import { listDirectory, executeWithTokenRefresh } from "@/services/openlist";
 
 export function useFileBrowser() {
-  const { getActiveServer, updateServerToken } = useServerStore();
+  const { getActiveServer } = useServerStore();
   const {
     currentPath,
     files,
@@ -37,12 +37,7 @@ export function useFileBrowser() {
 
     try {
       const response = await executeWithTokenRefresh(
-        () => listDirectory(server.url, server.token, targetPath),
-        server.id,
-        server.url,
-        server.username || "",
-        server.password || "",
-        updateServerToken
+        () => listDirectory(server.url, server.token, targetPath)
       );
       setFiles(response.content);
       if (path) {
@@ -53,7 +48,7 @@ export function useFileBrowser() {
     } finally {
       setLoading(false);
     }
-  }, [getActiveServer, currentPath, setFiles, setLoading, setError, setCurrentPath, updateServerToken]);
+  }, [getActiveServer, currentPath, setFiles, setLoading, setError, setCurrentPath]);
 
   return {
     currentPath,

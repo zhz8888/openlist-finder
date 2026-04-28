@@ -13,15 +13,13 @@ export function SettingsPage() {
 
   const [newServerName, setNewServerName] = useState("");
   const [newServerUrl, setNewServerUrl] = useState("");
-  const [newServerUsername, setNewServerUsername] = useState("");
-  const [newServerPassword, setNewServerPassword] = useState("");
+  const [newServerToken, setNewServerToken] = useState("");
   const [testResult, setTestResult] = useState<string | null>(null);
   const [meilisearchTestResult, setMeilisearchTestResult] = useState<string | null>(null);
   const [editingServer, setEditingServer] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editUrl, setEditUrl] = useState("");
-  const [editUsername, setEditUsername] = useState("");
-  const [editPassword, setEditPassword] = useState("");
+  const [editToken, setEditToken] = useState("");
   const [editTestResult, setEditTestResult] = useState<string | null>(null);
   const [mcpExpanded, setMcpExpanded] = useState(false);
 
@@ -53,7 +51,7 @@ export function SettingsPage() {
   };
 
   const handleAddServer = async () => {
-    if (!newServerName || !newServerUrl || !newServerUsername || !newServerPassword) return;
+    if (!newServerName || !newServerUrl || !newServerToken) return;
     try {
       const validation = validateServerUrl(newServerUrl);
       if (!validation.valid) {
@@ -61,12 +59,11 @@ export function SettingsPage() {
         return;
       }
       
-      const newServerId = await addServer(newServerName, validation.normalizedUrl || newServerUrl, newServerUsername, newServerPassword);
+      const newServerId = await addServer(newServerName, validation.normalizedUrl || newServerUrl, newServerToken);
 
       setNewServerName("");
       setNewServerUrl("");
-      setNewServerUsername("");
-      setNewServerPassword("");
+      setNewServerToken("");
 
       if (meilisearch.host && meilisearch.apiKey && newServerId) {
         addToast("info", "正在为新服务器创建索引...");
@@ -78,9 +75,7 @@ export function SettingsPage() {
             id: newServerId,
             name: newServerName,
             url: validation.normalizedUrl || newServerUrl,
-            token: "",
-            username: newServerUsername,
-            password: newServerPassword,
+            token: newServerToken,
             createdAt: new Date().toISOString(),
           } as ServerConfig
         );
@@ -102,14 +97,14 @@ export function SettingsPage() {
   };
 
   const handleTestConnection = async () => {
-    if (!newServerUrl || !newServerUsername || !newServerPassword) return;
+    if (!newServerUrl || !newServerToken) return;
     try {
       const validation = validateServerUrl(newServerUrl);
       if (!validation.valid) {
         setTestResult(`错误：${validation.error}`);
         return;
       }
-      const result = await testConnection(validation.normalizedUrl || newServerUrl, "");
+      const result = await testConnection(validation.normalizedUrl || newServerUrl, newServerToken);
       setTestResult(result.success ? "连接成功！" : `失败：${result.message}`);
     } catch (err) {
       setTestResult(`错误：${err instanceof Error ? err.message : String(err)}`);
@@ -168,20 +163,19 @@ export function SettingsPage() {
     setEditingServer(serverId);
     setEditName(server.name);
     setEditUrl(server.url);
-    setEditUsername(server.username || "");
-    setEditPassword(server.password || "");
+    setEditToken(server.token || "");
     setEditTestResult(null);
   };
 
   const handleTestEditConnection = async () => {
-    if (!editUrl || !editUsername || !editPassword) return;
+    if (!editUrl || !editToken) return;
     try {
       const validation = validateServerUrl(editUrl);
       if (!validation.valid) {
         setEditTestResult(`错误：${validation.error}`);
         return;
       }
-      const result = await testConnection(validation.normalizedUrl || editUrl, "");
+      const result = await testConnection(validation.normalizedUrl || editUrl, editToken);
       setEditTestResult(result.success ? "连接成功！" : `失败：${result.message}`);
     } catch (err) {
       setEditTestResult(`错误：${err instanceof Error ? err.message : String(err)}`);
@@ -190,7 +184,7 @@ export function SettingsPage() {
 
   const handleSaveEdit = () => {
     if (!editingServer) return;
-    updateServer(editingServer, { name: editName, url: editUrl.replace(/\/+$/, ""), username: editUsername, password: editPassword });
+    updateServer(editingServer, { name: editName, url: editUrl.replace(/\/+$/, ""), token: editToken });
     setEditingServer(null);
   };
 
@@ -235,17 +229,10 @@ export function SettingsPage() {
                           onChange={(e) => setEditUrl(e.target.value)}
                           placeholder="地址"
                         />
-                        <input
-                          type="text"
-                          className="input input-bordered w-full"
-                          value={editUsername}
-                          onChange={(e) => setEditUsername(e.target.value)}
-                          placeholder="用户名"
-                        />
                         <PasswordInput
-                          value={editPassword}
-                          onChange={setEditPassword}
-                          placeholder="密码"
+                          value={editToken}
+                          onChange={setEditToken}
+                          placeholder="Token"
                         />
                         {editTestResult && (
                           <div className={`result-message ${editTestResult.includes("成功") ? "result-success" : "result-error"}`}>
@@ -271,7 +258,7 @@ export function SettingsPage() {
                             type="button"
                             className="btn btn-ghost btn-sm"
                             onClick={handleTestEditConnection}
-                            disabled={!editUrl || !editUsername || !editPassword}
+                            disabled={!editUrl || !editToken}
                           >
                             测试连接
                           </button>
@@ -301,15 +288,14 @@ export function SettingsPage() {
               <div className="space-y-2 mt-2">
                 <input type="text" className="input input-bordered w-full" value={newServerName} onChange={(e) => setNewServerName(e.target.value)} placeholder="服务器名称" />
                 <input type="text" className="input input-bordered w-full" value={newServerUrl} onChange={(e) => setNewServerUrl(e.target.value)} placeholder="服务器地址（例如：https://example.com）" />
-                <input type="text" className="input input-bordered w-full" value={newServerUsername} onChange={(e) => setNewServerUsername(e.target.value)} placeholder="用户名" />
                 <PasswordInput
-                  value={newServerPassword}
-                  onChange={setNewServerPassword}
-                  placeholder="密码"
+                  value={newServerToken}
+                  onChange={setNewServerToken}
+                  placeholder="Token"
                 />
                 <div className="flex gap-3 pt-2">
-                  <button type="button" className="btn btn-primary" onClick={handleAddServer} disabled={!newServerName || !newServerUrl || !newServerUsername || !newServerPassword}>添加服务器</button>
-                  <button type="button" className="btn btn-ghost test-connection-btn" onClick={handleTestConnection} disabled={!newServerUrl || !newServerUsername || !newServerPassword}>测试连接</button>
+                  <button type="button" className="btn btn-primary" onClick={handleAddServer} disabled={!newServerName || !newServerUrl || !newServerToken}>添加服务器</button>
+                  <button type="button" className="btn btn-ghost test-connection-btn" onClick={handleTestConnection} disabled={!newServerUrl || !newServerToken}>测试连接</button>
                 </div>
                 {testResult && (
                   <div className={`result-message ${testResult.includes("成功") ? "result-success" : "result-error"}`}>
