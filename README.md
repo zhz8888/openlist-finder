@@ -20,7 +20,7 @@
 |------|------|
 | 桌面框架 | Tauri 2 |
 | 前端 | React 19 + TypeScript 5.8 |
-| 构建 | Vite 7 |
+| 构建 | Vite 7 + Bun |
 | UI | Tailwind CSS 4 |
 | 状态管理 | Zustand 5 |
 | 路由 | React Router DOM 7 |
@@ -97,6 +97,7 @@ openlist-finder/
 │       ├── lib.rs                # Tauri 库入口
 │       └── main.rs               # Rust 主入口
 └── package.json                  # 项目配置
+    ├── bun.lock                  # Bun 锁定文件
 ```
 
 ## 开发
@@ -110,19 +111,19 @@ openlist-finder/
 ### 安装依赖
 
 ```bash
-npm install
+bun install
 ```
 
 ### 开发模式
 
 ```bash
-npm run tauri dev
+bun tauri dev
 ```
 
 ### 构建发布
 
 ```bash
-npm run tauri build
+bun tauri build
 ```
 
 构建产物位于 `src-tauri/target/release/bundle/` 目录下。
