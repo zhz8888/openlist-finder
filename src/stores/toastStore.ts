@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { logger } from "@/utils/logger";
 
 export interface Toast {
   id: string;
@@ -16,9 +17,20 @@ interface ToastState {
 
 let toastCounter = 0;
 
+const TOAST_LEVEL_MAP: Record<Toast["type"], "info" | "warn" | "error"> = {
+  success: "info",
+  info: "info",
+  warning: "warn",
+  error: "error",
+};
+
 export const useToastStore = create<ToastState>()((set, get) => ({
   toasts: [],
   addToast: (type, message) => {
+    // Log toast notifications to the logging system
+    const level = TOAST_LEVEL_MAP[type];
+    logger[level](`[Toast] ${message}`);
+
     const id = `toast-${++toastCounter}`;
     set((state) => ({
       toasts: [...state.toasts, { id, type, message, isFading: false }],

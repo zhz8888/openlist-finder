@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { useServerStore, useFileBrowserStore } from "@/stores";
 import { listDirectory, executeWithTokenRefresh } from "@/services/openlist";
+import { logger } from "@/utils/logger";
 
 export function useFileBrowser() {
   const { getActiveServer } = useServerStore();
@@ -27,6 +28,7 @@ export function useFileBrowser() {
   const loadFiles = useCallback(async (path?: string) => {
     const server = getActiveServer();
     if (!server) {
+      logger.warn("[OpenList] No active server selected");
       setError("[OpenList] 未选择活动服务器");
       return;
     }
@@ -36,15 +38,19 @@ export function useFileBrowser() {
     setError(null);
 
     try {
+      logger.debug(`[OpenList] Loading directory: ${server.url}${targetPath}`);
       const response = await executeWithTokenRefresh(
         () => listDirectory(server.url, server.token, targetPath)
       );
+      logger.debug(`[OpenList] Directory loaded: ${response.content.length} items`);
       setFiles(response.content);
       if (path) {
         setCurrentPath(path);
       }
     } catch (err) {
-      setError(`[OpenList] ${err instanceof Error ? err.message : String(err)}`);
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      logger.error(`[OpenList] Failed to load directory: ${errorMsg}`);
+      setError(`[OpenList] ${errorMsg}`);
     } finally {
       setLoading(false);
     }

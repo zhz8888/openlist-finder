@@ -4,6 +4,7 @@ import { testConnection, validateServerUrl } from "@/services/openlist";
 import { testConnection as testMeilisearchConnection } from "@/services/meilisearch";
 import { createIndexesForAllServers, createIndexForServer } from "@/services/indexManager";
 import { PasswordInput } from "@/components";
+import { logger } from "@/utils/logger";
 import type { ThemeConfig, MCPLogLevel, ServerConfig } from "@/types";
 
 export function SettingsPage() {
@@ -53,19 +54,23 @@ export function SettingsPage() {
   const handleAddServer = async () => {
     if (!newServerName || !newServerUrl || !newServerToken) return;
     try {
+      logger.info(`[AddServer] Starting to add server: ${newServerName} (${newServerUrl})`);
       const validation = validateServerUrl(newServerUrl);
       if (!validation.valid) {
+        logger.error(`[AddServer] URL validation failed: ${validation.error}`);
         setTestResult(`错误：${validation.error}`);
         return;
       }
       
       const newServerId = await addServer(newServerName, validation.normalizedUrl || newServerUrl, newServerToken);
+      logger.info(`[AddServer] Server added successfully, ID: ${newServerId}`);
 
       setNewServerName("");
       setNewServerUrl("");
       setNewServerToken("");
 
       if (meilisearch.host && meilisearch.apiKey && newServerId) {
+        logger.info(`[AddServer] Creating index for new server...`);
         addToast("info", "正在为新服务器创建索引...");
         const indexResult = await createIndexForServer(
           meilisearch.host,
@@ -81,45 +86,62 @@ export function SettingsPage() {
         );
 
         if (indexResult.success) {
+          logger.info(`[AddServer] Index "${indexResult.indexUid}" created successfully`);
           setTestResult(`服务器添加成功！索引 "${indexResult.indexUid}" 已创建`);
           addToast("success", `索引 "${indexResult.indexUid}" 创建成功`);
         } else {
+          logger.warn(`[AddServer] Index creation failed: ${indexResult.error}`);
           setTestResult(`服务器添加成功，但索引创建失败: ${indexResult.error}`);
           addToast("warning", `索引创建失败: ${indexResult.error}`);
         }
       } else {
+        logger.info(`[AddServer] Meilisearch not configured, skipping index creation`);
         setTestResult("服务器添加成功！（Meilisearch 未配置，跳过索引创建）");
         addToast("success", "服务器添加成功");
       }
     } catch (err) {
-      setTestResult(`错误：${err instanceof Error ? err.message : String(err)}`);
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      logger.error(`[AddServer] Exception: ${errorMsg}`);
+      setTestResult(`错误：${errorMsg}`);
     }
   };
 
   const handleTestConnection = async () => {
     if (!newServerUrl || !newServerToken) return;
     try {
+      logger.info(`[OpenListConnectionTest] Starting connection test: ${newServerUrl}`);
       const validation = validateServerUrl(newServerUrl);
       if (!validation.valid) {
+        logger.error(`[OpenListConnectionTest] URL validation failed: ${validation.error}`);
         setTestResult(`错误：${validation.error}`);
         return;
       }
       const result = await testConnection(validation.normalizedUrl || newServerUrl, newServerToken);
+      if (result.success) {
+        logger.info(`[OpenListConnectionTest] Connection successful: ${validation.normalizedUrl || newServerUrl}`);
+      } else {
+        logger.warn(`[OpenListConnectionTest] Connection failed: ${result.message}`);
+      }
       setTestResult(result.success ? "连接成功！" : `失败：${result.message}`);
     } catch (err) {
-      setTestResult(`错误：${err instanceof Error ? err.message : String(err)}`);
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      logger.error(`[OpenListConnectionTest] Exception: ${errorMsg}`);
+      setTestResult(`错误：${errorMsg}`);
     }
   };
 
   const handleTestMeilisearch = async () => {
     if (!meilisearch.host || !meilisearch.apiKey) return;
     try {
+      logger.info(`[MeilisearchConnectionTest] Starting connection test: ${meilisearch.host}`);
       const result = await testMeilisearchConnection(meilisearch.host, meilisearch.apiKey);
       if (result) {
+        logger.info(`[MeilisearchConnectionTest] Connection successful, creating indexes for all servers...`);
         setMeilisearchTestResult("连接成功！正在为所有服务器创建索引...");
         addToast("info", "Meilisearch 连接成功，正在创建索引...");
 
         if (servers.length > 0) {
+          logger.debug(`[MeilisearchIndexCreation] Starting index creation for ${servers.length} servers`);
           const indexResults = await createIndexesForAllServers(
             meilisearch.host,
             meilisearch.apiKey,
@@ -131,6 +153,7 @@ export function SettingsPage() {
           const failCount = indexResults.filter((r) => !r.success).length;
 
           if (failCount === 0) {
+            logger.info(`[MeilisearchIndexCreation] All successful, total ${successCount} indexes`);
             setMeilisearchTestResult(`连接成功！已为 ${successCount} 个服务器创建索引`);
             addToast("success", `已为 ${successCount} 个服务器创建索引`);
           } else {
@@ -138,22 +161,27 @@ export function SettingsPage() {
               .filter((r) => !r.success)
               .map((r) => r.serverName)
               .join(", ");
+            logger.warn(`[MeilisearchIndexCreation] ${successCount} succeeded, ${failCount} failed: ${failedNames}`);
             setMeilisearchTestResult(
               `连接成功！${successCount} 个索引创建成功，${failCount} 个失败: ${failedNames}`
             );
             addToast("warning", `${failCount} 个索引创建失败，请查看日志`);
           }
         } else {
+          logger.info(`[MeilisearchIndexCreation] No servers added yet`);
           setMeilisearchTestResult("连接成功！当前没有已添加的服务器");
           addToast("success", "Meilisearch 连接成功");
         }
       } else {
+        logger.error(`[MeilisearchConnectionTest] Connection failed`);
         setMeilisearchTestResult("连接失败");
         addToast("error", "Meilisearch 连接失败");
       }
     } catch (err) {
-      setMeilisearchTestResult(`错误：${err instanceof Error ? err.message : String(err)}`);
-      addToast("error", `Meilisearch 连接错误：${err instanceof Error ? err.message : String(err)}`);
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      logger.error(`[MeilisearchConnectionTest] Exception: ${errorMsg}`);
+      setMeilisearchTestResult(`错误：${errorMsg}`);
+      addToast("error", `Meilisearch 连接错误：${errorMsg}`);
     }
   };
 
@@ -170,15 +198,24 @@ export function SettingsPage() {
   const handleTestEditConnection = async () => {
     if (!editUrl || !editToken) return;
     try {
+      logger.info(`[OpenListEditConnectionTest] Starting connection test: ${editUrl}`);
       const validation = validateServerUrl(editUrl);
       if (!validation.valid) {
+        logger.error(`[OpenListEditConnectionTest] URL validation failed: ${validation.error}`);
         setEditTestResult(`错误：${validation.error}`);
         return;
       }
       const result = await testConnection(validation.normalizedUrl || editUrl, editToken);
+      if (result.success) {
+        logger.info(`[OpenListEditConnectionTest] Connection successful: ${validation.normalizedUrl || editUrl}`);
+      } else {
+        logger.warn(`[OpenListEditConnectionTest] Connection failed: ${result.message}`);
+      }
       setEditTestResult(result.success ? "连接成功！" : `失败：${result.message}`);
     } catch (err) {
-      setEditTestResult(`错误：${err instanceof Error ? err.message : String(err)}`);
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      logger.error(`[OpenListEditConnectionTest] Exception: ${errorMsg}`);
+      setEditTestResult(`错误：${errorMsg}`);
     }
   };
 

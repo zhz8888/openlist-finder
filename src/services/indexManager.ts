@@ -1,4 +1,5 @@
 import { createIndex, updateFilterable } from "@/services/meilisearch";
+import { logger } from "@/utils/logger";
 import type { ServerConfig, TaskInfo } from "@/types";
 
 export interface IndexCreationResult {
@@ -35,19 +36,19 @@ async function createIndexWithRetry(
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      console.log(`[IndexManager] Creating index "${indexUid}" for server "${serverName}" (${serverId}), attempt ${attempt}/${maxRetries}`);
+      logger.debug(`[IndexManager] Creating index "${indexUid}" (server: ${serverName}), attempt ${attempt}/${maxRetries}`);
 
       const taskInfo = await createIndex(host, apiKey, indexUid);
 
-      console.log(`[IndexManager] Index "${indexUid}" creation request submitted, task UID: ${taskInfo.uid}`);
+      logger.debug(`[IndexManager] Index "${indexUid}" creation request submitted, task UID: ${taskInfo.uid}`);
 
       await delay(1000);
 
       try {
         await updateFilterable(host, apiKey, indexUid);
-        console.log(`[IndexManager] Filterable attributes for index "${indexUid}" updated`);
+        logger.debug(`[IndexManager] Filterable attributes for index "${indexUid}" updated`);
       } catch (filterError) {
-        console.warn(`[IndexManager] Failed to update filterable attributes (non-fatal):`, filterError);
+        logger.warn(`[IndexManager] Failed to update filterable attributes for index "${indexUid}" (non-fatal): ${filterError instanceof Error ? filterError.message : String(filterError)}`);
       }
 
       return {
@@ -59,11 +60,12 @@ async function createIndexWithRetry(
         retryCount: attempt - 1,
       };
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      logger.warn(`[IndexManager] Index "${indexUid}" creation failed (attempt ${attempt}/${maxRetries}): ${errorMsg}`);
       lastError = error instanceof Error ? error : new Error(String(error));
-      console.warn(`[IndexManager] Index "${indexUid}" creation failed (attempt ${attempt}/${maxRetries}):`, lastError.message);
 
       if (attempt < maxRetries) {
-        console.log(`[IndexManager] Waiting ${RETRY_DELAY_MS / 1000} seconds before retry...`);
+        logger.debug(`[IndexManager] Waiting ${RETRY_DELAY_MS / 1000}s before retry...`);
         await delay(RETRY_DELAY_MS);
       }
     }
@@ -86,11 +88,11 @@ export async function createIndexesForAllServers(
   servers: ServerConfig[]
 ): Promise<IndexCreationResult[]> {
   if (!host || !apiKey || servers.length === 0) {
-    console.log("[IndexManager] Skipping index creation: incomplete parameters");
+    logger.debug("[IndexManager] Skipping index creation: incomplete parameters");
     return [];
   }
 
-  console.log(`[IndexManager] Starting index creation for ${servers.length} servers`);
+  logger.info(`[IndexManager] Starting index creation for ${servers.length} servers`);
 
   const results: IndexCreationResult[] = [];
 
@@ -103,7 +105,7 @@ export async function createIndexesForAllServers(
   const successCount = results.filter((r) => r.success).length;
   const failCount = results.filter((r) => !r.success).length;
 
-  console.log(`[IndexManager] Index creation completed: ${successCount} succeeded, ${failCount} failed`);
+  logger.info(`[IndexManager] Index creation completed: ${successCount} succeeded, ${failCount} failed`);
 
   return results;
 }
@@ -115,7 +117,7 @@ export async function createIndexForServer(
   server: ServerConfig
 ): Promise<IndexCreationResult> {
   if (!host || !apiKey) {
-    console.log("[IndexManager] Skipping index creation: Meilisearch configuration incomplete");
+    logger.debug("[IndexManager] Skipping index creation: Meilisearch configuration incomplete");
     return {
       serverId: server.id,
       serverName: server.name,
@@ -127,14 +129,14 @@ export async function createIndexForServer(
   }
 
   const indexUid = generateIndexUid(indexPrefix, server.id);
-  console.log(`[IndexManager] Creating index "${indexUid}" for new server "${server.name}"`);
+  logger.info(`[IndexManager] Creating index "${indexUid}" for new server "${server.name}"`);
 
   const result = await createIndexWithRetry(host, apiKey, indexUid, server.id, server.name);
 
   if (result.success) {
-    console.log(`[IndexManager] Index creation successful for server "${server.name}"`);
+    logger.info(`[IndexManager] Index creation successful for server "${server.name}"`);
   } else {
-    console.error(`[IndexManager] Index creation failed for server "${server.name}":`, result.error);
+    logger.error(`[IndexManager] Index creation failed for server "${server.name}": ${result.error}`);
   }
 
   return result;

@@ -5,6 +5,7 @@ import type { IndexAvailabilityStatus } from "@/stores/searchStore";
 import { renameFile, deleteFiles, copyFiles, moveFiles, getFileInfo, executeWithTokenRefresh } from "@/services/openlist";
 import { search as searchMeilisearch, getStats } from "@/services/meilisearch";
 import { Breadcrumb, SortHeader } from "./Breadcrumb";
+import { logger } from "@/utils/logger";
 import type { FileInfo, SortField, MeilisearchDoc } from "@/types";
 
 function formatFileSize(bytes: number): string {
@@ -114,19 +115,24 @@ export function FileList() {
     try {
       const prefix = meilisearch.indexPrefix || "openlist";
       const indexUid = `${prefix}-${server.id}`;
+      logger.debug(`[Meilisearch] Checking index status for "${indexUid}"`);
       const stats = await getStats(meilisearch.host, meilisearch.apiKey, indexUid);
       
       if (stats.isIndexing) {
+        logger.debug(`[Meilisearch] Index "${indexUid}" is currently indexing`);
         return "indexing";
       }
       
       if (stats.numberOfDocuments === 0) {
+        logger.debug(`[Meilisearch] Index "${indexUid}" has no documents`);
         return "unavailable";
       }
       
+      logger.debug(`[Meilisearch] Index "${indexUid}" available with ${stats.numberOfDocuments} documents`);
       return "available";
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      logger.error(`[Meilisearch] Failed to check index status: ${msg}`);
       setIndexErrorMessage(msg);
       return "error";
     }
@@ -177,15 +183,19 @@ export function FileList() {
     if (!server || !file.path) return;
     setPreviewLoading(true);
     try {
+      logger.debug(`[OpenList] Loading preview content for "${file.name}"`);
       const info = await executeWithTokenRefresh(
         () => getFileInfo(server.url, server.token, file.path!)
       );
       if (info.content) {
+        logger.debug(`[OpenList] Preview content loaded for "${file.name}"`);
         setPreviewContent(info.content);
       } else {
+        logger.debug(`[OpenList] No text content for preview of "${file.name}"`);
         setPreviewContent("（无文本内容可供预览）");
       }
     } catch {
+      logger.error(`[OpenList] Failed to load preview content for "${file.name}"`);
       setPreviewContent("（加载文件内容失败）");
     } finally {
       setPreviewLoading(false);
@@ -202,14 +212,17 @@ export function FileList() {
     const server = getActiveServer();
     if (!server) return;
     try {
+      logger.info(`[OpenList] Renaming file "${renameModal.file.name}" to "${renameModal.newName}"`);
       await executeWithTokenRefresh(
         () => renameFile(server.url, server.token, renameModal.file.path!.replace(/\/[^/]+$/, "") || "/", renameModal.file.name, renameModal.newName)
       );
+      logger.info(`[OpenList] File renamed successfully`);
       setRenameModal(null);
       addToast("success", `已重命名文件 "${renameModal.file.name}" 为 "${renameModal.newName}"`);
       loadFiles();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      logger.error(`[OpenList] Rename failed: ${msg}`);
       addToast("error", `[OpenList] 重命名失败：${msg}`);
     }
   }, [renameModal, getActiveServer, loadFiles, addToast]);
@@ -219,15 +232,19 @@ export function FileList() {
     const server = getActiveServer();
     if (!server) return;
     try {
+      const fileNames = deleteModal.map((f) => f.name);
+      logger.info(`[OpenList] Deleting ${deleteModal.length} file(s): ${fileNames.join(", ")}`);
       await executeWithTokenRefresh(
-        () => deleteFiles(server.url, server.token, deleteModal[0].path!.replace(/\/[^/]+$/, "") || "/", deleteModal.map((f) => f.name))
+        () => deleteFiles(server.url, server.token, deleteModal[0].path!.replace(/\/[^/]+$/, "") || "/", fileNames)
       );
+      logger.info(`[OpenList] ${deleteModal.length} file(s) deleted successfully`);
       setDeleteModal(null);
       clearSelection();
       addToast("success", `已删除 ${deleteModal.length} 个文件`);
       loadFiles();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      logger.error(`[OpenList] Delete failed: ${msg}`);
       addToast("error", `[OpenList] 删除失败：${msg}`);
     }
   }, [deleteModal, getActiveServer, loadFiles, clearSelection, addToast]);
@@ -238,21 +255,27 @@ export function FileList() {
     if (!server) return;
     try {
       const srcDir = pathModal.files[0].path.replace(/\/[^/]+$/, "") || "/";
+      const fileNames = pathModal.files.map((f) => f.name);
       if (pathModal.operation === "copy") {
+        logger.info(`[OpenList] Copying ${pathModal.files.length} file(s) to ${pathModal.targetPath}`);
         await executeWithTokenRefresh(
-          () => copyFiles(server.url, server.token, srcDir, pathModal.targetPath, pathModal.files.map((f) => f.name))
+          () => copyFiles(server.url, server.token, srcDir, pathModal.targetPath, fileNames)
         );
+        logger.info(`[OpenList] ${pathModal.files.length} file(s) copied successfully`);
         addToast("success", `已复制 ${pathModal.files.length} 个文件到 ${pathModal.targetPath}`);
       } else {
+        logger.info(`[OpenList] Moving ${pathModal.files.length} file(s) to ${pathModal.targetPath}`);
         await executeWithTokenRefresh(
-          () => moveFiles(server.url, server.token, srcDir, pathModal.targetPath, pathModal.files.map((f) => f.name))
+          () => moveFiles(server.url, server.token, srcDir, pathModal.targetPath, fileNames)
         );
+        logger.info(`[OpenList] ${pathModal.files.length} file(s) moved successfully`);
         addToast("success", `已移动 ${pathModal.files.length} 个文件到 ${pathModal.targetPath}`);
       }
       setPathModal(null);
       loadFiles();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      logger.error(`[OpenList] ${pathModal.operation === "copy" ? "Copy" : "Move"} failed: ${msg}`);
       addToast("error", `[OpenList] ${pathModal.operation === "copy" ? "复制" : "移动"}失败：${msg}`);
     }
   }, [pathModal, getActiveServer, loadFiles, addToast]);
@@ -265,6 +288,7 @@ export function FileList() {
     }
 
     if (indexStatus !== "available") {
+      logger.warn("[Meilisearch] Search attempted but index not available");
       addToast("warning", "[Meilisearch] 搜索功能暂时不可用，请等待索引构建完成后再试");
       return;
     }
@@ -274,11 +298,14 @@ export function FileList() {
     try {
       const prefix = meilisearch.indexPrefix || "openlist";
       const indexUid = `${prefix}-${server.id}`;
+      logger.info(`[Meilisearch] Searching for "${query}" in index "${indexUid}"`);
       const result = await searchMeilisearch(meilisearch.host, meilisearch.apiKey, indexUid, query);
+      logger.info(`[Meilisearch] Search completed: ${result.hits.length} results`);
       setResults(result.hits);
       setIsSearchMode(true);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      logger.error(`[Meilisearch] Search failed: ${msg}`);
       setSearchError(msg);
       addToast("error", `[Meilisearch] 搜索失败：${msg}`);
     }
