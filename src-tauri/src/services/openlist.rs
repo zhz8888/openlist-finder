@@ -85,14 +85,16 @@ impl OpenListService {
             .map_err(|e| format!("Request failed: {}", e))?;
 
         if !response.status().is_success() {
-            return Err(format!("Server returned status: {}", response.status()));
+            let status = response.status();
+            let error_text = response.text().await.unwrap_or_default();
+            return Err(format!("Server returned HTTP {}: {}", status, error_text));
         }
 
         let data: serde_json::Value = response.json().await.map_err(|e| format!("Parse error: {}", e))?;
         let code = data.get("code").and_then(|c| c.as_i64()).unwrap_or(-1);
         if code != 200 {
             let message = data.get("message").and_then(|m| m.as_str()).unwrap_or("Unknown error");
-            return Err(message.to_string());
+            return Err(format!("OpenList API error (code {}): {}", code, message));
         }
 
         let content = data.get("data").and_then(|d| d.get("content"))
@@ -140,6 +142,12 @@ impl OpenListService {
             .await
             .map_err(|e| format!("Request failed: {}", e))?;
 
+        if !response.status().is_success() {
+            let status = response.status();
+            let error_text = response.text().await.unwrap_or_default();
+            return Err(format!("Server returned HTTP {}: {}", status, error_text));
+        }
+
         self.parse_operation_response(response).await
     }
 
@@ -158,6 +166,12 @@ impl OpenListService {
             .send()
             .await
             .map_err(|e| format!("Request failed: {}", e))?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let error_text = response.text().await.unwrap_or_default();
+            return Err(format!("Server returned HTTP {}: {}", status, error_text));
+        }
 
         self.parse_operation_response(response).await
     }
@@ -179,6 +193,12 @@ impl OpenListService {
             .await
             .map_err(|e| format!("Request failed: {}", e))?;
 
+        if !response.status().is_success() {
+            let status = response.status();
+            let error_text = response.text().await.unwrap_or_default();
+            return Err(format!("Server returned HTTP {}: {}", status, error_text));
+        }
+
         self.parse_operation_response(response).await
     }
 
@@ -198,6 +218,12 @@ impl OpenListService {
             .send()
             .await
             .map_err(|e| format!("Request failed: {}", e))?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let error_text = response.text().await.unwrap_or_default();
+            return Err(format!("Server returned HTTP {}: {}", status, error_text));
+        }
 
         self.parse_operation_response(response).await
     }
@@ -222,14 +248,16 @@ impl OpenListService {
             .map_err(|e| format!("Request failed: {}", e))?;
 
         if !response.status().is_success() {
-            return Err(format!("Server returned status: {}", response.status()));
+            let status = response.status();
+            let error_text = response.text().await.unwrap_or_default();
+            return Err(format!("Server returned HTTP {}: {}", status, error_text));
         }
 
         let data: serde_json::Value = response.json().await.map_err(|e| format!("Parse error: {}", e))?;
         let code = data.get("code").and_then(|c| c.as_i64()).unwrap_or(-1);
         if code != 200 {
             let message = data.get("message").and_then(|m| m.as_str()).unwrap_or("Unknown error");
-            return Err(message.to_string());
+            return Err(format!("OpenList API error (code {}): {}", code, message));
         }
 
         let file_info: FileInfo = serde_json::from_value(
@@ -241,12 +269,18 @@ impl OpenListService {
 
     async fn parse_operation_response(&self, response: reqwest::Response) -> Result<FileOperationResult, String> {
         if !response.status().is_success() {
-            return Err(format!("Server returned status: {}", response.status()));
+            let status = response.status();
+            let error_text = response.text().await.unwrap_or_default();
+            return Err(format!("Server returned HTTP {}: {}", status, error_text));
         }
 
         let data: serde_json::Value = response.json().await.map_err(|e| format!("Parse error: {}", e))?;
         let code = data.get("code").and_then(|c| c.as_i64()).unwrap_or(-1);
         let message = data.get("message").and_then(|m| m.as_str()).unwrap_or("Unknown error").to_string();
+
+        if code != 200 {
+            return Err(format!("OpenList API error (code {}): {}", code, message));
+        }
 
         Ok(FileOperationResult {
             success: code == 200,

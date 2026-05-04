@@ -221,8 +221,11 @@ export function SettingsPage() {
 
   const handleSaveEdit = () => {
     if (!editingServer) return;
+    logger.info(`[UpdateServer] Updating server ${editingServer} with new token`);
     updateServer(editingServer, { name: editName, url: editUrl.replace(/\/+$/, ""), token: editToken });
+    logger.info(`[UpdateServer] Server updated successfully`);
     setEditingServer(null);
+    addToast("success", "服务器配置已更新");
   };
 
   const handleThemeChange = (mode: "light" | "dark" | "system") => {

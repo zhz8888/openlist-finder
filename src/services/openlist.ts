@@ -22,7 +22,9 @@ function isTokenInvalidatedError(error: unknown): boolean {
   return errorMessage.toLowerCase().includes("invalidated") || 
          errorMessage.toLowerCase().includes("token expired") ||
          errorMessage.toLowerCase().includes("unauthorized") ||
-         errorMessage.toLowerCase().includes("401");
+         errorMessage.toLowerCase().includes("401") ||
+         errorMessage.toLowerCase().includes("token is invalid") ||
+         errorMessage.toLowerCase().includes("token已过期");
 }
 
 export async function executeWithTokenRefresh<T>(
@@ -32,7 +34,7 @@ export async function executeWithTokenRefresh<T>(
     return await operation();
   } catch (error) {
     if (isTokenInvalidatedError(error)) {
-      throw new Error("Token 已过期，请重新添加服务器");
+      throw new Error("Token 已过期，请在设置中更新该服务器的 Token 后重试");
     }
     throw error;
   }
