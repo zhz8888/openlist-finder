@@ -228,6 +228,21 @@ export function SettingsPage() {
     addToast("success", "服务器配置已更新");
   };
 
+  const handleRemoveServer = async (serverId: string) => {
+    const server = servers.find((s) => s.id === serverId);
+    const serverName = server?.name || "服务器";
+    try {
+      logger.info(`[RemoveServer] Removing server: ${serverName} (${serverId})`);
+      await removeServer(serverId);
+      logger.info(`[RemoveServer] Server removed successfully: ${serverName}`);
+      addToast("success", `已删除服务器 "${serverName}"`);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      logger.error(`[RemoveServer] Failed to remove server: ${errorMsg}`);
+      addToast("error", `删除服务器失败：${errorMsg}`);
+    }
+  };
+
   const handleThemeChange = (mode: "light" | "dark" | "system") => {
     setTheme({ mode } as ThemeConfig);
   };
@@ -315,7 +330,7 @@ export function SettingsPage() {
                         </div>
                         <div className="flex gap-1 shrink-0 flex-wrap">
                           <button type="button" className="btn btn-ghost btn-xs" onClick={() => handleStartEdit(server.id)}>编辑</button>
-                          <button type="button" className="btn btn-ghost btn-xs text-[var(--color-danger)]" onClick={() => removeServer(server.id)}>删除</button>
+                          <button type="button" className="btn btn-ghost btn-xs text-[var(--color-danger)]" onClick={() => handleRemoveServer(server.id)}>删除</button>
                         </div>
                       </>
                     )}
