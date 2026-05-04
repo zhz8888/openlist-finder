@@ -45,17 +45,31 @@ impl OpenListService {
     pub async fn test_connection(&self, url: &str, token: &str) -> Result<ServerTestResult, String> {
         let response = self.client
             .get(format!("{}/api/me", url.trim_end_matches('/')))
-            .header("Authorization", format!("Bearer {}", token))
+            .header("Authorization", token)
             .send()
             .await
             .map_err(|e| format!("Connection failed: {}", e))?;
 
         if response.status().is_success() {
-            Ok(ServerTestResult {
-                success: true,
-                message: "Connection successful".to_string(),
-                version: None,
-            })
+            let status = response.status();
+            let body: serde_json::Value = response.json().await.map_err(|e| format!("Parse error: {}", e))?;
+            let code = body.get("code").and_then(|c| c.as_i64()).unwrap_or(-1);
+            
+            if code == 200 {
+                let version = body.get("data").and_then(|d| d.get("version")).and_then(|v| v.as_str()).map(|s| s.to_string());
+                Ok(ServerTestResult {
+                    success: true,
+                    message: "Connection successful".to_string(),
+                    version,
+                })
+            } else {
+                let message = body.get("message").and_then(|m| m.as_str()).unwrap_or("Unknown error");
+                Ok(ServerTestResult {
+                    success: false,
+                    message: message.to_string(),
+                    version: None,
+                })
+            }
         } else {
             Ok(ServerTestResult {
                 success: false,
@@ -77,7 +91,7 @@ impl OpenListService {
 
         let response = self.client
             .post(&api_path)
-            .header("Authorization", format!("Bearer {}", token))
+            .header("Authorization", token)
             .header("Content-Type", "application/json")
             .json(&body)
             .send()
@@ -135,7 +149,7 @@ impl OpenListService {
 
         let response = self.client
             .post(&api_path)
-            .header("Authorization", format!("Bearer {}", token))
+            .header("Authorization", token)
             .header("Content-Type", "application/json")
             .json(&body)
             .send()
@@ -160,7 +174,7 @@ impl OpenListService {
 
         let response = self.client
             .post(&api_path)
-            .header("Authorization", format!("Bearer {}", token))
+            .header("Authorization", token)
             .header("Content-Type", "application/json")
             .json(&body)
             .send()
@@ -186,7 +200,7 @@ impl OpenListService {
 
         let response = self.client
             .post(&api_path)
-            .header("Authorization", format!("Bearer {}", token))
+            .header("Authorization", token)
             .header("Content-Type", "application/json")
             .json(&body)
             .send()
@@ -212,7 +226,7 @@ impl OpenListService {
 
         let response = self.client
             .post(&api_path)
-            .header("Authorization", format!("Bearer {}", token))
+            .header("Authorization", token)
             .header("Content-Type", "application/json")
             .json(&body)
             .send()
@@ -240,7 +254,7 @@ impl OpenListService {
 
         let response = self.client
             .post(&api_path)
-            .header("Authorization", format!("Bearer {}", token))
+            .header("Authorization", token)
             .header("Content-Type", "application/json")
             .json(&body)
             .send()
