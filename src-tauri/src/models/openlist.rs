@@ -38,6 +38,7 @@ pub struct FileInfo {
     pub name: String,
     pub size: i64,
     pub modified: String,
+    #[serde(rename(deserialize = "is_dir", serialize = "isDir"))]
     pub is_dir: bool,
     #[serde(rename = "type")]
     pub file_type: i32,

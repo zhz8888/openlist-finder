@@ -1,25 +1,8 @@
-import { useEffect } from "react";
 import { Sidebar, FileList } from "@/components";
-import { useFileBrowser } from "@/hooks";
 import { useServerStore } from "@/stores";
 
 export function HomePage() {
-  const { loadFiles } = useFileBrowser();
-  const { activeServerId, servers, getActiveServer } = useServerStore();
-
-  useEffect(() => {
-    if (activeServerId) {
-      loadFiles("/");
-    }
-  }, [activeServerId, loadFiles]);
-
-  const activeServer = getActiveServer();
-
-  useEffect(() => {
-    if (activeServerId && activeServer) {
-      loadFiles("/");
-    }
-  }, [activeServer?.url, activeServer?.token, activeServerId, loadFiles]);
+  const { activeServerId, servers } = useServerStore();
 
   if (!activeServerId || servers.length === 0) {
     return (

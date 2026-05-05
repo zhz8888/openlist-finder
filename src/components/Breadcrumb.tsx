@@ -2,9 +2,20 @@ import { useFileBrowser } from "@/hooks";
 import type { SortField } from "@/types";
 
 export function Breadcrumb() {
-  const { currentPath, navigateToPath } = useFileBrowser();
+  const { currentPath, navigateToPath, navigateUp, loadFiles } = useFileBrowser();
 
   const segments = currentPath.split("/").filter(Boolean);
+
+  const handleNavigate = (path: string) => {
+    navigateToPath(path);
+    loadFiles(path);
+  };
+
+  const handleGoUp = () => {
+    const parentPath = currentPath.split("/").slice(0, -1).join("/") || "/";
+    navigateUp();
+    loadFiles(parentPath);
+  };
 
   return (
     <div className="breadcrumbs text-sm px-4 py-2 bg-[var(--color-bg)] border-b border-[var(--color-border)]">
@@ -12,7 +23,7 @@ export function Breadcrumb() {
         <li>
           <button
             className="btn btn-ghost btn-xs"
-            onClick={() => navigateToPath("/")}
+            onClick={() => handleNavigate("/")}
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4" />
@@ -26,7 +37,7 @@ export function Breadcrumb() {
             <li key={path}>
               <button
                 className="btn btn-ghost btn-xs"
-                onClick={() => navigateToPath(path)}
+                onClick={() => handleNavigate(path)}
               >
                 {segment}
               </button>
@@ -34,6 +45,21 @@ export function Breadcrumb() {
           );
         })}
       </ul>
+      {currentPath !== "/" && (
+        <div className="ml-auto">
+          <button
+            className="btn btn-ghost btn-xs"
+            onClick={handleGoUp}
+            title="返回上一级"
+            aria-label="返回上一级"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+            </svg>
+            返回上一级
+          </button>
+        </div>
+      )}
     </div>
   );
 }

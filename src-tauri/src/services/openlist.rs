@@ -51,7 +51,6 @@ impl OpenListService {
             .map_err(|e| format!("Connection failed: {}", e))?;
 
         if response.status().is_success() {
-            let status = response.status();
             let body: serde_json::Value = response.json().await.map_err(|e| format!("Parse error: {}", e))?;
             let code = body.get("code").and_then(|c| c.as_i64()).unwrap_or(-1);
             

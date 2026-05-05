@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { useFileBrowser } from "@/hooks";
 import { useServerStore, useSettingsStore, useSearchStore, useFileBrowserStore, useToastStore } from "@/stores";
 import type { IndexAvailabilityStatus } from "@/stores/searchStore";
@@ -37,6 +38,51 @@ function isImageFile(file: FileInfo): boolean {
   return imageExts.includes(ext);
 }
 
+function getFileTypeDescription(file: FileInfo): string {
+  if (file.isDir) return "文件夹";
+  
+  const ext = file.name.split(".").pop()?.toLowerCase() || "";
+  if (!ext) return "文件";
+  
+  // 图片文件
+  if (["jpg", "jpeg", "png", "gif", "bmp", "svg", "webp", "ico", "avif"].includes(ext)) {
+    return `图片文件 (.${ext})`;
+  }
+  
+  // 视频文件
+  if (["mp4", "avi", "mkv", "mov", "wmv", "flv", "webm"].includes(ext)) {
+    return `视频文件 (.${ext})`;
+  }
+  
+  // 音频文件
+  if (["mp3", "wav", "flac", "aac", "ogg", "wma"].includes(ext)) {
+    return `音频文件 (.${ext})`;
+  }
+  
+  // 文档文件
+  if (["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx"].includes(ext)) {
+    return `文档文件 (.${ext})`;
+  }
+  
+  // 压缩文件
+  if (["zip", "rar", "7z", "tar", "gz", "bz2"].includes(ext)) {
+    return `压缩文件 (.${ext})`;
+  }
+  
+  // 代码文件
+  if (["js", "ts", "jsx", "tsx", "py", "java", "c", "cpp", "h", "hpp", "go", "rs", "vue", "svelte", "css", "html", "json", "xml", "yaml", "yml", "md", "sh", "sql"].includes(ext)) {
+    return `代码文件 (.${ext})`;
+  }
+  
+  // 可执行文件
+  if (["exe", "msi", "dmg", "app", "deb", "rpm"].includes(ext)) {
+    return `可执行文件 (.${ext})`;
+  }
+  
+  // 默认显示扩展名
+  return `文件 (.${ext})`;
+}
+
 function getFileIcon(file: FileInfo) {
   if (file.isDir) {
     return (
@@ -45,6 +91,74 @@ function getFileIcon(file: FileInfo) {
       </svg>
     );
   }
+  
+  const ext = file.name.split(".").pop()?.toLowerCase() || "";
+  
+  // 图片文件
+  if (["jpg", "jpeg", "png", "gif", "bmp", "svg", "webp", "ico", "avif"].includes(ext)) {
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[var(--color-success)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+    );
+  }
+  
+  // 视频文件
+  if (["mp4", "avi", "mkv", "mov", "wmv", "flv", "webm"].includes(ext)) {
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[var(--color-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+      </svg>
+    );
+  }
+  
+  // 音频文件
+  if (["mp3", "wav", "flac", "aac", "ogg", "wma"].includes(ext)) {
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[var(--color-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+      </svg>
+    );
+  }
+  
+  // 文档文件
+  if (["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx"].includes(ext)) {
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[var(--color-danger)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+    );
+  }
+  
+  // 压缩文件
+  if (["zip", "rar", "7z", "tar", "gz", "bz2"].includes(ext)) {
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[var(--color-warning)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+      </svg>
+    );
+  }
+  
+  // 代码文件
+  if (["js", "ts", "jsx", "tsx", "py", "java", "c", "cpp", "h", "hpp", "go", "rs", "vue", "svelte", "css", "html", "json", "xml", "yaml", "yml", "md", "sh", "sql"].includes(ext)) {
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[var(--color-info)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+      </svg>
+    );
+  }
+  
+  // 可执行文件
+  if (["exe", "msi", "dmg", "app", "deb", "rpm"].includes(ext)) {
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[var(--color-neutral)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    );
+  }
+  
+  // 默认文件图标
   return (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[var(--color-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -95,6 +209,7 @@ export function FileList() {
   } = useFileBrowser();
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; file: FileInfo } | null>(null);
+  const contextMenuRef = useRef<HTMLDivElement>(null);
   const [renameModal, setRenameModal] = useState<{ file: FileInfo; newName: string } | null>(null);
   const [deleteModal, setDeleteModal] = useState<FileInfo[] | null>(null);
   const [pathModal, setPathModal] = useState<{ files: FileInfo[]; operation: "copy" | "move"; targetPath: string } | null>(null);
@@ -105,6 +220,20 @@ export function FileList() {
   const [editSaving, setEditSaving] = useState(false);
   const [isSearchMode, setIsSearchMode] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const hasLoadedRef = useRef(false);
+  const loadFilesRef = useRef(loadFiles);
+  const fileListRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    loadFilesRef.current = loadFiles;
+  }, [loadFiles]);
+
+  useEffect(() => {
+    if (!hasLoadedRef.current) {
+      hasLoadedRef.current = true;
+      loadFilesRef.current("/");
+    }
+  }, []);
 
   const checkIndexAvailability = useCallback(async (): Promise<IndexAvailabilityStatus> => {
     const server = getActiveServer();
@@ -146,9 +275,6 @@ export function FileList() {
     };
 
     checkIndex();
-    
-    const interval = setInterval(checkIndex, 5000);
-    return () => clearInterval(interval);
   }, [checkIndexAvailability, setIndexStatus]);
 
   useEffect(() => {
@@ -204,8 +330,45 @@ export function FileList() {
 
   const handleContextMenu = useCallback((e: React.MouseEvent, file: FileInfo) => {
     e.preventDefault();
+    // 设置初始位置，稍后在渲染时进行边界调整
     setContextMenu({ x: e.clientX, y: e.clientY, file });
   }, []);
+
+  // 在DOM更新后计算菜单的最终位置，确保显示在鼠标右下方且不超出可视区域
+  useLayoutEffect(() => {
+    if (!contextMenu || !contextMenuRef.current) return;
+
+    // 获取菜单的实际尺寸
+    const menuWidth = contextMenuRef.current.offsetWidth;
+    const menuHeight = contextMenuRef.current.offsetHeight;
+    
+    // 鼠标位置作为基准点（clientX/Y 相对于视口，适合 fixed 定位）
+    const mouseX = contextMenu.x;
+    const mouseY = contextMenu.y;
+    
+    // 可视区域尺寸
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    // 计算菜单位置：从鼠标位置开始，显示在第四象限（右下方）
+    // 添加一个小偏移（5px）避免菜单紧贴鼠标指针
+    let left = mouseX + 5;
+    let top = mouseY + 5;
+    
+    // 检查右边界，如果超出则向左调整
+    if (left + menuWidth > viewportWidth) {
+      left = Math.max(0, viewportWidth - menuWidth - 10); // 留10px边距
+    }
+    
+    // 检查下边界，如果超出则向上调整
+    if (top + menuHeight > viewportHeight) {
+      top = Math.max(0, viewportHeight - menuHeight - 10); // 留10px边距
+    }
+    
+    // 直接设置样式，避免额外的 re-render
+    contextMenuRef.current.style.left = `${left}px`;
+    contextMenuRef.current.style.top = `${top}px`;
+  }, [contextMenu]);
 
   const handleRename = useCallback(async () => {
     if (!renameModal || !renameModal.file.path) return;
@@ -337,7 +500,7 @@ export function FileList() {
   }, [editModal, addToast]);
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex flex-col overflow-hidden relative" ref={fileListRef}>
       <Breadcrumb />
 
       <div className="px-4 py-2 bg-[var(--color-bg)] border-b border-[var(--color-border)] flex gap-2">
@@ -358,6 +521,20 @@ export function FileList() {
             disabled={isSearching || indexStatus !== "available"}
           >
             {isSearching ? <span className="loading loading-spinner loading-xs"></span> : "搜索"}
+          </button>
+          <button 
+            type="button" 
+            className="btn btn-ghost btn-sm" 
+            onClick={() => {
+              handleClearSearch();
+              loadFiles("/");
+            }}
+            title="刷新"
+            aria-label="刷新"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
           </button>
           {isSearchMode && (
             <button type="button" className="btn btn-ghost btn-sm" onClick={handleClearSearch}>
@@ -456,8 +633,8 @@ export function FileList() {
                   <tr>
                     <th>名称</th>
                     <th>路径</th>
-                    <th>大小</th>
                     <th>修改时间</th>
+                    <th>大小</th>
                     <th>类型</th>
                   </tr>
                 </thead>
@@ -488,9 +665,9 @@ export function FileList() {
                           </div>
                         </td>
                         <td className="text-xs text-[var(--color-neutral)]">{doc.dir_path || "/"}</td>
-                        <td className="text-xs text-[var(--color-neutral)]">{file.isDir ? "—" : formatFileSize(file.size)}</td>
                         <td className="text-xs text-[var(--color-neutral)]">{formatDate(file.modified)}</td>
-                        <td className="text-xs text-[var(--color-neutral)]">{file.isDir ? "文件夹" : "文件"}</td>
+                        <td className="text-xs text-[var(--color-neutral)]">{file.isDir ? "—" : formatFileSize(file.size)}</td>
+                        <td className="text-xs text-[var(--color-neutral)]">{getFileTypeDescription(file)}</td>
                       </tr>
                     );
                   })}
@@ -529,8 +706,8 @@ export function FileList() {
                   </label>
                 </th>
                 <SortHeader field="name" label="名称" currentSort={sortConfig} onSort={handleSort} />
-                <SortHeader field="size" label="大小" currentSort={sortConfig} onSort={handleSort} />
                 <SortHeader field="modified" label="修改时间" currentSort={sortConfig} onSort={handleSort} />
+                <SortHeader field="size" label="大小" currentSort={sortConfig} onSort={handleSort} />
                 <SortHeader field="type" label="类型" currentSort={sortConfig} onSort={handleSort} />
               </tr>
             </thead>
@@ -561,9 +738,9 @@ export function FileList() {
                       <span className={file.isDir ? "font-medium" : ""}>{file.name}</span>
                     </div>
                   </td>
-                  <td className="text-xs text-[var(--color-neutral)]">{file.isDir ? "—" : formatFileSize(file.size)}</td>
                   <td className="text-xs text-[var(--color-neutral)]">{formatDate(file.modified)}</td>
-                  <td className="text-xs text-[var(--color-neutral)]">{file.isDir ? "文件夹" : file.type || "文件"}</td>
+                  <td className="text-xs text-[var(--color-neutral)]">{file.isDir ? "—" : formatFileSize(file.size)}</td>
+                  <td className="text-xs text-[var(--color-neutral)]">{getFileTypeDescription(file)}</td>
                 </tr>
               ))}
             </tbody>
@@ -571,10 +748,10 @@ export function FileList() {
         )}
       </div>
 
-      {contextMenu && (
+      {contextMenu && createPortal(
         <div
+          ref={contextMenuRef}
           className="dropdown-content menu bg-[var(--color-bg)] rounded-lg z-50 w-52 p-2 shadow-lg border border-[var(--color-border)] fixed context-menu"
-          style={{ "--ctx-x": `${contextMenu.x}px`, "--ctx-y": `${contextMenu.y}px` } as React.CSSProperties}
           role="menu"
           aria-label="文件右键菜单"
         >
@@ -586,12 +763,13 @@ export function FileList() {
           <li role="menuitem"><button type="button" onClick={() => { setDeleteModal([contextMenu.file]); setContextMenu(null); }}>删除</button></li>
           <li role="menuitem"><button type="button" onClick={() => { setPathModal({ files: [contextMenu.file], operation: "copy", targetPath: "" }); setContextMenu(null); }}>复制</button></li>
           <li role="menuitem"><button type="button" onClick={() => { setPathModal({ files: [contextMenu.file], operation: "move", targetPath: "" }); setContextMenu(null); }}>移动</button></li>
-        </div>
+        </div>,
+        document.body
       )}
 
       {renameModal && (
-        <dialog className="modal modal-open">
-          <div className="modal-box">
+        <div className="file-modal-overlay">
+          <div className="file-modal-box">
             <h3 className="font-bold text-lg">重命名文件</h3>
             <p className="py-2 text-sm text-[var(--color-neutral)]">当前名称：{renameModal.file.name}</p>
             <input
@@ -607,13 +785,13 @@ export function FileList() {
               <button type="button" className="btn btn-primary" onClick={handleRename}>重命名</button>
             </div>
           </div>
-          <form method="dialog" className="modal-backdrop"><button type="button" onClick={() => setRenameModal(null)}>关闭</button></form>
-        </dialog>
+          <div className="file-modal-backdrop" onClick={() => setRenameModal(null)}></div>
+        </div>
       )}
 
       {deleteModal && (
-        <dialog className="modal modal-open">
-          <div className="modal-box">
+        <div className="file-modal-overlay">
+          <div className="file-modal-box">
             <h3 className="font-bold text-lg text-[var(--color-danger)]">确认删除</h3>
             <p className="py-2">确定要删除以下文件吗？</p>
             <ul className="list-disc list-inside text-sm">
@@ -624,13 +802,13 @@ export function FileList() {
               <button type="button" className="btn btn-error" onClick={handleDelete}>删除</button>
             </div>
           </div>
-          <form method="dialog" className="modal-backdrop"><button type="button" onClick={() => setDeleteModal(null)}>关闭</button></form>
-        </dialog>
+          <div className="file-modal-backdrop" onClick={() => setDeleteModal(null)}></div>
+        </div>
       )}
 
       {pathModal && (
-        <dialog className="modal modal-open">
-          <div className="modal-box">
+        <div className="file-modal-overlay">
+          <div className="file-modal-box">
             <h3 className="font-bold text-lg">{pathModal.operation === "copy" ? "复制" : "移动"}文件</h3>
             <p className="py-2 text-sm">目标目录路径：</p>
             <input
@@ -646,13 +824,13 @@ export function FileList() {
               <button type="button" className="btn btn-primary" onClick={handleCopyMove}>{pathModal.operation === "copy" ? "复制" : "移动"}</button>
             </div>
           </div>
-          <form method="dialog" className="modal-backdrop"><button type="button" onClick={() => setPathModal(null)}>关闭</button></form>
-        </dialog>
+          <div className="file-modal-backdrop" onClick={() => setPathModal(null)}></div>
+        </div>
       )}
 
       {previewModal && (
-        <dialog className="modal modal-open">
-          <div className="modal-box max-w-3xl">
+        <div className="file-modal-overlay">
+          <div className="file-modal-box max-w-3xl">
             <h3 className="font-bold text-lg">{previewModal.name}</h3>
             <div className="py-4">
               <div className="grid grid-cols-2 gap-2 text-sm mb-4">
@@ -709,13 +887,13 @@ export function FileList() {
               <button type="button" className="btn" onClick={() => { setPreviewModal(null); setPreviewContent(null); }}>关闭</button>
             </div>
           </div>
-          <form method="dialog" className="modal-backdrop"><button type="button" onClick={() => { setPreviewModal(null); setPreviewContent(null); }}>关闭</button></form>
-        </dialog>
+          <div className="file-modal-backdrop" onClick={() => { setPreviewModal(null); setPreviewContent(null); }}></div>
+        </div>
       )}
 
       {editModal && (
-        <dialog className="modal modal-open">
-          <div className="modal-box max-w-4xl">
+        <div className="file-modal-overlay">
+          <div className="file-modal-box max-w-4xl">
             <h3 className="font-bold text-lg">编辑：{editModal.file.name}</h3>
             <p className="text-xs opacity-50 mt-1">{editModal.file.path}</p>
             <div className="mt-4">
@@ -736,8 +914,8 @@ export function FileList() {
               </button>
             </div>
           </div>
-          <form method="dialog" className="modal-backdrop"><button type="button" onClick={() => setEditModal(null)}>关闭</button></form>
-        </dialog>
+          <div className="file-modal-backdrop" onClick={() => setEditModal(null)}></div>
+        </div>
       )}
     </div>
   );
