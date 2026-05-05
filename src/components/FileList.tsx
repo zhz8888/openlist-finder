@@ -5,7 +5,7 @@ import { useServerStore, useSettingsStore, useSearchStore, useFileBrowserStore, 
 import type { IndexAvailabilityStatus } from "@/stores/searchStore";
 import { renameFile, deleteFiles, copyFiles, moveFiles, getFileInfo, executeWithTokenRefresh } from "@/services/openlist";
 import { search as searchMeilisearch, getStats } from "@/services/meilisearch";
-import { Breadcrumb, SortHeader } from "./Breadcrumb";
+import { Breadcrumb, SortHeader, FolderTree } from "./index";
 import { logger } from "@/utils/logger";
 import type { FileInfo, SortField, MeilisearchDoc } from "@/types";
 
@@ -212,7 +212,7 @@ export function FileList() {
   const contextMenuRef = useRef<HTMLDivElement>(null);
   const [renameModal, setRenameModal] = useState<{ file: FileInfo; newName: string } | null>(null);
   const [deleteModal, setDeleteModal] = useState<FileInfo[] | null>(null);
-  const [pathModal, setPathModal] = useState<{ files: FileInfo[]; operation: "copy" | "move"; targetPath: string } | null>(null);
+  const [pathModal, setPathModal] = useState<{ files: FileInfo[]; operation: "copy" | "move"; targetPath: string; excludePaths: string[] } | null>(null);
   const [previewModal, setPreviewModal] = useState<FileInfo | null>(null);
   const [previewContent, setPreviewContent] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -761,8 +761,16 @@ export function FileList() {
           )}
           <li role="menuitem"><button type="button" onClick={() => { setRenameModal({ file: contextMenu.file, newName: contextMenu.file.name }); setContextMenu(null); }}>重命名</button></li>
           <li role="menuitem"><button type="button" onClick={() => { setDeleteModal([contextMenu.file]); setContextMenu(null); }}>删除</button></li>
-          <li role="menuitem"><button type="button" onClick={() => { setPathModal({ files: [contextMenu.file], operation: "copy", targetPath: "" }); setContextMenu(null); }}>复制</button></li>
-          <li role="menuitem"><button type="button" onClick={() => { setPathModal({ files: [contextMenu.file], operation: "move", targetPath: "" }); setContextMenu(null); }}>移动</button></li>
+          <li role="menuitem"><button type="button" onClick={() => {
+            const srcDir = contextMenu.file.path?.replace(/\/[^/]+$/, "") || "/";
+            setPathModal({ files: [contextMenu.file], operation: "copy", targetPath: "/", excludePaths: [srcDir] });
+            setContextMenu(null);
+          }}>复制</button></li>
+          <li role="menuitem"><button type="button" onClick={() => {
+            const srcDir = contextMenu.file.path?.replace(/\/[^/]+$/, "") || "/";
+            setPathModal({ files: [contextMenu.file], operation: "move", targetPath: "/", excludePaths: [srcDir] });
+            setContextMenu(null);
+          }}>移动</button></li>
         </div>,
         document.body
       )}
@@ -808,17 +816,25 @@ export function FileList() {
 
       {pathModal && (
         <div className="file-modal-overlay">
-          <div className="file-modal-box">
-            <h3 className="font-bold text-lg">{pathModal.operation === "copy" ? "复制" : "移动"}文件</h3>
-            <p className="py-2 text-sm">目标目录路径：</p>
-            <input
-              type="text"
-              className="input input-bordered w-full"
-              placeholder="/目标目录"
-              value={pathModal.targetPath}
-              onChange={(e) => setPathModal({ ...pathModal, targetPath: e.target.value })}
-              aria-label="目标目录路径"
-            />
+          <div className="file-modal-box max-w-2xl">
+            <h3 className="font-bold text-lg">{pathModal.operation === "copy" ? "复制到" : "移动到"}文件夹</h3>
+            <p className="py-2 text-sm text-[var(--color-neutral)]">
+              已选择 {pathModal.files.length} 个文件/文件夹
+            </p>
+            
+            <div className="mb-4">
+              <p className="text-sm font-medium mb-2">目标文件夹：</p>
+              <FolderTree
+                selectedPath={pathModal.targetPath}
+                onPathSelect={(path) => setPathModal({ ...pathModal, targetPath: path })}
+                excludePaths={pathModal.excludePaths}
+              />
+            </div>
+
+            <div className="text-xs text-[var(--color-neutral-muted)] mb-2">
+              当前选择：<span className="font-mono">{pathModal.targetPath}</span>
+            </div>
+
             <div className="modal-action">
               <button type="button" className="btn btn-ghost" onClick={() => setPathModal(null)}>取消</button>
               <button type="button" className="btn btn-primary" onClick={handleCopyMove}>{pathModal.operation === "copy" ? "复制" : "移动"}</button>

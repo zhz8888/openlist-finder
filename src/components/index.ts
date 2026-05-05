@@ -5,3 +5,4 @@ export { Breadcrumb, SortHeader } from "./Breadcrumb";
 export { ToastContainer } from "./ToastContainer";
 export { ErrorBoundary } from "./ErrorBoundary";
 export { PasswordInput } from "./PasswordInput";
+export { FolderTree } from "./FolderTree";
