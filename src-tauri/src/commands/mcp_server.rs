@@ -1,45 +1,131 @@
+//! MCP (Model Context Protocol) 服务器模块
+//!
+//! 本模块实现 MCP 协议的 stdio 传输层服务器,允许 AI 助手通过标准输入/输出
+//! 与 OpenList Finder 应用进行交互。支持文件浏览、搜索、文件操作等功能。
+//!
+//! 主要功能:
+//! - JSON-RPC 2.0 协议支持
+//! - MCP 工具定义和注册
+//! - OpenList 文件操作(浏览、重命名、删除、复制、移动)
+//! - Meilisearch 全文搜索
+//! - 服务器配置管理
+//!
+//! # 协议流程
+//!
+//! 1. AI 助手发送 `initialize` 请求
+//! 2. 服务器返回协议版本和能力声明
+//! 3. AI 助手发送 `notifications/initialized` 通知
+//! 4. AI 助手通过 `tools/list` 获取可用工具列表
+//! 5. AI 助手通过 `tools/call` 调用具体工具
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::io::{self, BufRead, Write};
 use crate::commands::openlist;
 use crate::commands::meilisearch;
+use crate::models::openlist::{CopyMoveRequest, RenameRequest};
 
+/// JSON-RPC 请求结构体
+///
+/// 表示一个标准的 JSON-RPC 2.0 请求,包含协议版本、请求ID、方法名和参数。
 #[derive(Debug, Serialize, Deserialize)]
 pub struct JsonRpcRequest {
+    /// JSON-RPC 协议版本,固定为 "2.0"
     pub jsonrpc: String,
+    
+    /// 请求唯一标识符,用于匹配请求和响应。通知(no notification)可为 None
     pub id: Option<i64>,
+    
+    /// 要调用的方法名称
     pub method: String,
+    
+    /// 方法参数,可选
     pub params: Option<Value>,
 }
 
+/// JSON-RPC 响应结构体
+///
+/// 表示一个标准的 JSON-RPC 2.0 响应,包含成功结果或错误信息。
+/// `result` 和 `error` 互斥,成功时 `result` 有值,失败时 `error` 有值。
 #[derive(Debug, Serialize, Deserialize)]
 pub struct JsonRpcResponse {
+    /// JSON-RPC 协议版本,固定为 "2.0"
     pub jsonrpc: String,
+    
+    /// 对应请求的ID
     pub id: Option<i64>,
+    
+    /// 成功时的返回结果
     #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<Value>,
+    
+    /// 失败时的错误信息
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<JsonRpcError>,
 }
 
+/// JSON-RPC 错误结构体
+///
+/// 包含错误码、错误消息和可选的附加数据。
+/// 错误码遵循 JSON-RPC 2.0 规范:
+/// - -32700: 解析错误
+/// - -32600: 无效请求
+/// - -32601: 方法未找到
+/// - -32602: 无效参数
 #[derive(Debug, Serialize, Deserialize)]
 pub struct JsonRpcError {
+    /// 错误码
     pub code: i64,
+    
+    /// 错误描述消息
     pub message: String,
+    
+    /// 可选的附加错误数据
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<Value>,
 }
 
+/// MCP 工具定义结构体
+///
+/// 描述一个可供 AI 助手调用的工具,包含工具名称、描述和输入参数 schema。
 #[derive(Debug, Serialize, Deserialize)]
 pub struct McpTool {
+    /// 工具名称,唯一标识
     pub name: String,
+    
+    /// 工具功能描述
     pub description: String,
+    
+    /// 输入参数的 JSON Schema,用于参数验证
     pub input_schema: Value,
 }
 
+/// MCP 服务器结构体
+///
+/// 提供 MCP 协议相关的静态方法,包括工具定义、请求处理等。
 pub struct McpServer;
 
 impl McpServer {
+    /// 获取所有可用的 MCP 工具列表
+    ///
+    /// 返回定义的所有工具,包括:
+    /// - `list_directory`: 列出目录内容
+    /// - `search_files`: 搜索文件
+    /// - `rename_file`: 重命名文件
+    /// - `delete_files`: 删除文件
+    /// - `copy_files`: 复制文件
+    /// - `move_files`: 移动文件
+    /// - `view_file`: 查看文件信息
+    /// - `edit_file`: 编辑文件
+    /// - `list_servers`: 列出服务器配置
+    /// - `add_server`: 添加服务器
+    /// - `remove_server`: 删除服务器
+    /// - `sync_index`: 同步索引到 Meilisearch
+    /// - `get_index_status`: 获取索引状态
+    ///
+    /// # 返回值
+    ///
+    /// 返回 `McpTool` 向量,包含所有可用工具的定义
     pub fn get_tools() -> Vec<McpTool> {
         let mut tools = vec![
             McpTool {
@@ -206,6 +292,17 @@ impl McpServer {
         tools
     }
 
+    /// 处理初始化请求
+    ///
+    /// 响应 AI 助手的 `initialize` 请求,返回协议版本、服务器能力和基本信息。
+    ///
+    /// # 参数
+    ///
+    /// * `id` - 请求ID,用于匹配响应
+    ///
+    /// # 返回值
+    ///
+    /// 返回包含协议版本和能力声明的 JSON-RPC 响应
     pub fn handle_initialize(id: Option<i64>) -> JsonRpcResponse {
         JsonRpcResponse {
             jsonrpc: "2.0".to_string(),
@@ -224,6 +321,17 @@ impl McpServer {
         }
     }
 
+    /// 处理工具列表请求
+    ///
+    /// 响应 AI 助手的 `tools/list` 请求,返回所有可用工具的定义。
+    ///
+    /// # 参数
+    ///
+    /// * `id` - 请求ID,用于匹配响应
+    ///
+    /// # 返回值
+    ///
+    /// 返回包含工具列表的 JSON-RPC 响应
     pub fn handle_tools_list(id: Option<i64>) -> JsonRpcResponse {
         let tools: Vec<Value> = Self::get_tools().into_iter().map(|t| {
             serde_json::json!({
@@ -241,6 +349,19 @@ impl McpServer {
         }
     }
 
+    /// 处理工具调用请求
+    ///
+    /// 解析 AI 助手的 `tools/call` 请求,根据工具名称路由到相应的处理逻辑。
+    /// 支持文件操作、搜索、服务器管理等所有已注册的工具。
+    ///
+    /// # 参数
+    ///
+    /// * `id` - 请求ID,用于匹配响应
+    /// * `params` - 工具调用参数,包含工具名称和参数
+    ///
+    /// # 返回值
+    ///
+    /// 返回工具执行结果或错误信息的 JSON-RPC 响应
     pub async fn handle_tool_call(id: Option<i64>, params: Option<Value>) -> JsonRpcResponse {
         let params = match params {
             Some(p) => p,
@@ -320,7 +441,12 @@ impl McpServer {
                     Some(n) => n.to_string(),
                     None => return Self::handle_invalid_params(id, "Missing new_name"),
                 };
-                match openlist::rename_file(server_url, "".to_string(), dir, old_name, new_name).await {
+                let rename_request = RenameRequest {
+                    dir,
+                    old_name,
+                    new_name,
+                };
+                match openlist::rename_file(server_url, "".to_string(), rename_request).await {
                     Ok(resp) => serde_json::json!({
                         "content": [{ "type": "text", "text": serde_json::to_string_pretty(&resp).unwrap_or_default() }]
                     }),
@@ -370,7 +496,12 @@ impl McpServer {
                     Some(arr) => arr.iter().filter_map(|v| v.as_str().map(String::from)).collect::<Vec<_>>(),
                     None => return Self::handle_invalid_params(id, "Missing names"),
                 };
-                match openlist::copy_files(server_url, "".to_string(), src_dir, dst_dir, names).await {
+                let copy_request = CopyMoveRequest {
+                    src_dir,
+                    dst_dir,
+                    names,
+                };
+                match openlist::copy_files(server_url, "".to_string(), copy_request).await {
                     Ok(resp) => serde_json::json!({
                         "content": [{ "type": "text", "text": serde_json::to_string_pretty(&resp).unwrap_or_default() }]
                     }),
@@ -397,7 +528,12 @@ impl McpServer {
                     Some(arr) => arr.iter().filter_map(|v| v.as_str().map(String::from)).collect::<Vec<_>>(),
                     None => return Self::handle_invalid_params(id, "Missing names"),
                 };
-                match openlist::move_files(server_url, "".to_string(), src_dir, dst_dir, names).await {
+                let move_request = CopyMoveRequest {
+                    src_dir,
+                    dst_dir,
+                    names,
+                };
+                match openlist::move_files(server_url, "".to_string(), move_request).await {
                     Ok(resp) => serde_json::json!({
                         "content": [{ "type": "text", "text": serde_json::to_string_pretty(&resp).unwrap_or_default() }]
                     }),
@@ -486,6 +622,18 @@ impl McpServer {
         }
     }
 
+    /// 处理方法未找到错误
+    ///
+    /// 当请求的方法不存在时,返回标准的 JSON-RPC 错误响应。
+    ///
+    /// # 参数
+    ///
+    /// * `id` - 请求ID,用于匹配响应
+    /// * `method` - 未找到的方法名称
+    ///
+    /// # 返回值
+    ///
+    /// 返回错误码为 -32601 的 JSON-RPC 错误响应
     pub fn handle_method_not_found(id: Option<i64>, method: &str) -> JsonRpcResponse {
         JsonRpcResponse {
             jsonrpc: "2.0".to_string(),
@@ -499,6 +647,18 @@ impl McpServer {
         }
     }
 
+    /// 处理无效参数错误
+    ///
+    /// 当请求参数缺失或格式不正确时,返回标准的 JSON-RPC 错误响应。
+    ///
+    /// # 参数
+    ///
+    /// * `id` - 请求ID,用于匹配响应
+    /// * `msg` - 错误描述消息
+    ///
+    /// # 返回值
+    ///
+    /// 返回错误码为 -32602 的 JSON-RPC 错误响应
     pub fn handle_invalid_params(id: Option<i64>, msg: &str) -> JsonRpcResponse {
         JsonRpcResponse {
             jsonrpc: "2.0".to_string(),
@@ -513,6 +673,20 @@ impl McpServer {
     }
 }
 
+/// 运行 MCP stdio 服务器
+///
+/// 启动基于标准输入/输出的 MCP 服务器主循环。该函数会:
+/// 1. 从 stdin 逐行读取 JSON-RPC 请求
+/// 2. 解析请求并路由到相应的处理方法
+/// 3. 将响应写入 stdout
+/// 4. 刷新输出缓冲区确保响应立即发送
+///
+/// # 注意事项
+///
+/// - 该函数会阻塞当前线程,直到 stdin 关闭或发生错误
+/// - 使用 tokio current_thread 运行时处理异步操作
+/// - 空行会被自动跳过
+/// - JSON 解析失败会返回解析错误响应
 pub fn run_stdio_server() {
     let stdin = io::stdin();
     let mut stdout = io::stdout();

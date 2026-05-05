@@ -432,7 +432,11 @@ export function FileList() {
     try {
       logger.info(`[OpenList] Renaming file "${renameModal.file.name}" to "${renameModal.newName}"`);
       await executeWithTokenRefresh(
-        () => renameFile(server.url, server.token, renameModal.file.path!.replace(/\/[^/]+$/, "") || "/", renameModal.file.name, renameModal.newName)
+        () => renameFile(server.url, server.token, {
+          dir: renameModal.file.path!.replace(/\/[^/]+$/, "") || "/",
+          oldName: renameModal.file.name,
+          newName: renameModal.newName
+        })
       );
       logger.info(`[OpenList] File renamed successfully`);
       setRenameModal(null);
@@ -474,17 +478,18 @@ export function FileList() {
     try {
       const srcDir = pathModal.files[0].path.replace(/\/[^/]+$/, "") || "/";
       const fileNames = pathModal.files.map((f) => f.name);
+      const request = { srcDir, dstDir: pathModal.targetPath, names: fileNames };
       if (pathModal.operation === "copy") {
         logger.info(`[OpenList] Copying ${pathModal.files.length} file(s) to ${pathModal.targetPath}`);
         await executeWithTokenRefresh(
-          () => copyFiles(server.url, server.token, srcDir, pathModal.targetPath, fileNames)
+          () => copyFiles(server.url, server.token, request)
         );
         logger.info(`[OpenList] ${pathModal.files.length} file(s) copied successfully`);
         addToast("success", `已复制 ${pathModal.files.length} 个文件到 ${pathModal.targetPath}`);
       } else {
         logger.info(`[OpenList] Moving ${pathModal.files.length} file(s) to ${pathModal.targetPath}`);
         await executeWithTokenRefresh(
-          () => moveFiles(server.url, server.token, srcDir, pathModal.targetPath, fileNames)
+          () => moveFiles(server.url, server.token, request)
         );
         logger.info(`[OpenList] ${pathModal.files.length} file(s) moved successfully`);
         addToast("success", `已移动 ${pathModal.files.length} 个文件到 ${pathModal.targetPath}`);
