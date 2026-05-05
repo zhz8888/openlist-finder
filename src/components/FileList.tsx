@@ -5,7 +5,7 @@ import { useServerStore, useSettingsStore, useSearchStore, useFileBrowserStore, 
 import type { IndexAvailabilityStatus } from "@/stores/searchStore";
 import { renameFile, deleteFiles, copyFiles, moveFiles, getFileInfo, executeWithTokenRefresh } from "@/services/openlist";
 import { search as searchMeilisearch, getStats } from "@/services/meilisearch";
-import { Breadcrumb, SortHeader, FolderTree } from "./index";
+import { Breadcrumb, SortHeader, FolderTree, ImagePreview, VideoPreview, AudioPreview, ArchivePreview } from "./index";
 import { logger } from "@/utils/logger";
 import type { FileInfo, SortField, MeilisearchDoc } from "@/types";
 
@@ -36,6 +36,27 @@ function isImageFile(file: FileInfo): boolean {
   const imageExts = ["jpg", "jpeg", "png", "gif", "bmp", "svg", "webp", "ico", "avif"];
   const ext = file.name.split(".").pop()?.toLowerCase() || "";
   return imageExts.includes(ext);
+}
+
+function isVideoFile(file: FileInfo): boolean {
+  if (file.isDir) return false;
+  const videoExts = ["mp4", "avi", "mkv", "mov", "wmv", "flv", "webm"];
+  const ext = file.name.split(".").pop()?.toLowerCase() || "";
+  return videoExts.includes(ext);
+}
+
+function isAudioFile(file: FileInfo): boolean {
+  if (file.isDir) return false;
+  const audioExts = ["mp3", "wav", "flac", "aac", "ogg", "wma"];
+  const ext = file.name.split(".").pop()?.toLowerCase() || "";
+  return audioExts.includes(ext);
+}
+
+function isArchiveFile(file: FileInfo): boolean {
+  if (file.isDir) return false;
+  const archiveExts = ["zip", "rar", "7z", "tar", "gz", "bz2"];
+  const ext = file.name.split(".").pop()?.toLowerCase() || "";
+  return archiveExts.includes(ext);
 }
 
 function getFileTypeDescription(file: FileInfo): string {
@@ -334,6 +355,40 @@ export function FileList() {
     setContextMenu({ x: e.clientX, y: e.clientY, file });
   }, []);
 
+  // 复制下载链接到剪贴板
+  const copyDownloadLink = useCallback(async (file: FileInfo) => {
+    if (!file.path || file.isDir) return;
+    const server = getActiveServer();
+    if (!server) return;
+
+    const downloadLink = `${server.url}/d${file.path}`;
+
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(downloadLink);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = downloadLink;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+          document.execCommand("copy");
+        } catch {
+          addToast("error", "复制链接失败，请手动复制");
+          return;
+        }
+        document.body.removeChild(textArea);
+      }
+      addToast("success", "下载链接已复制到剪贴板");
+    } catch {
+      addToast("error", "复制链接失败，请手动复制");
+    }
+  }, [getActiveServer, addToast]);
+
   // 在DOM更新后计算菜单的最终位置，确保显示在鼠标右下方且不超出可视区域
   useLayoutEffect(() => {
     if (!contextMenu || !contextMenuRef.current) return;
@@ -527,7 +582,7 @@ export function FileList() {
             className="btn btn-ghost btn-sm" 
             onClick={() => {
               handleClearSearch();
-              loadFiles("/");
+              loadFiles();
             }}
             title="刷新"
             aria-label="刷新"
@@ -771,6 +826,11 @@ export function FileList() {
             setPathModal({ files: [contextMenu.file], operation: "move", targetPath: "/", excludePaths: [srcDir] });
             setContextMenu(null);
           }}>移动</button></li>
+          {!contextMenu.file.isDir && (
+            <li role="menuitem"><button type="button" onClick={() => { copyDownloadLink(contextMenu.file); setContextMenu(null); }}>
+              下载
+            </button></li>
+          )}
         </div>,
         document.body
       )}
@@ -853,23 +913,30 @@ export function FileList() {
                 <p><strong>路径：</strong> {previewModal.path}</p>
                 <p><strong>大小：</strong> {formatFileSize(previewModal.size)}</p>
                 <p><strong>修改时间：</strong> {formatDate(previewModal.modified)}</p>
-                <p><strong>类型：</strong> {previewModal.type || "未知"}</p>
+                <p><strong>类型：</strong> {getFileTypeDescription(previewModal)}</p>
               </div>
 
+              {/* 图片预览 */}
               {isImageFile(previewModal) && (
-                <div className="border border-[var(--color-border)] rounded-lg p-2 bg-[var(--color-github-surface)]">
-                  <img
-                    src={`${getActiveServer()?.url}/d${previewModal.path}`}
-                    alt={previewModal.name}
-                    className="max-w-full max-h-96 mx-auto object-contain"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                      (e.target as HTMLImageElement).parentElement!.innerHTML = "<p class='text-center text-sm opacity-50 py-8'>图片预览不可用</p>";
-                    }}
-                  />
-                </div>
+                <ImagePreview file={previewModal} serverUrl={getActiveServer()?.url || ""} />
               )}
 
+              {/* 视频预览 */}
+              {isVideoFile(previewModal) && (
+                <VideoPreview file={previewModal} serverUrl={getActiveServer()?.url || ""} />
+              )}
+
+              {/* 音频预览 */}
+              {isAudioFile(previewModal) && (
+                <AudioPreview file={previewModal} serverUrl={getActiveServer()?.url || ""} />
+              )}
+
+              {/* 压缩包预览 */}
+              {isArchiveFile(previewModal) && (
+                <ArchivePreview file={previewModal} serverUrl={getActiveServer()?.url || ""} />
+              )}
+
+              {/* 文本文件预览 */}
               {isTextFile(previewModal) && (
                 <div className="border border-[var(--color-border)] rounded-lg bg-[var(--color-github-surface)]">
                   {previewLoading ? (
@@ -887,7 +954,8 @@ export function FileList() {
                 </div>
               )}
 
-              {!isTextFile(previewModal) && !isImageFile(previewModal) && (
+              {/* 不支持的预览类型 */}
+              {!isTextFile(previewModal) && !isImageFile(previewModal) && !isVideoFile(previewModal) && !isAudioFile(previewModal) && !isArchiveFile(previewModal) && (
                 <div className="border border-[var(--color-border)] rounded-lg p-4 bg-[var(--color-github-surface)] text-center">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -897,6 +965,11 @@ export function FileList() {
               )}
             </div>
             <div className="modal-action">
+              {!previewModal.isDir && (
+                <button type="button" className="btn btn-primary btn-sm" onClick={() => copyDownloadLink(previewModal)}>
+                  下载
+                </button>
+              )}
               {isTextFile(previewModal) && (
                 <button type="button" className="btn btn-sm" onClick={() => handleEditFile(previewModal)}>编辑</button>
               )}

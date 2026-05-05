@@ -6,3 +6,7 @@ export { ToastContainer } from "./ToastContainer";
 export { ErrorBoundary } from "./ErrorBoundary";
 export { PasswordInput } from "./PasswordInput";
 export { FolderTree } from "./FolderTree";
+export { ImagePreview } from "./ImagePreview";
+export { VideoPreview } from "./VideoPreview";
+export { AudioPreview } from "./AudioPreview";
+export { ArchivePreview } from "./ArchivePreview";
