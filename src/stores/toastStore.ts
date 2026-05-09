@@ -25,7 +25,6 @@ const TOAST_LEVEL_MAP: Record<Toast["type"], "info" | "warn" | "error"> = {
 
 const FADE_OUT_DURATION = 300;
 const TOAST_DISPLAY_DURATION = 4000;
-const AUTO_REMOVE_DELAY = 100;
 
 let toastCounter = 0;
 const timeoutRefs = new Map<string, ReturnType<typeof setTimeout>>();
