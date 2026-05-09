@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef, useLayoutEffect } from "react";
+import { useState, useCallback, useEffect, useRef, useLayoutEffect, memo } from "react";
 import { createPortal } from "react-dom";
 import { useFileBrowser } from "@/hooks";
 import { useServerStore, useSettingsStore, useSearchStore, useFileBrowserStore, useToastStore } from "@/stores";
@@ -25,6 +25,85 @@ function formatDate(dateStr: string): string {
   }
 }
 
+interface FileRowProps {
+  file: FileInfo;
+  isSelected: boolean;
+  onToggleSelection: (name: string) => void;
+  onDoubleClick: (file: FileInfo) => void;
+  onContextMenu: (e: React.MouseEvent, file: FileInfo) => void;
+}
+
+const FileRow = memo(function FileRow({
+  file,
+  isSelected,
+  onToggleSelection,
+  onDoubleClick,
+  onContextMenu,
+}: FileRowProps) {
+  return (
+    <tr
+      className={`hover cursor-pointer ${isSelected ? "active" : ""}`}
+      onClick={() => onToggleSelection(file.name)}
+      onDoubleClick={() => onDoubleClick(file)}
+      onContextMenu={(e) => onContextMenu(e, file)}
+    >
+      <td>
+        <label>
+          <input
+            type="checkbox"
+            className="checkbox checkbox-xs"
+            checked={isSelected}
+            onChange={() => onToggleSelection(file.name)}
+            onClick={(e) => e.stopPropagation()}
+            aria-label={`选择 ${file.name}`}
+          />
+        </label>
+      </td>
+      <td>
+        <div className="flex items-center gap-2">
+          {getFileIcon(file)}
+          <span className={file.isDir ? "font-medium" : ""}>{file.name}</span>
+        </div>
+      </td>
+      <td className="text-xs text-[var(--color-neutral)]">{formatDate(file.modified)}</td>
+      <td className="text-xs text-[var(--color-neutral)]">{file.isDir ? "—" : formatFileSize(file.size)}</td>
+      <td className="text-xs text-[var(--color-neutral)]">{getFileTypeDescription(file)}</td>
+    </tr>
+  );
+});
+
+interface SearchResultRowProps {
+  doc: MeilisearchDoc;
+  file: FileInfo;
+  onOpen: (file: FileInfo) => void;
+}
+
+const SearchResultRow = memo(function SearchResultRow({
+  doc,
+  file,
+  onOpen,
+}: SearchResultRowProps) {
+  const handleDoubleClick = () => onOpen(file);
+
+  return (
+    <tr
+      key={doc.id}
+      className="hover cursor-pointer"
+      onDoubleClick={handleDoubleClick}
+    >
+      <td>
+        <div className="flex items-center gap-2">
+          {getFileIcon(file)}
+          <span className={file.isDir ? "font-medium" : ""}>{file.name}</span>
+        </div>
+      </td>
+      <td className="text-xs text-[var(--color-neutral)]">{doc.dir_path || "/"}</td>
+      <td className="text-xs text-[var(--color-neutral)]">{formatDate(file.modified)}</td>
+      <td className="text-xs text-[var(--color-neutral)]">{file.isDir ? "—" : formatFileSize(file.size)}</td>
+      <td className="text-xs text-[var(--color-neutral)]">{getFileTypeDescription(file)}</td>
+    </tr>
+  );
+});
 
 function convertDocToFileInfo(doc: MeilisearchDoc): FileInfo {
   return {
@@ -383,6 +462,19 @@ export function FileList() {
     setSearchError(null);
   }, [setQuery, setResults, setSearchError]);
 
+  const handleOpenSearchResult = useCallback((file: FileInfo) => {
+    if (file.isDir) {
+      handleClearSearch();
+      loadFiles(file.path);
+    } else {
+      setPreviewModal(file);
+      setPreviewContent(null);
+      if (isTextFile(file)) {
+        loadPreviewContent(file);
+      }
+    }
+  }, [handleClearSearch, loadFiles, setPreviewModal, setPreviewContent, loadPreviewContent]);
+
   const handleEditFile = useCallback((file: FileInfo) => {
     const server = getActiveServer();
     if (!server) return;
@@ -544,33 +636,12 @@ export function FileList() {
                   {results.map((doc) => {
                     const file = convertDocToFileInfo(doc);
                     return (
-                      <tr
+                      <SearchResultRow
                         key={doc.id}
-                        className="hover cursor-pointer"
-                        onDoubleClick={() => {
-                          if (file.isDir) {
-                            handleClearSearch();
-                            loadFiles(file.path);
-                          } else {
-                            setPreviewModal(file);
-                            setPreviewContent(null);
-                            if (isTextFile(file)) {
-                              loadPreviewContent(file);
-                            }
-                          }
-                        }}
-                      >
-                        <td>
-                          <div className="flex items-center gap-2">
-                            {getFileIcon(file)}
-                            <span className={file.isDir ? "font-medium" : ""}>{file.name}</span>
-                          </div>
-                        </td>
-                        <td className="text-xs text-[var(--color-neutral)]">{doc.dir_path || "/"}</td>
-                        <td className="text-xs text-[var(--color-neutral)]">{formatDate(file.modified)}</td>
-                        <td className="text-xs text-[var(--color-neutral)]">{file.isDir ? "—" : formatFileSize(file.size)}</td>
-                        <td className="text-xs text-[var(--color-neutral)]">{getFileTypeDescription(file)}</td>
-                      </tr>
+                        doc={doc}
+                        file={file}
+                        onOpen={handleOpenSearchResult}
+                      />
                     );
                   })}
                 </tbody>
@@ -615,35 +686,14 @@ export function FileList() {
             </thead>
             <tbody>
               {files.map((file) => (
-                <tr
+                <FileRow
                   key={file.path}
-                  className={`hover cursor-pointer ${selectedFiles.has(file.name) ? "active" : ""}`}
-                  onClick={() => toggleFileSelection(file.name)}
-                  onDoubleClick={() => handleDoubleClick(file)}
-                  onContextMenu={(e) => handleContextMenu(e, file)}
-                >
-                  <td>
-                    <label>
-                      <input
-                        type="checkbox"
-                        className="checkbox checkbox-xs"
-                        checked={selectedFiles.has(file.name)}
-                        onChange={() => toggleFileSelection(file.name)}
-                        onClick={(e) => e.stopPropagation()}
-                        aria-label={`选择 ${file.name}`}
-                      />
-                    </label>
-                  </td>
-                  <td>
-                    <div className="flex items-center gap-2">
-                      {getFileIcon(file)}
-                      <span className={file.isDir ? "font-medium" : ""}>{file.name}</span>
-                    </div>
-                  </td>
-                  <td className="text-xs text-[var(--color-neutral)]">{formatDate(file.modified)}</td>
-                  <td className="text-xs text-[var(--color-neutral)]">{file.isDir ? "—" : formatFileSize(file.size)}</td>
-                  <td className="text-xs text-[var(--color-neutral)]">{getFileTypeDescription(file)}</td>
-                </tr>
+                  file={file}
+                  isSelected={selectedFiles.has(file.name)}
+                  onToggleSelection={toggleFileSelection}
+                  onDoubleClick={handleDoubleClick}
+                  onContextMenu={handleContextMenu}
+                />
               ))}
             </tbody>
           </table>
