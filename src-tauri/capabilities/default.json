@@ -5,11 +5,6 @@
   "permissions": [
     "core:default",
     "opener:default",
-    "http:default",
-    "http:allow-fetch",
-    "http:allow-fetch-send",
-    "http:allow-fetch-cancel",
-    "http:allow-fetch-read-body",
     "store:default",
     "store:allow-get",
     "store:allow-set",
@@ -27,10 +22,6 @@
     "dialog:allow-ask",
     "dialog:allow-confirm",
     "shell:default",
-    "shell:allow-open",
-    "fs:default",
-    "fs:allow-read",
-    "fs:allow-write",
-    "fs:allow-exists"
+    "shell:allow-open"
   ]
 }
