@@ -1,0 +1,68 @@
+{
+  "hooks": {
+    "commit-msg": {
+      "description": "Validates commit messages against Conventional Commits format",
+      "script": ".claude/hooks/commit-msg.sh"
+    }
+  },
+  "commitMessage": {
+    "types": ["feat", "fix", "docs", "style", "refactor", "perf", "test", "build", "ci", "chore", "revert"],
+    "scopes": ["frontend", "backend", "api", "dbus", "config", "deps", "ui", "core", "utils"],
+    "subjectPattern": ".+",
+    "subjectPatternError": "Subject should not end with punctuation (。.!?)",
+    "headerPattern": "^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)\\([a-zA-Z0-9_,-]+\\): .+$",
+    "headerPatternError": "Commit header must follow format: <type>(<scope>): <subject>"
+  },
+  "projectCommands": {
+    "install": {
+      "command": "bun install",
+      "description": "安装项目依赖",
+      "when": "首次克隆项目后，或添加新依赖后"
+    },
+    "dev": {
+      "command": "bun tauri dev",
+      "description": "启动开发模式（热重载）",
+      "when": "日常开发调试，需要实时预览效果时"
+    },
+    "build": {
+      "command": "bun run build",
+      "description": "仅构建前端资源",
+      "when": "仅修改了前端代码，需要快速验证构建结果时"
+    },
+    "build:release": {
+      "command": "bun tauri build",
+      "description": "构建发布版本（前端 + Rust 编译）",
+      "when": "完成开发，准备发布或测试最终效果时"
+    },
+    "clean": {
+      "command": "cargo clean",
+      "description": "清理 Rust 编译产物",
+      "when": "遇到奇怪的编译错误，尝试清理缓存时"
+    },
+    "check": {
+      "command": "cargo check",
+      "description": "检查 Rust 代码类型错误（不编译）",
+      "when": "快速检查代码是否有明显错误时"
+    },
+    "fmt": {
+      "command": "cargo fmt",
+      "description": "格式化 Rust 代码",
+      "when": "提交前确保代码格式一致时"
+    },
+    "clippy": {
+      "command": "cargo clippy",
+      "description": "运行 Rust linter 检查代码质量",
+      "when": "提交前检查代码最佳实践时"
+    },
+    "test": {
+      "command": "cargo test",
+      "description": "运行 Rust 单元测试",
+      "when": "修改 Rust 代码后验证功能时"
+    }
+  },
+  "environment": {
+    "node": ">= 24",
+    "rust": ">= 1.90",
+    "tauri": "2.x"
+  }
+}

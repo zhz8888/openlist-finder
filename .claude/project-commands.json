@@ -1,0 +1,59 @@
+{
+  "$schema": "https://schemas.claude.dev/project-commands/v1.json",
+  "name": "OpenList Finder",
+  "description": "基于 Tauri 2 的跨平台文件管理工具",
+  "commands": {
+    "install": {
+      "command": "bun install",
+      "description": "安装所有项目依赖",
+      "useCase": "首次克隆项目后 | 添加/更新依赖包后"
+    },
+    "dev": {
+      "command": "bun tauri dev",
+      "description": "启动 Tauri 开发服务器和前端热重载",
+      "useCase": "日常开发调试 | 修改 UI/逻辑后实时预览 | 使用 DevTools 检查运行时问题"
+    },
+    "build": {
+      "command": "bun run build",
+      "description": "仅构建前端（Vite）",
+      "useCase": "仅修改了前端代码（React/TypeScript）时快速验证构建 | 不想启动完整 Tauri 环境时"
+    },
+    "build:release": {
+      "command": "bun tauri build",
+      "description": "构建生产发布版本（前端 + Rust 编译 + 可执行文件）",
+      "useCase": "完成功能开发准备发布 | 测试最终打包效果 | 生成安装包"
+    },
+    "clean": {
+      "command": "cargo clean",
+      "description": "清理 Rust 编译缓存（target/ 目录）",
+      "useCase": "遇到奇怪的编译错误 | 依赖更新后想重置构建 | 磁盘空间不足时"
+    },
+    "check": {
+      "command": "cargo check",
+      "description": "快速检查 Rust 代码类型错误（不生成二进制）",
+      "useCase": "提交前快速验证 | 修改 Rust 代码后想快速确认无错误"
+    },
+    "fmt": {
+      "command": "cargo fmt",
+      "description": "格式化 Rust 代码为标准风格",
+      "useCase": "提交前确保格式一致 | 修复代码风格问题"
+    },
+    "clippy": {
+      "command": "cargo clippy",
+      "description": "运行 Rust linter 检查代码质量、最佳实践",
+      "useCase": "提交前检查 | 发现潜在 bug 或性能问题 | 修复 clippy 警告"
+    },
+    "test": {
+      "command": "cargo test",
+      "description": "运行 Rust 单元测试和集成测试",
+      "useCase": "修改 Rust 代码后验证功能正确性 | 修改后想确认未破坏现有功能"
+    }
+  },
+  "workflow": {
+    "dailyDev": ["bun tauri dev"],
+    "frontendOnly": ["bun run build"],
+    "beforeCommit": ["cargo fmt", "cargo clippy", "cargo test"],
+    "beforeRelease": ["bun tauri build"],
+    "troubleshoot": ["cargo clean", "cargo check"]
+  }
+}
