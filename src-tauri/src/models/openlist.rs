@@ -6,7 +6,7 @@
 use serde::{Deserialize, Serialize};
 
 /// 服务器配置结构体
-/// 
+///
 /// 用于存储和管理 OpenList 服务器的连接信息。
 /// 与前端 `ServerConfig` 类型对齐，支持多服务器管理和 MCP 集成。
 ///
@@ -182,7 +182,7 @@ pub struct FileOperationResult {
 }
 
 /// 文件复制/移动请求结构体
-/// 
+///
 /// 与前端 `CopyMoveRequest` 类型对齐，用于批量文件复制和移动操作。
 ///
 /// # 字段说明
@@ -202,7 +202,7 @@ pub struct CopyMoveRequest {
 }
 
 /// 文件重命名请求结构体
-/// 
+///
 /// 与前端 `RenameRequest` 类型对齐，用于文件重命名操作。
 ///
 /// # 字段说明

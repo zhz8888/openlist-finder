@@ -18,13 +18,13 @@
 //! 4. AI 助手通过 `tools/list` 获取可用工具列表
 //! 5. AI 助手通过 `tools/call` 调用具体工具
 
+use crate::commands::meilisearch;
+use crate::commands::openlist;
+use crate::models::openlist::{CopyMoveRequest, RenameRequest, ServerConfig};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::io::{self, BufRead, Write};
 use std::sync::{Arc, RwLock};
-use crate::commands::openlist;
-use crate::commands::meilisearch;
-use crate::models::openlist::{CopyMoveRequest, RenameRequest, ServerConfig};
 
 /// MCP 服务器配置类型别名
 pub type McpServerConfig = Arc<RwLock<Vec<ServerConfig>>>;
@@ -36,13 +36,13 @@ pub type McpServerConfig = Arc<RwLock<Vec<ServerConfig>>>;
 pub struct JsonRpcRequest {
     /// JSON-RPC 协议版本,固定为 "2.0"
     pub jsonrpc: String,
-    
+
     /// 请求唯一标识符,用于匹配请求和响应。通知(no notification)可为 None
     pub id: Option<i64>,
-    
+
     /// 要调用的方法名称
     pub method: String,
-    
+
     /// 方法参数,可选
     pub params: Option<Value>,
 }
@@ -55,14 +55,14 @@ pub struct JsonRpcRequest {
 pub struct JsonRpcResponse {
     /// JSON-RPC 协议版本,固定为 "2.0"
     pub jsonrpc: String,
-    
+
     /// 对应请求的ID
     pub id: Option<i64>,
-    
+
     /// 成功时的返回结果
     #[serde(skip_serializing_if = "Option::is_none")]
     pub result: Option<Value>,
-    
+
     /// 失败时的错误信息
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<JsonRpcError>,
@@ -80,10 +80,10 @@ pub struct JsonRpcResponse {
 pub struct JsonRpcError {
     /// 错误码
     pub code: i64,
-    
+
     /// 错误描述消息
     pub message: String,
-    
+
     /// 可选的附加错误数据
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<Value>,
@@ -96,10 +96,10 @@ pub struct JsonRpcError {
 pub struct McpTool {
     /// 工具名称,唯一标识
     pub name: String,
-    
+
     /// 工具功能描述
     pub description: String,
-    
+
     /// 输入参数的 JSON Schema,用于参数验证
     pub input_schema: Value,
 }
@@ -134,7 +134,8 @@ impl McpServer {
         let mut tools = vec![
             McpTool {
                 name: "list_directory".to_string(),
-                description: "List files and directories in a given path on an OpenList server".to_string(),
+                description: "List files and directories in a given path on an OpenList server"
+                    .to_string(),
                 input_schema: serde_json::json!({
                     "type": "object",
                     "properties": {
@@ -228,7 +229,8 @@ impl McpServer {
             },
             McpTool {
                 name: "edit_file".to_string(),
-                description: "Edit a text file on an OpenList server by updating its content".to_string(),
+                description: "Edit a text file on an OpenList server by updating its content"
+                    .to_string(),
                 input_schema: serde_json::json!({
                     "type": "object",
                     "properties": {
@@ -337,13 +339,16 @@ impl McpServer {
     ///
     /// 返回包含工具列表的 JSON-RPC 响应
     pub fn handle_tools_list(id: Option<i64>) -> JsonRpcResponse {
-        let tools: Vec<Value> = Self::get_tools().into_iter().map(|t| {
-            serde_json::json!({
-                "name": t.name,
-                "description": t.description,
-                "inputSchema": t.input_schema
+        let tools: Vec<Value> = Self::get_tools()
+            .into_iter()
+            .map(|t| {
+                serde_json::json!({
+                    "name": t.name,
+                    "description": t.description,
+                    "inputSchema": t.input_schema
+                })
             })
-        }).collect();
+            .collect();
 
         JsonRpcResponse {
             jsonrpc: "2.0".to_string(),
@@ -365,7 +370,8 @@ impl McpServer {
     /// 返回找到的 token，如果未找到则返回空字符串
     fn find_token(config: &McpServerConfig, server_url: &str) -> String {
         if let Ok(config_read) = config.read() {
-            config_read.iter()
+            config_read
+                .iter()
                 .find(|s| s.url == server_url)
                 .map(|s| s.token.clone())
                 .unwrap_or_default()
@@ -388,7 +394,11 @@ impl McpServer {
     /// # 返回值
     ///
     /// 返回工具执行结果或错误信息的 JSON-RPC 响应
-    pub async fn handle_tool_call(id: Option<i64>, params: Option<Value>, config: McpServerConfig) -> JsonRpcResponse {
+    pub async fn handle_tool_call(
+        id: Option<i64>,
+        params: Option<Value>,
+        config: McpServerConfig,
+    ) -> JsonRpcResponse {
         let params = match params {
             Some(p) => p,
             None => {
@@ -403,7 +413,10 @@ impl McpServer {
             }
         };
 
-        let arguments = params.get("arguments").cloned().unwrap_or(serde_json::json!({}));
+        let arguments = params
+            .get("arguments")
+            .cloned()
+            .unwrap_or(serde_json::json!({}));
 
         let result = match tool_name.as_str() {
             "list_directory" => {
@@ -435,13 +448,41 @@ impl McpServer {
                     Some(s) => s.to_string(),
                     None => return Self::handle_invalid_params(id, "Missing server_id"),
                 };
-                let limit = Some(arguments.get("limit").and_then(|v| v.as_u64()).unwrap_or(20) as i64);
-                let offset = Some(arguments.get("offset").and_then(|v| v.as_u64()).unwrap_or(0) as i64);
-                let host = arguments.get("host").and_then(|v| v.as_str()).unwrap_or("http://localhost:7700");
-                let api_key = arguments.get("api_key").and_then(|v| v.as_str()).unwrap_or("");
-                let index_prefix = arguments.get("index_prefix").and_then(|v| v.as_str()).unwrap_or("openlist");
+                let limit = Some(
+                    arguments
+                        .get("limit")
+                        .and_then(|v| v.as_u64())
+                        .unwrap_or(20) as i64,
+                );
+                let offset = Some(
+                    arguments
+                        .get("offset")
+                        .and_then(|v| v.as_u64())
+                        .unwrap_or(0) as i64,
+                );
+                let host = arguments
+                    .get("host")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("http://localhost:7700");
+                let api_key = arguments
+                    .get("api_key")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("");
+                let index_prefix = arguments
+                    .get("index_prefix")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("openlist");
                 let index_uid = format!("{}-{}", index_prefix, server_id);
-                match meilisearch::meilisearch_search(host.to_string(), api_key.to_string(), index_uid.to_string(), query, limit, offset).await {
+                match meilisearch::meilisearch_search(
+                    host.to_string(),
+                    api_key.to_string(),
+                    index_uid.to_string(),
+                    query,
+                    limit,
+                    offset,
+                )
+                .await
+                {
                     Ok(resp) => serde_json::json!({
                         "content": [{ "type": "text", "text": serde_json::to_string_pretty(&resp).unwrap_or_default() }]
                     }),
@@ -494,7 +535,10 @@ impl McpServer {
                     None => return Self::handle_invalid_params(id, "Missing dir"),
                 };
                 let names = match arguments.get("names").and_then(|v| v.as_array()) {
-                    Some(arr) => arr.iter().filter_map(|v| v.as_str().map(String::from)).collect::<Vec<_>>(),
+                    Some(arr) => arr
+                        .iter()
+                        .filter_map(|v| v.as_str().map(String::from))
+                        .collect::<Vec<_>>(),
                     None => return Self::handle_invalid_params(id, "Missing names"),
                 };
                 let token = Self::find_token(&config, &server_url);
@@ -522,7 +566,10 @@ impl McpServer {
                     None => return Self::handle_invalid_params(id, "Missing dst_dir"),
                 };
                 let names = match arguments.get("names").and_then(|v| v.as_array()) {
-                    Some(arr) => arr.iter().filter_map(|v| v.as_str().map(String::from)).collect::<Vec<_>>(),
+                    Some(arr) => arr
+                        .iter()
+                        .filter_map(|v| v.as_str().map(String::from))
+                        .collect::<Vec<_>>(),
                     None => return Self::handle_invalid_params(id, "Missing names"),
                 };
                 let copy_request = CopyMoveRequest {
@@ -555,7 +602,10 @@ impl McpServer {
                     None => return Self::handle_invalid_params(id, "Missing dst_dir"),
                 };
                 let names = match arguments.get("names").and_then(|v| v.as_array()) {
-                    Some(arr) => arr.iter().filter_map(|v| v.as_str().map(String::from)).collect::<Vec<_>>(),
+                    Some(arr) => arr
+                        .iter()
+                        .filter_map(|v| v.as_str().map(String::from))
+                        .collect::<Vec<_>>(),
                     None => return Self::handle_invalid_params(id, "Missing names"),
                 };
                 let move_request = CopyMoveRequest {
@@ -755,7 +805,11 @@ pub fn run_stdio_server(config: McpServerConfig) {
                                 data: None,
                             }),
                         };
-                        let _ = writeln!(stdout, "{}", serde_json::to_string(&response).unwrap_or_default());
+                        let _ = writeln!(
+                            stdout,
+                            "{}",
+                            serde_json::to_string(&response).unwrap_or_default()
+                        );
                         let _ = stdout.flush();
                         continue;
                     }
@@ -767,7 +821,11 @@ pub fn run_stdio_server(config: McpServerConfig) {
                         continue;
                     }
                     "tools/list" => McpServer::handle_tools_list(request.id),
-                    "tools/call" => rt.block_on(McpServer::handle_tool_call(request.id, request.params, config.clone())),
+                    "tools/call" => rt.block_on(McpServer::handle_tool_call(
+                        request.id,
+                        request.params,
+                        config.clone(),
+                    )),
                     "ping" => JsonRpcResponse {
                         jsonrpc: "2.0".to_string(),
                         id: request.id,
@@ -777,7 +835,11 @@ pub fn run_stdio_server(config: McpServerConfig) {
                     _ => McpServer::handle_method_not_found(request.id, &request.method),
                 };
 
-                let _ = writeln!(stdout, "{}", serde_json::to_string(&response).unwrap_or_default());
+                let _ = writeln!(
+                    stdout,
+                    "{}",
+                    serde_json::to_string(&response).unwrap_or_default()
+                );
                 let _ = stdout.flush();
             }
             Err(_) => break,

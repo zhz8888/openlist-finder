@@ -21,6 +21,7 @@ use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
+use tracing::warn;
 
 /// 系统密钥链服务名称
 const KEYRING_SERVICE: &str = "openlist-finder";
@@ -51,12 +52,11 @@ fn get_fallback_path() -> Result<PathBuf, String> {
     let app_data_dir = dirs::data_local_dir()
         .ok_or_else(|| "无法获取应用数据目录".to_string())?
         .join("openlist-finder");
-    
+
     if !app_data_dir.exists() {
-        fs::create_dir_all(&app_data_dir)
-            .map_err(|e| format!("创建数据目录失败: {}", e))?;
+        fs::create_dir_all(&app_data_dir).map_err(|e| format!("创建数据目录失败: {}", e))?;
     }
-    
+
     Ok(app_data_dir.join("encryption.key"))
 }
 
@@ -72,12 +72,31 @@ fn get_fallback_path() -> Result<PathBuf, String> {
 fn read_fallback_key() -> Result<Option<String>, String> {
     let path = get_fallback_path()?;
     if path.exists() {
-        let content = fs::read_to_string(&path)
-            .map_err(|e| format!("读取密钥文件失败: {}", e))?;
-        // 去除可能的空白字符(换行符、空格等)
-        let trimmed = content.trim().to_string();
-        eprintln!("[Keyring] 从降级方案读取密钥,长度: {}", trimmed.len());
-        Ok(Some(trimmed))
+        let content = fs::read_to_string(&path).map_err(|e| format!("读取密钥文件失败: {}", e))?;
+
+        if content.trim().is_empty() {
+            return Ok(None);
+        }
+
+        // 优先尝试使用 keycrypt 解密
+        match keycrypt::decrypt(content.trim()) {
+            Ok(decrypted) => {
+                let key = decrypted.as_str().to_string();
+                eprintln!("[Keyring] 从降级方案解密读取密钥");
+                Ok(Some(key))
+            }
+            Err(_) => {
+                // 解密失败，尝试明文读取（兼容旧格式或未加密存储）
+                let trimmed = content.trim().to_string();
+                if !trimmed.is_empty() {
+                    eprintln!("[Keyring] 从降级方案读取明文密钥");
+                    warn!("[Keyring] 密钥文件未加密或已损坏，存在安全风险");
+                    Ok(Some(trimmed))
+                } else {
+                    Ok(None)
+                }
+            }
+        }
     } else {
         eprintln!("[Keyring] 降级方案密钥文件不存在");
         Ok(None)
@@ -93,10 +112,36 @@ fn read_fallback_key() -> Result<Option<String>, String> {
 /// * `key` - 要存储的密钥字符串
 fn write_fallback_key(key: &str) -> Result<(), String> {
     let path = get_fallback_path()?;
-    fs::write(&path, key)
-        .map_err(|e| format!("写入密钥文件失败: {}", e))?;
-    eprintln!("[Keyring] 密钥已写入降级方案文件,长度: {}", key.len());
-    Ok(())
+
+    // 优先尝试使用 keycrypt 加密存储
+    match keycrypt::encrypt(key) {
+        Ok(encrypted) => {
+            fs::write(&path, encrypted).map_err(|e| format!("写入密钥文件失败: {}", e))?;
+            // 设置文件权限为 0o600，确保只有所有者可以读写
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                fs::set_permissions(&path, fs::Permissions::from_mode(0o600))
+                    .map_err(|e| format!("设置文件权限失败: {}", e))?;
+            }
+            eprintln!("[Keyring] 密钥以加密形式写入降级方案文件");
+            Ok(())
+        }
+        Err(e) => {
+            // keycrypt 加密失败，降级为明文存储
+            eprintln!("[Keyring] 密钥加密失败: {}，使用明文存储", e);
+            warn!("[Keyring] 系统密钥链和加密存储均不可用，密钥以明文形式存储于 {} - 存在安全风险", path.display());
+            fs::write(&path, key).map_err(|e| format!("写入密钥文件失败: {}", e))?;
+            // 设置文件权限为 0o600，确保只有所有者可以读写
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                fs::set_permissions(&path, fs::Permissions::from_mode(0o600))
+                    .map_err(|e| format!("设置文件权限失败: {}", e))?;
+            }
+            Ok(())
+        }
+    }
 }
 
 /// 删除降级方案密钥文件
@@ -105,8 +150,7 @@ fn write_fallback_key(key: &str) -> Result<(), String> {
 fn delete_fallback_key() -> Result<(), String> {
     let path = get_fallback_path()?;
     if path.exists() {
-        fs::remove_file(&path)
-            .map_err(|e| format!("删除密钥文件失败: {}", e))?;
+        fs::remove_file(&path).map_err(|e| format!("删除密钥文件失败: {}", e))?;
     }
     Ok(())
 }
@@ -118,13 +162,13 @@ fn delete_fallback_key() -> Result<(), String> {
 pub struct KeyringResult {
     /// 操作是否成功
     pub success: bool,
-    
+
     /// 返回的数据(如获取到的密钥或生成的密钥)
     pub data: Option<String>,
-    
+
     /// 错误信息(操作失败时)
     pub error: Option<String>,
-    
+
     /// 是否使用了降级方案(文件存储而非系统密钥链)
     pub fallback_used: bool,
 }
@@ -159,6 +203,7 @@ pub fn keyring_get_key() -> Result<KeyringResult, String> {
                     match read_fallback_key() {
                         Ok(Some(key)) => {
                             eprintln!("[Keyring] 从降级方案成功获取密钥");
+                            warn!("[Keyring] 系统密钥链不可用，密钥以加密文件形式存储，安全性降低");
                             Ok(KeyringResult {
                                 success: true,
                                 data: Some(key),
@@ -168,6 +213,7 @@ pub fn keyring_get_key() -> Result<KeyringResult, String> {
                         }
                         Ok(None) => {
                             eprintln!("[Keyring] 降级方案中也无密钥");
+                            warn!("[Keyring] 系统密钥链不可用，密钥文件不存在");
                             Ok(KeyringResult {
                                 success: true,
                                 data: None,
@@ -186,6 +232,7 @@ pub fn keyring_get_key() -> Result<KeyringResult, String> {
                     match read_fallback_key() {
                         Ok(Some(key)) => {
                             eprintln!("[Keyring] 从降级方案成功获取密钥");
+                            warn!("[Keyring] 系统密钥链不可用，密钥以加密文件形式存储，安全性降低");
                             Ok(KeyringResult {
                                 success: true,
                                 data: Some(key),
@@ -195,6 +242,7 @@ pub fn keyring_get_key() -> Result<KeyringResult, String> {
                         }
                         Ok(None) => {
                             eprintln!("[Keyring] 降级方案中也无密钥");
+                            warn!("[Keyring] 系统密钥链不可用，密钥文件不存在");
                             Ok(KeyringResult {
                                 success: true,
                                 data: None,
@@ -204,7 +252,10 @@ pub fn keyring_get_key() -> Result<KeyringResult, String> {
                         }
                         Err(fallback_err) => {
                             eprintln!("[Keyring] 降级方案读取失败: {}", fallback_err);
-                            Err(format!("获取密钥失败，降级方案也失败: {} (原始错误: {})", fallback_err, e))
+                            Err(format!(
+                                "获取密钥失败，降级方案也失败: {} (原始错误: {})",
+                                fallback_err, e
+                            ))
                         }
                     }
                 }
@@ -215,6 +266,7 @@ pub fn keyring_get_key() -> Result<KeyringResult, String> {
             match read_fallback_key() {
                 Ok(Some(key)) => {
                     eprintln!("[Keyring] 从降级方案成功获取密钥");
+                    warn!("[Keyring] 系统密钥链不可用，密钥以加密文件形式存储，安全性降低");
                     Ok(KeyringResult {
                         success: true,
                         data: Some(key),
@@ -224,6 +276,7 @@ pub fn keyring_get_key() -> Result<KeyringResult, String> {
                 }
                 Ok(None) => {
                     eprintln!("[Keyring] 降级方案中也无密钥");
+                    warn!("[Keyring] 系统密钥链不可用，密钥文件不存在");
                     Ok(KeyringResult {
                         success: true,
                         data: None,
@@ -233,7 +286,10 @@ pub fn keyring_get_key() -> Result<KeyringResult, String> {
                 }
                 Err(fallback_err) => {
                     eprintln!("[Keyring] 降级方案读取失败: {}", fallback_err);
-                    Err(format!("获取密钥失败，降级方案也失败: {} (原始错误: {})", fallback_err, e))
+                    Err(format!(
+                        "获取密钥失败，降级方案也失败: {} (原始错误: {})",
+                        fallback_err, e
+                    ))
                 }
             }
         }
@@ -255,35 +311,34 @@ pub fn keyring_get_key() -> Result<KeyringResult, String> {
 #[tauri::command]
 pub fn keyring_set_key(key: String) -> Result<KeyringResult, String> {
     eprintln!("[Keyring] 开始设置密钥，长度: {}", key.len());
-    eprintln!("[Keyring] 密钥前缀: {}...", &key[..8.min(key.len())]);
-    
+
     match get_entry() {
-        Ok(entry) => {
-            match entry.set_password(&key) {
-                Ok(()) => {
-                    eprintln!("[Keyring] 密钥已成功写入系统密钥链");
-                    Ok(KeyringResult {
-                        success: true,
-                        data: None,
-                        error: None,
-                        fallback_used: false,
-                    })
-                }
-                Err(e) => {
-                    eprintln!("[Keyring] 系统密钥链写入失败: {}，使用降级方案", e);
-                    write_fallback_key(&key)?;
-                    Ok(KeyringResult {
-                        success: true,
-                        data: None,
-                        error: None,
-                        fallback_used: true,
-                    })
-                }
+        Ok(entry) => match entry.set_password(&key) {
+            Ok(()) => {
+                eprintln!("[Keyring] 密钥已成功写入系统密钥链");
+                Ok(KeyringResult {
+                    success: true,
+                    data: None,
+                    error: None,
+                    fallback_used: false,
+                })
             }
-        }
+            Err(e) => {
+                eprintln!("[Keyring] 系统密钥链写入失败: {}，使用降级方案", e);
+                write_fallback_key(&key)?;
+                warn!("[Keyring] 系统密钥链不可用，密钥以加密文件形式存储，安全性降低");
+                Ok(KeyringResult {
+                    success: true,
+                    data: None,
+                    error: None,
+                    fallback_used: true,
+                })
+            }
+        },
         Err(e) => {
             eprintln!("[Keyring] 创建密钥链条目失败: {}，使用降级方案", e);
             write_fallback_key(&key)?;
+            warn!("[Keyring] 系统密钥链不可用，密钥以加密文件形式存储，安全性降低");
             Ok(KeyringResult {
                 success: true,
                 data: None,
@@ -305,7 +360,7 @@ pub fn keyring_set_key(key: String) -> Result<KeyringResult, String> {
 #[tauri::command]
 pub fn keyring_delete_key() -> Result<KeyringResult, String> {
     let mut keyring_deleted = false;
-    let mut fallback_deleted = false;
+    let mut fallback_delete_failed = false;
 
     if let Ok(entry) = get_entry() {
         if entry.delete_credential().is_ok() {
@@ -313,11 +368,12 @@ pub fn keyring_delete_key() -> Result<KeyringResult, String> {
         }
     }
 
-    if delete_fallback_key().is_ok() {
-        fallback_deleted = true;
+    if let Err(e) = delete_fallback_key() {
+        warn!("[Keyring] 删除降级方案密钥文件失败: {}", e);
+        fallback_delete_failed = true;
     }
 
-    if !keyring_deleted && !fallback_deleted {
+    if !keyring_deleted && fallback_delete_failed {
         return Err("删除密钥失败".to_string());
     }
 
@@ -352,29 +408,29 @@ pub fn keyring_generate_key() -> Result<KeyringResult, String> {
         .collect();
 
     match get_entry() {
-        Ok(entry) => {
-            match entry.set_password(&key) {
-                Ok(()) => Ok(KeyringResult {
+        Ok(entry) => match entry.set_password(&key) {
+            Ok(()) => Ok(KeyringResult {
+                success: true,
+                data: Some(key),
+                error: None,
+                fallback_used: false,
+            }),
+            Err(e) => {
+                eprintln!("[Keyring] 系统密钥链写入失败: {}，使用降级方案", e);
+                write_fallback_key(&key)?;
+                warn!("[Keyring] 系统密钥链不可用，密钥以加密文件形式存储，安全性降低");
+                Ok(KeyringResult {
                     success: true,
                     data: Some(key),
                     error: None,
-                    fallback_used: false,
-                }),
-                Err(e) => {
-                    eprintln!("[Keyring] 系统密钥链写入失败: {}，使用降级方案", e);
-                    write_fallback_key(&key)?;
-                    Ok(KeyringResult {
-                        success: true,
-                        data: Some(key),
-                        error: None,
-                        fallback_used: true,
-                    })
-                }
+                    fallback_used: true,
+                })
             }
-        }
+        },
         Err(e) => {
             eprintln!("[Keyring] 创建密钥链条目失败: {}，使用降级方案", e);
             write_fallback_key(&key)?;
+            warn!("[Keyring] 系统密钥链不可用，密钥以加密文件形式存储，安全性降低");
             Ok(KeyringResult {
                 success: true,
                 data: Some(key),

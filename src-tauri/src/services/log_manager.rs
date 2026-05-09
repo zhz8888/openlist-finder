@@ -10,11 +10,11 @@
 //! - 集成tracing框架作为Layer
 //! - 自动清理过期日志(基于最大容量限制)
 
-use serde::{Deserialize, Serialize};
-use std::sync::{Mutex, Arc};
-use std::collections::VecDeque;
 use chrono::Local;
-use tracing::{Event, Subscriber, Level};
+use serde::{Deserialize, Serialize};
+use std::collections::VecDeque;
+use std::sync::{Arc, Mutex};
+use tracing::{Event, Level, Subscriber};
 use tracing_subscriber::layer::{Context, Layer};
 
 /// 日志条目结构体
@@ -25,13 +25,13 @@ use tracing_subscriber::layer::{Context, Layer};
 pub struct LogEntry {
     /// 日志时间戳,格式: "YYYY-MM-DD HH:MM:SS.mmm"
     pub timestamp: String,
-    
+
     /// 日志级别,可选值: "TRACE", "DEBUG", "INFO", "WARN", "ERROR"
     pub level: String,
-    
+
     /// 日志来源模块路径,如 "openlist_finder::services::openlist"
     pub target: String,
-    
+
     /// 日志消息内容
     pub message: String,
 }
@@ -111,12 +111,18 @@ impl LogManager {
     /// # 返回值
     ///
     /// 返回过滤并分页后的日志条目向量
-    pub fn get_logs(&self, level_filter: Option<&str>, offset: usize, limit: usize) -> Vec<LogEntry> {
+    pub fn get_logs(
+        &self,
+        level_filter: Option<&str>,
+        offset: usize,
+        limit: usize,
+    ) -> Vec<LogEntry> {
         let logs = self.logs.lock().unwrap();
-        
+
         // 根据级别过滤日志
         let filtered: Vec<LogEntry> = match level_filter {
-            Some(level) => logs.iter()
+            Some(level) => logs
+                .iter()
                 .filter(|log| log.level == level)
                 .cloned()
                 .collect(),
@@ -126,7 +132,7 @@ impl LogManager {
         // 计算分页范围
         let start = offset.min(filtered.len());
         let end = (offset + limit).min(filtered.len());
-        
+
         filtered[start..end].to_vec()
     }
 
@@ -141,7 +147,7 @@ impl LogManager {
     /// 返回符合条件的日志总数
     pub fn get_total_count(&self, level_filter: Option<&str>) -> usize {
         let logs = self.logs.lock().unwrap();
-        
+
         match level_filter {
             Some(level) => logs.iter().filter(|log| log.level == level).count(),
             None => logs.len(),
@@ -267,11 +273,13 @@ where
 
         // 提取目标模块
         let target = event.metadata().target().to_string();
-        
+
         // 使用 JsonVisitor 解析事件消息
         let mut visitor = JsonVisitor::new();
         event.record(&mut visitor);
-        let message = visitor.message.unwrap_or_else(|| event.metadata().name().to_string());
+        let message = visitor
+            .message
+            .unwrap_or_else(|| event.metadata().name().to_string());
 
         // 添加到缓存
         self.add_log(level, &target, &message);
@@ -315,7 +323,12 @@ impl tracing::field::Visit for JsonVisitor {
         if self.message.is_none() {
             self.message = Some(format!("{}: {}", field.name(), value));
         } else {
-            self.message = Some(format!("{} {}: {}", self.message.as_ref().unwrap(), field.name(), value));
+            self.message = Some(format!(
+                "{} {}: {}",
+                self.message.as_ref().unwrap(),
+                field.name(),
+                value
+            ));
         }
     }
 
@@ -332,7 +345,12 @@ impl tracing::field::Visit for JsonVisitor {
         if self.message.is_none() {
             self.message = Some(format!("{}: {:?}", field.name(), value));
         } else {
-            self.message = Some(format!("{} {}: {:?}", self.message.as_ref().unwrap(), field.name(), value));
+            self.message = Some(format!(
+                "{} {}: {:?}",
+                self.message.as_ref().unwrap(),
+                field.name(),
+                value
+            ));
         }
     }
 }

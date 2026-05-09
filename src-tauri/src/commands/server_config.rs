@@ -11,9 +11,9 @@
 //! - 删除服务器
 //! - 设置默认服务器
 
+use crate::models::openlist::ServerConfig;
 use serde::{Deserialize, Serialize};
 use tauri_plugin_store::StoreExt;
-use crate::models::openlist::ServerConfig;
 
 /// 存储文件名称
 const SERVERS_STORE_FILE: &str = "servers.json";
@@ -74,7 +74,9 @@ pub fn save_servers(app: tauri::AppHandle, servers: Vec<ServerConfig>) -> Result
 
     store.set(SERVERS_KEY, value);
 
-    store.save().map_err(|e| format!("Failed to save store: {}", e))?;
+    store
+        .save()
+        .map_err(|e| format!("Failed to save store: {}", e))?;
 
     Ok(())
 }

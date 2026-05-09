@@ -23,9 +23,9 @@ mod services;
 
 use std::sync::{Arc, RwLock};
 
-use tauri::Manager;
-use services::log_manager::{LogManager, LogManagerLayer};
 use crate::models::openlist::ServerConfig;
+use services::log_manager::{LogManager, LogManagerLayer};
+use tauri::Manager;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
@@ -57,7 +57,9 @@ async fn start_mcp_server(app: tauri::AppHandle) -> Result<String, String> {
 
     tokio::task::spawn_blocking(move || {
         commands::mcp_server::run_stdio_server(config);
-    }).await.map_err(|e| format!("MCP server task failed: {}", e))?;
+    })
+    .await
+    .map_err(|e| format!("MCP server task failed: {}", e))?;
     Ok("MCP server stopped".to_string())
 }
 
@@ -85,13 +87,13 @@ pub fn run() {
     // 创建日志管理器实例
     let log_manager = LogManager::new();
     let log_manager_for_layer = log_manager.clone();
-    
+
     // 配置日志层：自定义存储层 + 控制台输出层
     let log_layer = LogManagerLayer::new(
         log_manager_for_layer.get_log_manager(),
         10000, // 最大保留 10000 条日志
     );
-    
+
     tracing_subscriber::registry()
         .with(log_layer)
         .with(
@@ -100,11 +102,11 @@ pub fn run() {
                 .compact(),
         )
         .init();
-    
+
     tracing::info!("OpenList Finder application starting");
     tracing::debug!("Initializing Tauri builder with plugins");
     tracing::info!("Loading application configuration");
-    
+
     // 构建 Tauri 应用
     tauri::Builder::default()
         // 注册插件

@@ -29,7 +29,12 @@ use crate::services::openlist::OpenListService;
 ///
 /// 成功时返回访问令牌字符串,失败时返回错误信息
 #[tauri::command]
-pub async fn login_to_openlist(url: String, username: String, password: String, otp_code: Option<String>) -> Result<String, String> {
+pub async fn login_to_openlist(
+    url: String,
+    username: String,
+    password: String,
+    otp_code: Option<String>,
+) -> Result<String, String> {
     let service = OpenListService::new();
     service.login(&url, &username, &password, otp_code).await
 }
@@ -47,7 +52,10 @@ pub async fn login_to_openlist(url: String, username: String, password: String, 
 ///
 /// 成功时返回 `ServerTestResult` 包含连接状态和服务器信息,失败时返回错误信息
 #[tauri::command]
-pub async fn test_openlist_connection(url: String, token: String) -> Result<ServerTestResult, String> {
+pub async fn test_openlist_connection(
+    url: String,
+    token: String,
+) -> Result<ServerTestResult, String> {
     let service = OpenListService::new();
     service.test_connection(&url, &token).await
 }
@@ -66,7 +74,11 @@ pub async fn test_openlist_connection(url: String, token: String) -> Result<Serv
 ///
 /// 成功时返回 `FileListResponse` 包含文件列表,失败时返回错误信息
 #[tauri::command]
-pub async fn list_directory(url: String, token: String, path: String) -> Result<FileListResponse, String> {
+pub async fn list_directory(
+    url: String,
+    token: String,
+    path: String,
+) -> Result<FileListResponse, String> {
     let service = OpenListService::new();
     service.list_directory(&url, &token, &path).await
 }
@@ -85,9 +97,21 @@ pub async fn list_directory(url: String, token: String, path: String) -> Result<
 ///
 /// 成功时返回 `FileOperationResult` 包含操作结果,失败时返回错误信息
 #[tauri::command]
-pub async fn rename_file(url: String, token: String, request: RenameRequest) -> Result<FileOperationResult, String> {
+pub async fn rename_file(
+    url: String,
+    token: String,
+    request: RenameRequest,
+) -> Result<FileOperationResult, String> {
     let service = OpenListService::new();
-    service.rename(&url, &token, &request.dir, &request.old_name, &request.new_name).await
+    service
+        .rename(
+            &url,
+            &token,
+            &request.dir,
+            &request.old_name,
+            &request.new_name,
+        )
+        .await
 }
 
 /// 删除文件
@@ -105,7 +129,12 @@ pub async fn rename_file(url: String, token: String, request: RenameRequest) -> 
 ///
 /// 成功时返回 `FileOperationResult` 包含操作结果,失败时返回错误信息
 #[tauri::command]
-pub async fn delete_files(url: String, token: String, dir: String, names: Vec<String>) -> Result<FileOperationResult, String> {
+pub async fn delete_files(
+    url: String,
+    token: String,
+    dir: String,
+    names: Vec<String>,
+) -> Result<FileOperationResult, String> {
     let service = OpenListService::new();
     service.delete(&url, &token, &dir, names).await
 }
@@ -124,9 +153,21 @@ pub async fn delete_files(url: String, token: String, dir: String, names: Vec<St
 ///
 /// 成功时返回 `FileOperationResult` 包含操作结果,失败时返回错误信息
 #[tauri::command]
-pub async fn copy_files(url: String, token: String, request: CopyMoveRequest) -> Result<FileOperationResult, String> {
+pub async fn copy_files(
+    url: String,
+    token: String,
+    request: CopyMoveRequest,
+) -> Result<FileOperationResult, String> {
     let service = OpenListService::new();
-    service.copy(&url, &token, &request.src_dir, &request.dst_dir, request.names).await
+    service
+        .copy(
+            &url,
+            &token,
+            &request.src_dir,
+            &request.dst_dir,
+            request.names,
+        )
+        .await
 }
 
 /// 移动文件
@@ -143,9 +184,21 @@ pub async fn copy_files(url: String, token: String, request: CopyMoveRequest) ->
 ///
 /// 成功时返回 `FileOperationResult` 包含操作结果,失败时返回错误信息
 #[tauri::command]
-pub async fn move_files(url: String, token: String, request: CopyMoveRequest) -> Result<FileOperationResult, String> {
+pub async fn move_files(
+    url: String,
+    token: String,
+    request: CopyMoveRequest,
+) -> Result<FileOperationResult, String> {
     let service = OpenListService::new();
-    service.move_files(&url, &token, &request.src_dir, &request.dst_dir, request.names).await
+    service
+        .move_files(
+            &url,
+            &token,
+            &request.src_dir,
+            &request.dst_dir,
+            request.names,
+        )
+        .await
 }
 
 /// 获取文件信息

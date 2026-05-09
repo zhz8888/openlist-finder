@@ -8,9 +8,9 @@
 //! - 清空所有日志
 //! - 接收前端日志并存储
 
+use crate::services::log_manager::LogManager;
 use serde::{Deserialize, Serialize};
 use tauri::State;
-use crate::services::log_manager::LogManager;
 
 /// 获取日志请求结构体
 ///
@@ -19,10 +19,10 @@ use crate::services::log_manager::LogManager;
 pub struct GetLogsRequest {
     /// 可选的日志级别过滤器,如 "INFO", "ERROR" 等
     pub level: Option<String>,
-    
+
     /// 分页偏移量,从第几条日志开始返回
     pub offset: usize,
-    
+
     /// 分页限制,最多返回多少条日志
     pub limit: usize,
 }
@@ -34,7 +34,7 @@ pub struct GetLogsRequest {
 pub struct GetLogsResponse {
     /// 当前页的日志条目列表
     pub logs: Vec<crate::services::log_manager::LogEntry>,
-    
+
     /// 符合条件的日志总数(用于分页计算)
     pub total: usize,
 }
@@ -48,10 +48,10 @@ pub struct FrontendLogEntry {
     /// 日志时间戳(由前端生成,后端暂不使用)
     #[allow(dead_code)]
     pub timestamp: String,
-    
+
     /// 日志级别
     pub level: String,
-    
+
     /// 日志消息内容
     pub message: String,
 }
@@ -74,11 +74,7 @@ pub fn get_logs(
     request: GetLogsRequest,
 ) -> Result<GetLogsResponse, String> {
     let total = log_manager.get_total_count(request.level.as_deref());
-    let logs = log_manager.get_logs(
-        request.level.as_deref(),
-        request.offset,
-        request.limit,
-    );
+    let logs = log_manager.get_logs(request.level.as_deref(), request.offset, request.limit);
 
     Ok(GetLogsResponse { logs, total })
 }
@@ -118,10 +114,6 @@ pub fn forward_frontend_log(
     log_manager: State<LogManager>,
     log_entry: FrontendLogEntry,
 ) -> Result<(), String> {
-    log_manager.add_log(
-        &log_entry.level,
-        "frontend",
-        &log_entry.message,
-    );
+    log_manager.add_log(&log_entry.level, "frontend", &log_entry.message);
     Ok(())
 }
