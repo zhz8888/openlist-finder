@@ -7,7 +7,7 @@ import type {
 } from "@/types";
 
 function isTauriAvailable(): boolean {
-  return typeof window !== "undefined" && 
+  return typeof window !== "undefined" &&
     "__TAURI_INTERNALS__" in window;
 }
 
@@ -17,9 +17,20 @@ function checkTauriEnvironment(): void {
   }
 }
 
-export async function testConnection(host: string, apiKey: string): Promise<boolean> {
+export interface MeilisearchTestResult {
+  success: boolean;
+  message: string;
+}
+
+export async function testConnection(host: string, apiKey: string): Promise<MeilisearchTestResult> {
   checkTauriEnvironment();
-  return invoke("test_meilisearch_connection", { host, apiKey });
+  try {
+    const result = await invoke<boolean>("test_meilisearch_connection", { host, apiKey });
+    return { success: result, message: result ? "连接成功" : "连接失败" };
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    return { success: false, message: errorMsg };
+  }
 }
 
 export async function createIndex(host: string, apiKey: string, indexUid: string): Promise<TaskInfo> {

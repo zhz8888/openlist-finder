@@ -135,7 +135,7 @@ export function SettingsPage() {
     try {
       logger.info(`[MeilisearchConnectionTest] Starting connection test: ${meilisearch.host}`);
       const result = await testMeilisearchConnection(meilisearch.host, meilisearch.apiKey);
-      if (result) {
+      if (result.success) {
         logger.info(`[MeilisearchConnectionTest] Connection successful, creating indexes for all servers...`);
         setMeilisearchTestResult("连接成功！正在为所有服务器创建索引...");
         addToast("info", "Meilisearch 连接成功，正在创建索引...");
@@ -173,9 +173,9 @@ export function SettingsPage() {
           addToast("success", "Meilisearch 连接成功");
         }
       } else {
-        logger.error(`[MeilisearchConnectionTest] Connection failed`);
-        setMeilisearchTestResult("连接失败");
-        addToast("error", "Meilisearch 连接失败");
+        logger.error(`[MeilisearchConnectionTest] Connection failed: ${result.message}`);
+        setMeilisearchTestResult(`连接失败：${result.message}`);
+        addToast("error", `Meilisearch 连接失败：${result.message}`);
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
