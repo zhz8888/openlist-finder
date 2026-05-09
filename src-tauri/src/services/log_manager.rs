@@ -12,6 +12,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::sync::{Mutex, Arc};
+use std::collections::VecDeque;
 use chrono::Local;
 use tracing::{Event, Subscriber, Level};
 use tracing_subscriber::layer::{Context, Layer};
@@ -49,9 +50,9 @@ pub struct LogEntry {
 /// ```
 #[derive(Clone)]
 pub struct LogManager {
-    /// 日志条目缓存,使用Mutex保证线程安全
-    logs: Arc<Mutex<Vec<LogEntry>>>,
-    
+    /// 日志条目缓存,使用Mutex保证线程安全,使用VecDeque实现O(1)的首尾操作
+    logs: Arc<Mutex<VecDeque<LogEntry>>>,
+
     /// 最大日志条数限制,超出后自动移除最旧的日志
     max_logs: usize,
 }
@@ -66,7 +67,7 @@ impl LogManager {
     /// 返回初始化后的 `LogManager` 实例
     pub fn new() -> Self {
         Self {
-            logs: Arc::new(Mutex::new(Vec::new())),
+            logs: Arc::new(Mutex::new(VecDeque::new())),
             max_logs: 10000,
         }
     }
@@ -83,10 +84,10 @@ impl LogManager {
     /// * `message` - 日志消息内容
     pub fn add_log(&self, level: &str, target: &str, message: &str) {
         let mut logs = self.logs.lock().unwrap();
-        
-        // 达到容量上限时,移除最旧的日志
+
+        // 达到容量上限时,使用 VecDeque::pop_front() O(1) 移除最旧的日志
         if logs.len() >= self.max_logs {
-            logs.remove(0);
+            logs.pop_front();
         }
 
         logs.push(LogEntry {
@@ -163,7 +164,7 @@ impl LogManager {
     /// # 返回值
     ///
     /// 返回日志缓存的共享引用
-    pub fn get_log_manager(&self) -> Arc<Mutex<Vec<LogEntry>>> {
+    pub fn get_log_manager(&self) -> Arc<Mutex<VecDeque<LogEntry>>> {
         self.logs.clone()
     }
 }
@@ -186,9 +187,9 @@ impl LogManager {
 ///     .init();
 /// ```
 pub struct LogManagerLayer {
-    /// 共享的日志缓存引用
-    logs: Arc<Mutex<Vec<LogEntry>>>,
-    
+    /// 共享的日志缓存引用,使用 VecDeque 实现高效的队首操作
+    logs: Arc<Mutex<VecDeque<LogEntry>>>,
+
     /// 最大日志条数限制
     max_logs: usize,
 }
@@ -204,7 +205,7 @@ impl LogManagerLayer {
     /// # 返回值
     ///
     /// 返回初始化后的 `LogManagerLayer` 实例
-    pub fn new(logs: Arc<Mutex<Vec<LogEntry>>>, max_logs: usize) -> Self {
+    pub fn new(logs: Arc<Mutex<VecDeque<LogEntry>>>, max_logs: usize) -> Self {
         Self { logs, max_logs }
     }
 
@@ -220,10 +221,10 @@ impl LogManagerLayer {
     /// * `message` - 日志消息内容
     fn add_log(&self, level: &str, target: &str, message: &str) {
         let mut logs = self.logs.lock().unwrap();
-        
-        // 达到容量上限时,移除最旧的日志
+
+        // 达到容量上限时,使用 VecDeque::pop_front() O(1) 移除最旧的日志
         if logs.len() >= self.max_logs {
-            logs.remove(0);
+            logs.pop_front();
         }
 
         logs.push(LogEntry {
