@@ -15,7 +15,6 @@ export interface FileInfo {
   created?: string;
   sign?: string;
   thumb?: string;
-  hashInfo?: unknown;
   path?: string;
   content?: string;
 }
@@ -38,7 +37,6 @@ export interface FileDetail {
   created?: string;
   sign?: string;
   thumb?: string;
-  hashInfo?: unknown;
   path?: string;
   content?: string;
 }
