@@ -29,6 +29,7 @@ const LEVEL_BADGE: Record<string, string> = {
 };
 
 const COPY_CONFIRM_DURATION = 2000;
+const DEBOUNCE_DELAY = 300;
 
 export function LogViewerPage() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -39,6 +40,7 @@ export function LogViewerPage() {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const logContainerRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadLogs = useCallback(async () => {
     if (loadingRef.current) return;
@@ -69,8 +71,18 @@ export function LogViewerPage() {
   }, [selectedLevel]);
 
   useEffect(() => {
-    loadLogs();
-  }, [selectedLevel]);
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+    debounceRef.current = setTimeout(() => {
+      loadLogs();
+    }, DEBOUNCE_DELAY);
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, [selectedLevel, loadLogs]);
 
   const copyLog = async (log: LogEntry, index: number) => {
     try {
