@@ -167,11 +167,12 @@ export function FileList() {
   const loadPreviewContent = useCallback(async (file: FileInfo) => {
     const server = getActiveServer();
     if (!server || !file.path) return;
+    const filePath = file.path;
     setPreviewLoading(true);
     try {
       logger.debug(`[OpenList] Loading preview content for "${file.name}"`);
       const info = await executeWithTokenRefresh(
-        () => getFileInfo(server.url, server.token, file.path!)
+        () => getFileInfo(server.url, server.token, filePath)
       );
       if (info.content) {
         logger.debug(`[OpenList] Preview content loaded for "${file.name}"`);
@@ -268,11 +269,12 @@ export function FileList() {
     if (!renameModal || !renameModal.file.path) return;
     const server = getActiveServer();
     if (!server) return;
+    const filePath = renameModal.file.path;
     try {
       logger.info(`[OpenList] Renaming file "${renameModal.file.name}" to "${renameModal.newName}"`);
       await executeWithTokenRefresh(
         () => renameFile(server.url, server.token, {
-          dir: renameModal.file.path!.replace(/\/[^/]+$/, "") || "/",
+          dir: filePath.replace(/\/[^/]+$/, "") || "/",
           oldName: renameModal.file.name,
           newName: renameModal.newName
         })
@@ -292,11 +294,12 @@ export function FileList() {
     if (!deleteModal || !deleteModal[0]?.path) return;
     const server = getActiveServer();
     if (!server) return;
+    const filePath = deleteModal[0].path;
     try {
       const fileNames = deleteModal.map((f) => f.name);
       logger.info(`[OpenList] Deleting ${deleteModal.length} file(s): ${fileNames.join(", ")}`);
       await executeWithTokenRefresh(
-        () => deleteFiles(server.url, server.token, deleteModal[0].path!.replace(/\/[^/]+$/, "") || "/", fileNames)
+        () => deleteFiles(server.url, server.token, filePath.replace(/\/[^/]+$/, "") || "/", fileNames)
       );
       logger.info(`[OpenList] ${deleteModal.length} file(s) deleted successfully`);
       setDeleteModal(null);
