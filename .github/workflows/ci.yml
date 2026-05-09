@@ -29,35 +29,118 @@ jobs:
 
     steps:
       - name: Checkout repository
+        id: checkout
         uses: actions/checkout@v4
 
       - name: Install dependencies (Ubuntu only)
+        id: install-deps
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
       - name: Install cross-compilation tools (Linux arm64)
+        id: install-cross
         if: matrix.target == 'aarch64-unknown-linux-gnu'
         run: |
           sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
           echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
 
       - name: Setup Node.js
+        id: setup-node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Install Rust stable
+        id: setup-rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
 
+      - name: Install Bun
+        id: install-bun
+        uses: oven-sh/setup-bun@v2
+
       - name: Install frontend dependencies
-        run: npm install
+        id: install-deps-front
+        run: bun install
 
       - name: Build frontend
-        run: npm run build
+        id: build-frontend
+        run: bun run build
 
       - name: Build Tauri app (check only)
-        run: cargo check --manifest-path src-tauri/Cargo.toml ${{ matrix.target != '' && format('--target {0}', matrix.target) || '' }}
+        id: cargo-check
+        run: cargo check --manifest-path src-tauri/Cargo.toml
+
+      - name: Upload artifacts
+        id: upload-artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-check-${{ matrix.platform }}-${{ matrix.target }}
+          path: |
+            dist/**
+            src-tauri/target/${{ matrix.target }}/debug/** 2>/dev/null || true
+            src-tauri/target/${{ matrix.target }}/release/** 2>/dev/null || true
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Generate build summary
+        run: |
+          # Function to check step status and format emoji
+          status_emoji() {
+            if [ "$1" == "success" ]; then echo "✅"; else echo "❌"; fi
+          }
+
+          # Define all steps
+          STEPS="checkout install-deps install-cross setup-node setup-rust install-bun install-deps-front build-frontend cargo-check upload-artifacts"
+          STEP_NAMES="Checkout repository|Install dependencies|Install cross-compilation|Setup Node.js|Install Rust|Install Bun|Install frontend deps|Build frontend|Cargo check|Upload artifacts"
+
+          echo "## CI Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Build Info" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Platform**: ${{ matrix.platform }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target**: ${{ matrix.target }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Overall Status**: $(status_emoji '${{ job.status }}') ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Build Steps" >> $GITHUB_STEP_SUMMARY
+          echo "| Step | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Checkout repository | $(status_emoji '${{ steps.checkout.outcome }}') |" >> $GITHUB_STEP_SUMMARY
+          echo "| Install dependencies | $(status_emoji '${{ steps.install-deps.outcome }}') |" >> $GITHUB_STEP_SUMMARY
+          echo "| Install cross-compilation | $(status_emoji '${{ steps.install-cross.outcome }}') |" >> $GITHUB_STEP_SUMMARY
+          echo "| Setup Node.js 24 | $(status_emoji '${{ steps.setup-node.outcome }}') |" >> $GITHUB_STEP_SUMMARY
+          echo "| Install Rust stable | $(status_emoji '${{ steps.setup-rust.outcome }}') |" >> $GITHUB_STEP_SUMMARY
+          echo "| Install Bun | $(status_emoji '${{ steps.install-bun.outcome }}') |" >> $GITHUB_STEP_SUMMARY
+          echo "| Install frontend dependencies | $(status_emoji '${{ steps.install-deps-front.outcome }}') |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build frontend | $(status_emoji '${{ steps.build-frontend.outcome }}') |" >> $GITHUB_STEP_SUMMARY
+          echo "| Cargo check | $(status_emoji '${{ steps.cargo-check.outcome }}') |" >> $GITHUB_STEP_SUMMARY
+          echo "| Upload artifacts | $(status_emoji '${{ steps.upload-artifacts.outcome }}') |" >> $GITHUB_STEP_SUMMARY
+
+          # Check for failures and show error logs
+          FAILED_STEPS=""
+          if [ "${{ steps.checkout.outcome }}" != "success" ]; then FAILED_STEPS="${FAILED_STEPS}checkout "; fi
+          if [ "${{ steps.install-deps.outcome }}" != "success" ]; then FAILED_STEPS="${FAILED_STEPS}install-deps "; fi
+          if [ "${{ steps.install-cross.outcome }}" != "success" ]; then FAILED_STEPS="${FAILED_STEPS}install-cross "; fi
+          if [ "${{ steps.setup-node.outcome }}" != "success" ]; then FAILED_STEPS="${FAILED_STEPS}setup-node "; fi
+          if [ "${{ steps.setup-rust.outcome }}" != "success" ]; then FAILED_STEPS="${FAILED_STEPS}setup-rust "; fi
+          if [ "${{ steps.install-bun.outcome }}" != "success" ]; then FAILED_STEPS="${FAILED_STEPS}install-bun "; fi
+          if [ "${{ steps.install-deps-front.outcome }}" != "success" ]; then FAILED_STEPS="${FAILED_STEPS}install-deps-front "; fi
+          if [ "${{ steps.build-frontend.outcome }}" != "success" ]; then FAILED_STEPS="${FAILED_STEPS}build-frontend "; fi
+          if [ "${{ steps.cargo-check.outcome }}" != "success" ]; then FAILED_STEPS="${FAILED_STEPS}cargo-check "; fi
+
+          if [ -n "$FAILED_STEPS" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Failed Steps" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The following steps failed. Check the [build log](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/logs) for details." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            for step in $FAILED_STEPS; do
+              echo "- \`$step\`" >> $GITHUB_STEP_SUMMARY
+            done
+          fi
