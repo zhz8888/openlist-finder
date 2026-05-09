@@ -38,14 +38,16 @@ export function LogViewerPage() {
   const [error, setError] = useState<string | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const logContainerRef = useRef<HTMLDivElement>(null);
+  const loadingRef = useRef(false);
 
   const loadLogs = useCallback(async () => {
-    if (loading) return;
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     setLoading(true);
     setError(null);
     try {
       const levelFilter = selectedLevel === "ALL" ? null : selectedLevel;
-      
+
       const result = await invoke<{ logs: LogEntry[]; total: number }>("get_logs", {
         request: {
           level: levelFilter,
@@ -53,7 +55,7 @@ export function LogViewerPage() {
           limit: 10000,
         },
       });
-      
+
       setLogs(result.logs);
       setTotal(result.total);
     } catch (err) {
@@ -62,8 +64,9 @@ export function LogViewerPage() {
       console.error("Failed to load logs:", err);
     } finally {
       setLoading(false);
+      loadingRef.current = false;
     }
-  }, [selectedLevel, loading]);
+  }, [selectedLevel]);
 
   useEffect(() => {
     loadLogs();
