@@ -28,6 +28,8 @@ const LEVEL_BADGE: Record<string, string> = {
   CRITICAL: "badge-critical",
 };
 
+const COPY_CONFIRM_DURATION = 2000;
+
 export function LogViewerPage() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [selectedLevel, setSelectedLevel] = useState("ALL");
@@ -72,7 +74,7 @@ export function LogViewerPage() {
       const text = `[${log.timestamp}] [${log.level}] [${log.target}] ${log.message}`;
       await navigator.clipboard.writeText(text);
       setCopiedIndex(index);
-      setTimeout(() => setCopiedIndex(null), 2000);
+      setTimeout(() => setCopiedIndex(null), COPY_CONFIRM_DURATION);
     } catch {
       console.error("Failed to copy log");
     }
