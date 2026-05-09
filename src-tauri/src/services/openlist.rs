@@ -3,6 +3,8 @@
 //! 封装与 OpenList 服务器的 HTTP 交互逻辑，提供文件操作的高级 API。
 //! 所有方法都是异步的，使用 `reqwest` 客户端发送 HTTP 请求。
 
+use std::time::Duration;
+
 use crate::models::openlist::*;
 
 /// OpenList 服务结构体
@@ -21,7 +23,10 @@ impl OpenListService {
     /// 返回配置好的 OpenListService 实例
     pub fn new() -> Self {
         Self {
-            client: reqwest::Client::new(),
+            client: reqwest::Client::builder()
+                .timeout(Duration::from_secs(30))
+                .build()
+                .expect("Failed to create HTTP client"),
         }
     }
 
