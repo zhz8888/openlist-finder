@@ -3,13 +3,23 @@ import { HashRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider, ErrorBoundary, ToastContainer } from "@/components";
 import { MainLayout, SettingsPage } from "@/pages";
 import { LogViewerPage } from "@/pages/LogViewerPage";
-import { useServerStore, useSettingsStore } from "@/stores";
+import { useServerStore, useSettingsStore, useToastStore } from "@/stores";
 
 function AppInitializer() {
   useEffect(() => {
     const initializeStores = async () => {
-      await useServerStore.getState().initialize();
-      await useSettingsStore.getState().initialize();
+      try {
+        await useServerStore.getState().initialize();
+      } catch (error) {
+        console.error("Failed to initialize server store:", error);
+        useToastStore.getState().addToast("error", "初始化服务器配置失败");
+      }
+      try {
+        await useSettingsStore.getState().initialize();
+      } catch (error) {
+        console.error("Failed to initialize settings store:", error);
+        useToastStore.getState().addToast("error", "初始化设置失败");
+      }
     };
     initializeStores();
   }, []);
