@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { FileInfo, SortConfig } from "@/types";
+import { sortFiles } from "@/utils/fileSorting";
 
 interface FileBrowserState {
   currentPath: string;
@@ -73,26 +74,6 @@ export const useFileBrowserStore = create<FileBrowserState>()((set, get) => ({
 
   getSortedFiles: () => {
     const state = get();
-    const { files, sortConfig } = state;
-    const sorted = [...files].sort((a, b) => {
-      if (a.isDir !== b.isDir) return a.isDir ? -1 : 1;
-      let cmp = 0;
-      switch (sortConfig.field) {
-        case "name":
-          cmp = a.name.localeCompare(b.name);
-          break;
-        case "size":
-          cmp = a.size - b.size;
-          break;
-        case "modified":
-          cmp = new Date(a.modified).getTime() - new Date(b.modified).getTime();
-          break;
-        case "type":
-          cmp = a.type - b.type;
-          break;
-      }
-      return sortConfig.order === "asc" ? cmp : -cmp;
-    });
-    return sorted;
+    return sortFiles(state.files, state.sortConfig);
   },
 }));
