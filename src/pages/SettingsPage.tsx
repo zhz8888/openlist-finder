@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useServerStore, useSettingsStore, useToastStore } from "@/stores";
 import { testConnection, validateServerUrl } from "@/services/openlist";
 import { testConnection as testMeilisearchConnection } from "@/services/meilisearch";
@@ -24,7 +24,7 @@ export function SettingsPage() {
   const [editTestResult, setEditTestResult] = useState<string | null>(null);
   const [mcpExpanded, setMcpExpanded] = useState(false);
 
-  const copyToClipboard = async (text: string) => {
+  const copyToClipboard = useCallback(async (text: string) => {
     try {
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(text);
@@ -41,17 +41,17 @@ export function SettingsPage() {
         try {
           document.execCommand("copy");
           addToast("success", "配置已复制到剪贴板");
-        } catch (err) {
+        } catch {
           addToast("error", "复制失败，请手动复制");
         }
         document.body.removeChild(textArea);
       }
-    } catch (err) {
+    } catch {
       addToast("error", "复制失败，请手动复制");
     }
-  };
+  }, [addToast]);
 
-  const handleAddServer = async () => {
+  const handleAddServer = useCallback(async () => {
     if (!newServerName || !newServerUrl || !newServerToken) return;
     try {
       logger.info(`[AddServer] Starting to add server: ${newServerName} (${newServerUrl})`);
@@ -61,7 +61,7 @@ export function SettingsPage() {
         setTestResult(`错误：${validation.error}`);
         return;
       }
-      
+
       const newServerId = await addServer(newServerName, validation.normalizedUrl || newServerUrl, newServerToken);
       logger.info(`[AddServer] Server added successfully, ID: ${newServerId}`);
 
@@ -104,9 +104,9 @@ export function SettingsPage() {
       logger.error(`[AddServer] Exception: ${errorMsg}`);
       setTestResult(`错误：${errorMsg}`);
     }
-  };
+  }, [newServerName, newServerUrl, newServerToken, meilisearch, addServer, addToast]);
 
-  const handleTestConnection = async () => {
+  const handleTestConnection = useCallback(async () => {
     if (!newServerUrl || !newServerToken) return;
     try {
       logger.info(`[OpenListConnectionTest] Starting connection test: ${newServerUrl}`);
@@ -128,9 +128,9 @@ export function SettingsPage() {
       logger.error(`[OpenListConnectionTest] Exception: ${errorMsg}`);
       setTestResult(`错误：${errorMsg}`);
     }
-  };
+  }, [newServerUrl, newServerToken]);
 
-  const handleTestMeilisearch = async () => {
+  const handleTestMeilisearch = useCallback(async () => {
     if (!meilisearch.host || !meilisearch.apiKey) return;
     try {
       logger.info(`[MeilisearchConnectionTest] Starting connection test: ${meilisearch.host}`);
@@ -183,9 +183,9 @@ export function SettingsPage() {
       setMeilisearchTestResult(`错误：${errorMsg}`);
       addToast("error", `Meilisearch 连接错误：${errorMsg}`);
     }
-  };
+  }, [meilisearch, servers, addToast]);
 
-  const handleStartEdit = (serverId: string) => {
+  const handleStartEdit = useCallback((serverId: string) => {
     const server = servers.find((s) => s.id === serverId);
     if (!server) return;
     setEditingServer(serverId);
@@ -193,9 +193,9 @@ export function SettingsPage() {
     setEditUrl(server.url);
     setEditToken(server.token || "");
     setEditTestResult(null);
-  };
+  }, [servers]);
 
-  const handleTestEditConnection = async () => {
+  const handleTestEditConnection = useCallback(async () => {
     if (!editUrl || !editToken) return;
     try {
       logger.info(`[OpenListEditConnectionTest] Starting connection test: ${editUrl}`);
@@ -217,18 +217,18 @@ export function SettingsPage() {
       logger.error(`[OpenListEditConnectionTest] Exception: ${errorMsg}`);
       setEditTestResult(`错误：${errorMsg}`);
     }
-  };
+  }, [editUrl, editToken]);
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = useCallback(() => {
     if (!editingServer) return;
     logger.info(`[UpdateServer] Updating server ${editingServer} with new token`);
     updateServer(editingServer, { name: editName, url: editUrl.replace(/\/+$/, ""), token: editToken });
     logger.info(`[UpdateServer] Server updated successfully`);
     setEditingServer(null);
     addToast("success", "服务器配置已更新");
-  };
+  }, [editingServer, editName, editUrl, editToken, updateServer, addToast]);
 
-  const handleRemoveServer = async (serverId: string) => {
+  const handleRemoveServer = useCallback(async (serverId: string) => {
     const server = servers.find((s) => s.id === serverId);
     const serverName = server?.name || "服务器";
     try {
@@ -241,11 +241,11 @@ export function SettingsPage() {
       logger.error(`[RemoveServer] Failed to remove server: ${errorMsg}`);
       addToast("error", `删除服务器失败：${errorMsg}`);
     }
-  };
+  }, [servers, removeServer, addToast]);
 
-  const handleThemeChange = (mode: "light" | "dark" | "system") => {
+  const handleThemeChange = useCallback((mode: "light" | "dark" | "system") => {
     setTheme({ mode } as ThemeConfig);
-  };
+  }, [setTheme]);
 
   return (
     <div className="flex h-screen bg-[var(--color-bg)] overflow-y-auto">
