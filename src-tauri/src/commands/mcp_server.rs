@@ -21,9 +21,13 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::io::{self, BufRead, Write};
+use std::sync::{Arc, RwLock};
 use crate::commands::openlist;
 use crate::commands::meilisearch;
-use crate::models::openlist::{CopyMoveRequest, RenameRequest};
+use crate::models::openlist::{CopyMoveRequest, RenameRequest, ServerConfig};
+
+/// MCP 服务器配置类型别名
+pub type McpServerConfig = Arc<RwLock<Vec<ServerConfig>>>;
 
 /// JSON-RPC 请求结构体
 ///
@@ -349,6 +353,27 @@ impl McpServer {
         }
     }
 
+    /// 根据 server_url 从配置中查找 token
+    ///
+    /// # 参数
+    ///
+    /// * `config` - 服务器配置
+    /// * `server_url` - 服务器 URL
+    ///
+    /// # 返回值
+    ///
+    /// 返回找到的 token，如果未找到则返回空字符串
+    fn find_token(config: &McpServerConfig, server_url: &str) -> String {
+        if let Ok(config_read) = config.read() {
+            config_read.iter()
+                .find(|s| s.url == server_url)
+                .map(|s| s.token.clone())
+                .unwrap_or_default()
+        } else {
+            String::new()
+        }
+    }
+
     /// 处理工具调用请求
     ///
     /// 解析 AI 助手的 `tools/call` 请求,根据工具名称路由到相应的处理逻辑。
@@ -358,11 +383,12 @@ impl McpServer {
     ///
     /// * `id` - 请求ID,用于匹配响应
     /// * `params` - 工具调用参数,包含工具名称和参数
+    /// * `config` - MCP 服务器配置，包含服务器列表
     ///
     /// # 返回值
     ///
     /// 返回工具执行结果或错误信息的 JSON-RPC 响应
-    pub async fn handle_tool_call(id: Option<i64>, params: Option<Value>) -> JsonRpcResponse {
+    pub async fn handle_tool_call(id: Option<i64>, params: Option<Value>, config: McpServerConfig) -> JsonRpcResponse {
         let params = match params {
             Some(p) => p,
             None => {
@@ -389,7 +415,8 @@ impl McpServer {
                     Some(p) => p.to_string(),
                     None => return Self::handle_invalid_params(id, "Missing path"),
                 };
-                match openlist::list_directory(server_url, "".to_string(), path).await {
+                let token = Self::find_token(&config, &server_url);
+                match openlist::list_directory(server_url, token, path).await {
                     Ok(resp) => serde_json::json!({
                         "content": [{ "type": "text", "text": serde_json::to_string_pretty(&resp).unwrap_or_default() }]
                     }),
@@ -446,7 +473,8 @@ impl McpServer {
                     old_name,
                     new_name,
                 };
-                match openlist::rename_file(server_url, "".to_string(), rename_request).await {
+                let token = Self::find_token(&config, &server_url);
+                match openlist::rename_file(server_url, token, rename_request).await {
                     Ok(resp) => serde_json::json!({
                         "content": [{ "type": "text", "text": serde_json::to_string_pretty(&resp).unwrap_or_default() }]
                     }),
@@ -469,7 +497,8 @@ impl McpServer {
                     Some(arr) => arr.iter().filter_map(|v| v.as_str().map(String::from)).collect::<Vec<_>>(),
                     None => return Self::handle_invalid_params(id, "Missing names"),
                 };
-                match openlist::delete_files(server_url, "".to_string(), dir, names).await {
+                let token = Self::find_token(&config, &server_url);
+                match openlist::delete_files(server_url, token, dir, names).await {
                     Ok(resp) => serde_json::json!({
                         "content": [{ "type": "text", "text": serde_json::to_string_pretty(&resp).unwrap_or_default() }]
                     }),
@@ -501,7 +530,8 @@ impl McpServer {
                     dst_dir,
                     names,
                 };
-                match openlist::copy_files(server_url, "".to_string(), copy_request).await {
+                let token = Self::find_token(&config, &server_url);
+                match openlist::copy_files(server_url, token, copy_request).await {
                     Ok(resp) => serde_json::json!({
                         "content": [{ "type": "text", "text": serde_json::to_string_pretty(&resp).unwrap_or_default() }]
                     }),
@@ -533,7 +563,8 @@ impl McpServer {
                     dst_dir,
                     names,
                 };
-                match openlist::move_files(server_url, "".to_string(), move_request).await {
+                let token = Self::find_token(&config, &server_url);
+                match openlist::move_files(server_url, token, move_request).await {
                     Ok(resp) => serde_json::json!({
                         "content": [{ "type": "text", "text": serde_json::to_string_pretty(&resp).unwrap_or_default() }]
                     }),
@@ -552,7 +583,8 @@ impl McpServer {
                     Some(p) => p.to_string(),
                     None => return Self::handle_invalid_params(id, "Missing path"),
                 };
-                match openlist::get_file_info(server_url, "".to_string(), path).await {
+                let token = Self::find_token(&config, &server_url);
+                match openlist::get_file_info(server_url, token, path).await {
                     Ok(resp) => serde_json::json!({
                         "content": [{ "type": "text", "text": serde_json::to_string_pretty(&resp).unwrap_or_default() }]
                     }),
@@ -575,7 +607,8 @@ impl McpServer {
                     Some(c) => c.to_string(),
                     None => return Self::handle_invalid_params(id, "Missing content"),
                 };
-                match openlist::get_file_info(server_url.clone(), "".to_string(), path.clone()).await {
+                let token = Self::find_token(&config, &server_url);
+                match openlist::get_file_info(server_url.clone(), token, path.clone()).await {
                     Ok(_info) => {
                         serde_json::json!({
                             "content": [{ "type": "text", "text": format!("File edit requested for: {}. Note: Direct file content editing via API is not supported by OpenList. Use rename_file to rename or delete_files + upload to replace content.", path) }],
@@ -687,7 +720,11 @@ impl McpServer {
 /// - 使用 tokio current_thread 运行时处理异步操作
 /// - 空行会被自动跳过
 /// - JSON 解析失败会返回解析错误响应
-pub fn run_stdio_server() {
+///
+/// # 参数
+///
+/// * `config` - MCP 服务器配置，包含服务器列表
+pub fn run_stdio_server(config: McpServerConfig) {
     let stdin = io::stdin();
     let mut stdout = io::stdout();
     let reader = stdin.lock();
@@ -730,7 +767,7 @@ pub fn run_stdio_server() {
                         continue;
                     }
                     "tools/list" => McpServer::handle_tools_list(request.id),
-                    "tools/call" => rt.block_on(McpServer::handle_tool_call(request.id, request.params)),
+                    "tools/call" => rt.block_on(McpServer::handle_tool_call(request.id, request.params, config.clone())),
                     "ping" => JsonRpcResponse {
                         jsonrpc: "2.0".to_string(),
                         id: request.id,

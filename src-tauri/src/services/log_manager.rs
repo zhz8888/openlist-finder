@@ -90,7 +90,7 @@ impl LogManager {
             logs.pop_front();
         }
 
-        logs.push(LogEntry {
+        logs.push_back(LogEntry {
             timestamp: Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string(),
             level: level.to_string(),
             target: target.to_string(),
@@ -120,7 +120,7 @@ impl LogManager {
                 .filter(|log| log.level == level)
                 .cloned()
                 .collect(),
-            None => logs.clone(),
+            None => logs.clone().into(),
         };
 
         // 计算分页范围
@@ -227,7 +227,7 @@ impl LogManagerLayer {
             logs.pop_front();
         }
 
-        logs.push(LogEntry {
+        logs.push_back(LogEntry {
             timestamp: Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string(),
             level: level.to_string(),
             target: target.to_string(),

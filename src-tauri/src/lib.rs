@@ -21,8 +21,11 @@ mod commands;
 mod models;
 mod services;
 
+use std::sync::{Arc, RwLock};
+
 use tauri::Manager;
 use services::log_manager::{LogManager, LogManagerLayer};
+use crate::models::openlist::ServerConfig;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 
@@ -47,9 +50,13 @@ fn greet(name: &str) -> String {
 /// * `Ok(String)` - MCP 服务器停止后的消息
 /// * `Err(String)` - 服务器任务执行失败时的错误信息
 #[tauri::command]
-async fn start_mcp_server() -> Result<String, String> {
-    tokio::task::spawn_blocking(|| {
-        commands::mcp_server::run_stdio_server();
+async fn start_mcp_server(app: tauri::AppHandle) -> Result<String, String> {
+    let servers = commands::server_config::load_servers(app.clone())
+        .map_err(|e| format!("Failed to load servers: {}", e))?;
+    let config: Arc<RwLock<Vec<ServerConfig>>> = Arc::new(RwLock::new(servers));
+
+    tokio::task::spawn_blocking(move || {
+        commands::mcp_server::run_stdio_server(config);
     }).await.map_err(|e| format!("MCP server task failed: {}", e))?;
     Ok("MCP server stopped".to_string())
 }
