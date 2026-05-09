@@ -73,6 +73,6 @@ bun run build        # 仅构建前端
 
 ## 环境要求
 
-- Node.js >= 18
-- Rust >= 1.77
+- Node.js >= 24
+- Rust >= 1.90
 - Tauri CLI 2.x

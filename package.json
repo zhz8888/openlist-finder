@@ -5,10 +5,16 @@
   "license": "AGPL-3.0-only",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
+    "dev": "bun tauri dev",
+    "build": "bun run build",
+    "build:release": "bun tauri build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "check": "cargo check",
+    "fmt": "cargo fmt",
+    "clippy": "cargo clippy",
+    "test": "cargo test",
+    "clean": "cargo clean"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.2",
