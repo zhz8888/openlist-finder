@@ -51,6 +51,9 @@
       "deb": {
         "depends": []
       },
+      "rpm": {
+        "depends": []
+      },
       "appimage": {
         "bundleMediaFramework": false
       }
