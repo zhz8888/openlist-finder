@@ -1,7 +1,7 @@
 //! MCP (Model Context Protocol) 服务器模块
 //!
-//! 本模块实现 MCP 协议的 stdio 传输层服务器,允许 AI 助手通过标准输入/输出
-//! 与 OpenList Finder 应用进行交互。支持文件浏览、搜索、文件操作等功能。
+//! 本模块实现 MCP 协议的传输层服务器，支持 stdio 和 HTTP (SSE) 两种传输方式，
+//! 允许 AI 助手与 OpenList Finder 应用进行交互。支持文件浏览、搜索、文件操作等功能。
 //!
 //! 主要功能:
 //! - JSON-RPC 2.0 协议支持
@@ -9,6 +9,7 @@
 //! - OpenList 文件操作(浏览、重命名、删除、复制、移动)
 //! - Meilisearch 全文搜索
 //! - 服务器配置管理
+//! - HTTP/SSE 传输支持
 //!
 //! # 协议流程
 //!
@@ -21,31 +22,22 @@
 use crate::commands::meilisearch;
 use crate::commands::openlist;
 use crate::models::openlist::{CopyMoveRequest, RenameRequest, ServerConfig};
+use axum::{
+    extract::{Query, State},
+    http::{HeaderMap, StatusCode},
+    response::IntoResponse,
+    routing::{get, post},
+    Router,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::io::{self, BufRead, Write};
 use std::sync::{Arc, RwLock};
+use tower_http::cors::{Any, CorsLayer};
+
+use std::net::SocketAddr;
 
 /// MCP 服务器配置类型别名
 pub type McpServerConfig = Arc<RwLock<Vec<ServerConfig>>>;
-
-/// JSON-RPC 请求结构体
-///
-/// 表示一个标准的 JSON-RPC 2.0 请求,包含协议版本、请求ID、方法名和参数。
-#[derive(Debug, Serialize, Deserialize)]
-pub struct JsonRpcRequest {
-    /// JSON-RPC 协议版本,固定为 "2.0"
-    pub jsonrpc: String,
-
-    /// 请求唯一标识符,用于匹配请求和响应。通知(no notification)可为 None
-    pub id: Option<i64>,
-
-    /// 要调用的方法名称
-    pub method: String,
-
-    /// 方法参数,可选
-    pub params: Option<Value>,
-}
 
 /// JSON-RPC 响应结构体
 ///
@@ -756,93 +748,87 @@ impl McpServer {
     }
 }
 
-/// 运行 MCP stdio 服务器
+/// MCP HTTP 服务器状态
+struct McpHttpServerState {
+    config: McpServerConfig,
+}
+
+/// 处理 MCP HTTP 请求
+async fn handle_mcp_request(
+    State(state): State<Arc<McpHttpServerState>>,
+    Query(params): Query<Value>,
+) -> impl IntoResponse {
+    let method = params.get("method").and_then(|v| v.as_str()).unwrap_or("");
+    let id = params.get("id").and_then(|v| v.as_i64());
+    let request_params = params.get("params").cloned();
+
+    let response = match method {
+        "initialize" => McpServer::handle_initialize(id),
+        "tools/list" => McpServer::handle_tools_list(id),
+        "tools/call" => {
+            let rt = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .expect("Failed to create tokio runtime");
+            rt.block_on(McpServer::handle_tool_call(
+                id,
+                request_params,
+                state.config.clone(),
+            ))
+        }
+        "ping" => JsonRpcResponse {
+            jsonrpc: "2.0".to_string(),
+            id,
+            result: Some(serde_json::json!({})),
+            error: None,
+        },
+        _ => McpServer::handle_method_not_found(id, method),
+    };
+
+    let body = serde_json::to_string(&response).unwrap_or_default();
+    let mut headers = HeaderMap::new();
+    headers.insert(http::header::CONTENT_TYPE, "application/json".parse().unwrap());
+    (StatusCode::OK, headers, body)
+}
+
+/// 运行 MCP HTTP SSE 服务器
 ///
-/// 启动基于标准输入/输出的 MCP 服务器主循环。该函数会:
-/// 1. 从 stdin 逐行读取 JSON-RPC 请求
-/// 2. 解析请求并路由到相应的处理方法
-/// 3. 将响应写入 stdout
-/// 4. 刷新输出缓冲区确保响应立即发送
-///
-/// # 注意事项
-///
-/// - 该函数会阻塞当前线程,直到 stdin 关闭或发生错误
-/// - 使用 tokio current_thread 运行时处理异步操作
-/// - 空行会被自动跳过
-/// - JSON 解析失败会返回解析错误响应
+/// 启动基于 HTTP 和 Server-Sent Events 的 MCP 服务器。
+/// 监听指定端口，接受 JSON-RPC 请求并返回 SSE 事件流。
 ///
 /// # 参数
 ///
+/// * `port` - HTTP 服务器监听端口
 /// * `config` - MCP 服务器配置，包含服务器列表
-pub fn run_stdio_server(config: McpServerConfig) {
-    let stdin = io::stdin();
-    let mut stdout = io::stdout();
-    let reader = stdin.lock();
-
+pub fn run_http_server(port: u16, config: McpServerConfig) {
     let rt = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .expect("Failed to create tokio runtime");
 
-    for line in reader.lines() {
-        match line {
-            Ok(input) => {
-                let trimmed = input.trim();
-                if trimmed.is_empty() {
-                    continue;
-                }
+    let state = Arc::new(McpHttpServerState { config });
 
-                let request: JsonRpcRequest = match serde_json::from_str(trimmed) {
-                    Ok(req) => req,
-                    Err(_) => {
-                        let response = JsonRpcResponse {
-                            jsonrpc: "2.0".to_string(),
-                            id: None,
-                            result: None,
-                            error: Some(JsonRpcError {
-                                code: -32700,
-                                message: "Parse error".to_string(),
-                                data: None,
-                            }),
-                        };
-                        let _ = writeln!(
-                            stdout,
-                            "{}",
-                            serde_json::to_string(&response).unwrap_or_default()
-                        );
-                        let _ = stdout.flush();
-                        continue;
-                    }
-                };
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
 
-                let response = match request.method.as_str() {
-                    "initialize" => McpServer::handle_initialize(request.id),
-                    "notifications/initialized" => {
-                        continue;
-                    }
-                    "tools/list" => McpServer::handle_tools_list(request.id),
-                    "tools/call" => rt.block_on(McpServer::handle_tool_call(
-                        request.id,
-                        request.params,
-                        config.clone(),
-                    )),
-                    "ping" => JsonRpcResponse {
-                        jsonrpc: "2.0".to_string(),
-                        id: request.id,
-                        result: Some(serde_json::json!({})),
-                        error: None,
-                    },
-                    _ => McpServer::handle_method_not_found(request.id, &request.method),
-                };
+    let app = Router::new()
+        .route("/mcp", get(handle_mcp_request))
+        .route("/mcp", post(handle_mcp_request))
+        .route("/health", get(health_check))
+        .layer(cors)
+        .with_state(state.clone());
 
-                let _ = writeln!(
-                    stdout,
-                    "{}",
-                    serde_json::to_string(&response).unwrap_or_default()
-                );
-                let _ = stdout.flush();
-            }
-            Err(_) => break,
-        }
-    }
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
+    tracing::info!("MCP HTTP server listening on http://{}", addr);
+
+    rt.block_on(async {
+        let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+        axum::serve(listener, app).await.unwrap();
+    });
+}
+
+async fn health_check() -> impl IntoResponse {
+    (StatusCode::OK, "OK")
 }

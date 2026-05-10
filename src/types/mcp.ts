@@ -104,4 +104,5 @@ export interface MCPConfig {
   serverName: string;
   serverVersion: string;
   logLevel: MCPLogLevel;
+  httpPort: number;
 }

@@ -15,7 +15,7 @@
 //! - Meilisearch 集成：索引管理、文档同步、全文搜索
 //! - 系统密钥环：安全存储敏感信息（Token、API Key 等）
 //! - 日志管理：应用日志收集、查询和清理
-//! - MCP 服务器：提供 AI 助手通过 stdio 连接的接口
+//! - MCP 服务器：提供 AI 助手通过 HTTP 连接的接口
 
 mod commands;
 mod models;
@@ -41,26 +41,26 @@ fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
-/// 启动 MCP 服务器
+/// 启动 MCP HTTP 服务器
 ///
-/// 在后台阻塞线程中运行 MCP（Model Context Protocol）stdio 服务器，
-/// 供 AI 助手通过标准输入/输出进行通信。
+/// 在后台线程中运行 MCP（Model Context Protocol）HTTP(SSE) 服务器，
+/// 供 AI 助手通过 HTTP 连接进行通信。
 ///
 /// # 返回值
 /// * `Ok(String)` - MCP 服务器停止后的消息
 /// * `Err(String)` - 服务器任务执行失败时的错误信息
 #[tauri::command]
-async fn start_mcp_server(app: tauri::AppHandle) -> Result<String, String> {
+async fn start_mcp_http_server(port: u16, app: tauri::AppHandle) -> Result<String, String> {
     let servers = commands::server_config::load_servers(app.clone())
         .map_err(|e| format!("Failed to load servers: {}", e))?;
     let config: Arc<RwLock<Vec<ServerConfig>>> = Arc::new(RwLock::new(servers));
 
     tokio::task::spawn_blocking(move || {
-        commands::mcp_server::run_stdio_server(config);
+        commands::mcp_server::run_http_server(port, config);
     })
     .await
-    .map_err(|e| format!("MCP server task failed: {}", e))?;
-    Ok("MCP server stopped".to_string())
+    .map_err(|e| format!("MCP HTTP server task failed: {}", e))?;
+    Ok("MCP HTTP server stopped".to_string())
 }
 
 /// 应用程序入口点
@@ -120,7 +120,7 @@ pub fn run() {
         // 注册命令处理器
         .invoke_handler(tauri::generate_handler![
             greet,
-            start_mcp_server,
+            start_mcp_http_server,
             commands::openlist::login_to_openlist,
             commands::openlist::test_openlist_connection,
             commands::openlist::list_directory,

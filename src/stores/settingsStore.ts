@@ -19,6 +19,7 @@ const defaultMCPConfig: MCPConfig = {
   serverName: "openlist-finder",
   serverVersion: "0.1.0",
   logLevel: "info",
+  httpPort: 18792,
 };
 
 interface SettingsState {

@@ -518,7 +518,7 @@ export function SettingsPage() {
                 <div className="flex-1">
                   <h2 className="card-title text-lg">MCP 服务器配置</h2>
                   <p className="text-sm text-[var(--color-fg)]/70">
-                    配置 Model Context Protocol 服务器，供 AI 助手通过 stdio 连接使用
+                    配置 Model Context Protocol 服务器，供 AI 助手通过 HTTP 连接使用
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -608,9 +608,37 @@ export function SettingsPage() {
                       </label>
                     </div>
 
+                    <div className="form-control">
+                      <label className="label">
+                        <span className="label-text">HTTP 端口</span>
+                      </label>
+                      <input
+                        type="number"
+                        className="input input-bordered w-full"
+                        value={mcp.httpPort}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value);
+                          if (isNaN(val) || val < 1) {
+                            updateMCP({ httpPort: 1 });
+                          } else if (val > 65535) {
+                            updateMCP({ httpPort: 65535 });
+                          } else {
+                            updateMCP({ httpPort: val });
+                          }
+                        }}
+                        min={1}
+                        max={65535}
+                        placeholder="18792"
+                        disabled={!mcp.enabled}
+                      />
+                      <label className="label">
+                        <span className="label-text-alt text-[var(--color-fg)]/60">MCP HTTP 服务器监听端口 (1-65535)</span>
+                      </label>
+                    </div>
+
                     <div className="bg-[var(--color-bg)] rounded-lg p-4 mt-4">
                       <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-medium text-[var(--color-fg)]">Claude Desktop 配置示例</h3>
+                        <h3 className="font-medium text-[var(--color-fg)]">MCP 客户端配置示例</h3>
                         <button
                           type="button"
                           className="btn btn-ghost btn-xs"
@@ -618,8 +646,7 @@ export function SettingsPage() {
                             const config = {
                               mcpServers: {
                                 [mcp.serverName]: {
-                                  command: "path/to/openlist-finder",
-                                  args: ["--mcp"]
+                                  url: `http://127.0.0.1:${mcp.httpPort || 18792}/mcp`
                                 }
                               }
                             };
@@ -634,24 +661,18 @@ export function SettingsPage() {
                         </button>
                       </div>
                       <p className="text-sm text-[var(--color-fg)]/70 mb-3">
-                        将以下配置添加到 Claude Desktop 的配置文件中：
+                        将以下配置添加到 MCP 客户端的配置文件中：
                       </p>
                       <pre className="bg-[var(--color-github-surface-hover)] p-4 rounded-lg text-xs overflow-x-auto font-mono text-[var(--color-fg)] border-2 border-[var(--color-border)] shadow-inner">
 {JSON.stringify({
   mcpServers: {
     [mcp.serverName]: {
-      command: "path/to/openlist-finder",
-      args: ["--mcp"]
+      url: `http://127.0.0.1:${mcp.httpPort || 18792}/mcp`
     }
   }
 }, null, 2)}
                       </pre>
-                      <div className="mt-3 text-xs text-[var(--color-fg)]/70">
-                        <p className="font-medium mb-1">配置文件位置：</p>
-                        <p>macOS: <code className="bg-[var(--color-github-surface-hover)] px-1 rounded">~/Library/Application Support/Claude/claude_desktop_config.json</code></p>
-                        <p className="mt-1">Windows: <code className="bg-[var(--color-github-surface-hover)] px-1 rounded">%APPDATA%\Claude\claude_desktop_config.json</code></p>
                       </div>
-                    </div>
 
                     <div className="flex gap-2 pt-2">
                       <button
