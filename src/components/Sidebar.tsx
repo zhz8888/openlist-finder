@@ -4,7 +4,7 @@ import { useFileBrowser } from "@/hooks";
 export function Sidebar() {
   const { servers, activeServerId, setActiveServer } = useServerStore();
   const { sidebarCollapsed, setSidebarCollapsed } = useSettingsStore();
-  const { indexProgress } = useSearchStore();
+  const { indexProgress, indexStatus } = useSearchStore();
   const { loadFiles } = useFileBrowser();
   const rawFiles = useFileBrowserStore((s) => s.files);
   const activeServer = servers.find((s) => s.id === activeServerId);
@@ -93,8 +93,12 @@ export function Sidebar() {
                     <span className="text-xs">{indexProgress.percentage.toFixed(0)}%</span>
                   </div>
                 ) : (
-                  <div className="stat-value text-base">
-                    {indexProgress.indexed} / {indexProgress.total || "—"}
+                  <div className={`stat-value text-base ${["error", "unavailable"].includes(indexStatus) ? "text-[var(--color-danger)]" : ""}`}>
+                    {["error", "unavailable"].includes(indexStatus) ? (
+                      <span className="text-xs font-normal">索引不可用 | 直连模式</span>
+                    ) : (
+                      <>{indexProgress.indexed} / {indexProgress.total || "—"}</>
+                    )}
                   </div>
                 )}
               </div>

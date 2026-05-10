@@ -491,6 +491,19 @@ export function FileList() {
         </div>
       )}
 
+      {(indexStatus === "error" || indexStatus === "unavailable") && (
+        <div className="result-message result-warning mx-4 mt-2">
+          <div className="result-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div className="result-text">
+            搜索功能暂时不可用，当前为<strong>直连模式</strong>，可正常进行文件操作
+          </div>
+        </div>
+      )}
+
       {indexStatus === "indexing" && (
         <div className="result-message result-warning mx-4 mt-2">
           <div className="result-icon">
