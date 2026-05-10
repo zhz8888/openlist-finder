@@ -22,6 +22,13 @@ export interface MeilisearchTestResult {
   message: string;
 }
 
+export interface SyncStatusResponse {
+  is_running: boolean;
+  last_sync: string | null;
+  documents_synced: number;
+  interval_secs: number;
+}
+
 export async function testConnection(host: string, apiKey: string): Promise<MeilisearchTestResult> {
   checkTauriEnvironment();
   try {
@@ -56,4 +63,35 @@ export async function getStats(host: string, apiKey: string, indexUid: string): 
 export async function updateFilterable(host: string, apiKey: string, indexUid: string): Promise<TaskInfo> {
   checkTauriEnvironment();
   return invoke("meilisearch_update_filterable", { host, apiKey, indexUid });
+}
+
+export async function startAutoSync(
+  meilisearchConfig: { host: string; apiKey: string; indexPrefix: string; syncStrategy: string },
+  servers: Array<{ id: string; name: string; url: string; token: string }>,
+  intervalSeconds?: number
+): Promise<boolean> {
+  checkTauriEnvironment();
+  return invoke("start_auto_sync", {
+    meilisearchConfig,
+    servers,
+    interval_secs: intervalSeconds
+  });
+}
+
+export async function stopAutoSync(): Promise<boolean> {
+  checkTauriEnvironment();
+  return invoke("stop_auto_sync");
+}
+
+export async function getSyncStatus(): Promise<SyncStatusResponse> {
+  checkTauriEnvironment();
+  return invoke("get_sync_status");
+}
+
+export async function triggerSync(
+  meilisearchConfig: { host: string; apiKey: string; indexPrefix: string; syncStrategy: string },
+  servers: Array<{ id: string; name: string; url: string; token: string }>
+): Promise<TaskInfo> {
+  checkTauriEnvironment();
+  return invoke("trigger_sync", { meilisearchConfig, servers });
 }

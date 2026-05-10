@@ -4,3 +4,4 @@ pub mod mcp_server;
 pub mod meilisearch;
 pub mod openlist;
 pub mod server_config;
+pub mod sync;

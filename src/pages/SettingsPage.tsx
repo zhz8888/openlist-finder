@@ -1,7 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useServerStore, useSettingsStore, useToastStore } from "@/stores";
 import { testConnection, validateServerUrl } from "@/services/openlist";
-import { testConnection as testMeilisearchConnection } from "@/services/meilisearch";
+import { testConnection as testMeilisearchConnection, startAutoSync, stopAutoSync, getSyncStatus } from "@/services/meilisearch";
 import { createIndexesForAllServers, createIndexForServer } from "@/services/indexManager";
 import { PasswordInput } from "@/components";
 import { logger } from "@/utils/logger";
@@ -23,6 +23,44 @@ export function SettingsPage() {
   const [editToken, setEditToken] = useState("");
   const [editTestResult, setEditTestResult] = useState<string | null>(null);
   const [mcpExpanded, setMcpExpanded] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<{ is_running: boolean; last_sync: string | null } | null>(null);
+  const [syncInterval, setSyncInterval] = useState(meilisearch.syncInterval || 300);
+
+  // Auto sync management
+  useEffect(() => {
+    const manageAutoSync = async () => {
+      if (!meilisearch.host || !meilisearch.apiKey || servers.length === 0) {
+        return;
+      }
+
+      if (meilisearch.syncStrategy === "auto") {
+        try {
+          const status = await getSyncStatus();
+          setSyncStatus({ is_running: status.is_running, last_sync: status.last_sync });
+
+          if (!status.is_running) {
+            await startAutoSync(
+              { host: meilisearch.host, apiKey: meilisearch.apiKey, indexPrefix: meilisearch.indexPrefix, syncStrategy: meilisearch.syncStrategy },
+              servers.map(s => ({ id: s.id, name: s.name, url: s.url, token: s.token })),
+              syncInterval
+            );
+            addToast("info", `自动同步已启动（间隔 ${syncInterval} 秒）`);
+          }
+        } catch (err) {
+          logger.error(`[AutoSync] Failed to start: ${err}`);
+        }
+      } else {
+        try {
+          await stopAutoSync();
+          addToast("info", "自动同步已停止");
+        } catch (err) {
+          // Ignore if not running
+        }
+      }
+    };
+
+    manageAutoSync();
+  }, [meilisearch.syncStrategy, meilisearch.host, meilisearch.apiKey, meilisearch.indexPrefix, servers, syncInterval, addToast]);
 
   const copyToClipboard = useCallback(async (text: string) => {
     try {
@@ -410,6 +448,42 @@ export function SettingsPage() {
                       <option value="auto">自动</option>
                     </select>
                   </div>
+                  {meilisearch.syncStrategy === "auto" && (
+                    <div className="form-control">
+                      <label className="label">
+                        <span className="label-text">同步间隔（秒）</span>
+                        <span className="label-text-alt">{syncInterval} 秒</span>
+                      </label>
+                      <input
+                        type="range"
+                        min="60"
+                        max="3600"
+                        step="60"
+                        value={syncInterval}
+                        onChange={(e) => setSyncInterval(Number(e.target.value))}
+                        onMouseUp={() => updateMeilisearch({ syncInterval: syncInterval })}
+                        className="range range-primary"
+                        title="同步间隔"
+                        aria-label="同步间隔"
+                      />
+                      <div className="flex justify-between text-xs text-[var(--color-fg)]/60 mt-1">
+                        <span>1 分钟</span>
+                        <span>60 分钟</span>
+                      </div>
+                    </div>
+                  )}
+                  {syncStatus && (
+                    <div className="text-sm text-[var(--color-fg)]/70 mt-2">
+                      {syncStatus.is_running ? (
+                        <span className="text-success">● 自动同步运行中</span>
+                      ) : (
+                        <span className="text-neutral">○ 自动同步已停止</span>
+                      )}
+                      {syncStatus.last_sync && (
+                        <span className="ml-2">上次同步：{new Date(syncStatus.last_sync).toLocaleString()}</span>
+                      )}
+                    </div>
+                  )}
                   <div className="flex gap-3 pt-2">
                     <button type="button" className="btn btn-primary" onClick={() => addToast("success", "Meilisearch 配置已保存")}>
                       保存配置

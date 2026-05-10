@@ -3,6 +3,7 @@ export interface MeilisearchConfig {
   apiKey: string;
   indexPrefix: string;
   syncStrategy: "manual" | "auto";
+  syncInterval?: number;
 }
 
 export interface MeilisearchDoc {

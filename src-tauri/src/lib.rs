@@ -151,6 +151,10 @@ pub fn run() {
             commands::server_config::update_server,
             commands::server_config::remove_server,
             commands::server_config::set_default_server,
+            commands::sync::start_auto_sync,
+            commands::sync::stop_auto_sync,
+            commands::sync::get_sync_status,
+            commands::sync::trigger_sync,
         ])
         // 窗口初始化配置
         .setup(|app| {
