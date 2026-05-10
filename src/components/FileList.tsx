@@ -3,11 +3,12 @@ import { createPortal } from "react-dom";
 import { useFileBrowser } from "@/hooks";
 import { useServerStore, useSettingsStore, useSearchStore, useFileBrowserStore, useToastStore } from "@/stores";
 import type { IndexAvailabilityStatus } from "@/stores/searchStore";
-import { renameFile, deleteFiles, copyFiles, moveFiles, getFileInfo, executeWithTokenRefresh } from "@/services/openlist";
+import { renameFile, deleteFiles, copyFiles, moveFiles, executeWithTokenRefresh } from "@/services/openlist";
 import { search as searchMeilisearch, getStats } from "@/services/meilisearch";
-import { Breadcrumb, SortHeader, FolderTree, ImagePreview, VideoPreview, AudioPreview, ArchivePreview } from "./index";
+import { Breadcrumb, SortHeader, FolderTree } from "./index";
+import { previewRegistry, UnsupportedPreview } from "./previews";
 import { logger } from "@/utils/logger";
-import { isTextFile, isImageFile, isVideoFile, isAudioFile, isArchiveFile, getFileTypeDescription, getFileIcon } from "@/utils/fileTypes";
+import { getFileTypeDescription, getFileIcon } from "@/utils/fileTypes";
 import type { FileInfo, SortField, MeilisearchDoc } from "@/types";
 
 function formatFileSize(bytes: number): string {
@@ -153,8 +154,6 @@ export function FileList() {
   const [deleteModal, setDeleteModal] = useState<FileInfo[] | null>(null);
   const [pathModal, setPathModal] = useState<{ files: FileInfo[]; operation: "copy" | "move"; targetPath: string; excludePaths: string[] } | null>(null);
   const [previewModal, setPreviewModal] = useState<FileInfo | null>(null);
-  const [previewContent, setPreviewContent] = useState<string | null>(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
   const [isSearchMode, setIsSearchMode] = useState(false);
   const hasLoadedRef = useRef(false);
   const loadFilesRef = useRef(loadFiles);
@@ -233,37 +232,8 @@ export function FileList() {
       loadFiles(newPath);
     } else {
       setPreviewModal(file);
-      setPreviewContent(null);
-      if (isTextFile(file)) {
-        loadPreviewContent(file);
-      }
     }
   }, [navigateToDirectory, loadFiles, currentPath]);
-
-  const loadPreviewContent = useCallback(async (file: FileInfo) => {
-    const server = getActiveServer();
-    if (!server || !file.path) return;
-    const filePath = file.path;
-    setPreviewLoading(true);
-    try {
-      logger.debug(`[OpenList] Loading preview content for "${file.name}"`);
-      const info = await executeWithTokenRefresh(
-        () => getFileInfo(server.url, server.token, filePath)
-      );
-      if (info.content) {
-        logger.debug(`[OpenList] Preview content loaded for "${file.name}"`);
-        setPreviewContent(info.content);
-      } else {
-        logger.debug(`[OpenList] No text content for preview of "${file.name}"`);
-        setPreviewContent("（无文本内容可供预览）");
-      }
-    } catch {
-      logger.error(`[OpenList] Failed to load preview content for "${file.name}"`);
-      setPreviewContent("（加载文件内容失败）");
-    } finally {
-      setPreviewLoading(false);
-    }
-  }, [getActiveServer]);
 
   const handleContextMenu = useCallback((e: React.MouseEvent, file: FileInfo) => {
     e.preventDefault();
@@ -465,12 +435,8 @@ export function FileList() {
       loadFiles(file.path);
     } else {
       setPreviewModal(file);
-      setPreviewContent(null);
-      if (isTextFile(file)) {
-        loadPreviewContent(file);
-      }
     }
-  }, [handleClearSearch, loadFiles, setPreviewModal, setPreviewContent, loadPreviewContent]);
+  }, [handleClearSearch, loadFiles, setPreviewModal]);
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden relative" ref={fileListRef}>
@@ -686,7 +652,7 @@ export function FileList() {
           role="menu"
           aria-label="文件右键菜单"
         >
-          <li role="menuitem"><button type="button" onClick={() => { setPreviewModal(contextMenu.file); setPreviewContent(null); if (isTextFile(contextMenu.file)) loadPreviewContent(contextMenu.file); setContextMenu(null); }}>查看</button></li>
+          <li role="menuitem"><button type="button" onClick={() => { setPreviewModal(contextMenu.file); setContextMenu(null); }}>查看</button></li>
           <li role="menuitem"><button type="button" onClick={() => { setRenameModal({ file: contextMenu.file, newName: contextMenu.file.name }); setContextMenu(null); }}>重命名</button></li>
           <li role="menuitem"><button type="button" onClick={() => { setDeleteModal([contextMenu.file]); setContextMenu(null); }}>删除</button></li>
           <li role="menuitem"><button type="button" onClick={() => {
@@ -789,53 +755,15 @@ export function FileList() {
                 <p><strong>类型：</strong> {getFileTypeDescription(previewModal)}</p>
               </div>
 
-              {/* 图片预览 */}
-              {isImageFile(previewModal) && (
-                <ImagePreview file={previewModal} serverUrl={getActiveServer()?.url || ""} />
-              )}
-
-              {/* 视频预览 */}
-              {isVideoFile(previewModal) && (
-                <VideoPreview file={previewModal} serverUrl={getActiveServer()?.url || ""} />
-              )}
-
-              {/* 音频预览 */}
-              {isAudioFile(previewModal) && (
-                <AudioPreview file={previewModal} serverUrl={getActiveServer()?.url || ""} />
-              )}
-
-              {/* 压缩包预览 */}
-              {isArchiveFile(previewModal) && (
-                <ArchivePreview file={previewModal} serverUrl={getActiveServer()?.url || ""} />
-              )}
-
-              {/* 文本文件预览 */}
-              {isTextFile(previewModal) && (
-                <div className="border border-[var(--color-border)] rounded-lg bg-[var(--color-github-surface)]">
-                  {previewLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <span className="loading loading-spinner loading-sm"></span>
-                      <span className="ml-2 text-sm opacity-70">正在加载内容...</span>
-                    </div>
-                  ) : previewContent ? (
-                    <pre className="p-3 text-xs overflow-auto max-h-80 whitespace-pre-wrap break-words font-mono">
-                      {previewContent}
-                    </pre>
-                  ) : (
-                    <p className="text-center text-sm opacity-50 py-8">预览不可用</p>
-                  )}
-                </div>
-              )}
-
-              {/* 不支持的预览类型 */}
-              {!isTextFile(previewModal) && !isImageFile(previewModal) && !isVideoFile(previewModal) && !isAudioFile(previewModal) && !isArchiveFile(previewModal) && (
-                <div className="border border-[var(--color-border)] rounded-lg p-4 bg-[var(--color-github-surface)] text-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <p className="text-sm opacity-50 mt-2">此文件类型不支持预览</p>
-                </div>
-              )}
+              {/* 动态预览组件 */}
+              {(() => {
+                const entry = previewRegistry.match(previewModal);
+                if (entry && entry.component) {
+                  const Component = entry.component;
+                  return <Component file={previewModal} serverUrl={getActiveServer()?.url || ""} />;
+                }
+                return <UnsupportedPreview file={previewModal} serverUrl={getActiveServer()?.url || ""} />;
+              })()}
             </div>
             <div className="modal-action">
               {!previewModal.isDir && (
@@ -843,10 +771,10 @@ export function FileList() {
                   下载
                 </button>
               )}
-              <button type="button" className="btn" onClick={() => { setPreviewModal(null); setPreviewContent(null); }}>关闭</button>
+              <button type="button" className="btn" onClick={() => setPreviewModal(null)}>关闭</button>
             </div>
           </div>
-          <div className="file-modal-backdrop" onClick={() => { setPreviewModal(null); setPreviewContent(null); }}></div>
+          <div className="file-modal-backdrop" onClick={() => setPreviewModal(null)}></div>
         </div>
       )}
     </div>
