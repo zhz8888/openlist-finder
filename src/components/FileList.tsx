@@ -155,10 +155,7 @@ export function FileList() {
   const [previewModal, setPreviewModal] = useState<FileInfo | null>(null);
   const [previewContent, setPreviewContent] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
-  const [editModal, setEditModal] = useState<{ file: FileInfo; content: string } | null>(null);
-  const [editSaving, setEditSaving] = useState(false);
   const [isSearchMode, setIsSearchMode] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const hasLoadedRef = useRef(false);
   const loadFilesRef = useRef(loadFiles);
   const fileListRef = useRef<HTMLDivElement>(null);
@@ -475,24 +472,6 @@ export function FileList() {
     }
   }, [handleClearSearch, loadFiles, setPreviewModal, setPreviewContent, loadPreviewContent]);
 
-  const handleEditFile = useCallback((file: FileInfo) => {
-    const server = getActiveServer();
-    if (!server) return;
-    setEditModal({ file, content: previewContent || "" });
-    setPreviewModal(null);
-  }, [getActiveServer, previewContent]);
-
-  const handleSaveEdit = useCallback(async () => {
-    if (!editModal) return;
-    setEditSaving(true);
-    try {
-      addToast("info", `保存文件 "${editModal.file.name}" 的功能不受 OpenList API 支持。请使用重命名或删除后重新上传。`);
-      setEditModal(null);
-    } finally {
-      setEditSaving(false);
-    }
-  }, [editModal, addToast]);
-
   return (
     <div className="flex-1 flex flex-col overflow-hidden relative" ref={fileListRef}>
       <Breadcrumb />
@@ -708,9 +687,6 @@ export function FileList() {
           aria-label="文件右键菜单"
         >
           <li role="menuitem"><button type="button" onClick={() => { setPreviewModal(contextMenu.file); setPreviewContent(null); if (isTextFile(contextMenu.file)) loadPreviewContent(contextMenu.file); setContextMenu(null); }}>查看</button></li>
-          {!contextMenu.file.isDir && isTextFile(contextMenu.file) && (
-            <li role="menuitem"><button type="button" onClick={() => { setEditModal({ file: contextMenu.file, content: "" }); setContextMenu(null); }}>编辑</button></li>
-          )}
           <li role="menuitem"><button type="button" onClick={() => { setRenameModal({ file: contextMenu.file, newName: contextMenu.file.name }); setContextMenu(null); }}>重命名</button></li>
           <li role="menuitem"><button type="button" onClick={() => { setDeleteModal([contextMenu.file]); setContextMenu(null); }}>删除</button></li>
           <li role="menuitem"><button type="button" onClick={() => {
@@ -867,40 +843,10 @@ export function FileList() {
                   下载
                 </button>
               )}
-              {isTextFile(previewModal) && (
-                <button type="button" className="btn btn-sm" onClick={() => handleEditFile(previewModal)}>编辑</button>
-              )}
               <button type="button" className="btn" onClick={() => { setPreviewModal(null); setPreviewContent(null); }}>关闭</button>
             </div>
           </div>
           <div className="file-modal-backdrop" onClick={() => { setPreviewModal(null); setPreviewContent(null); }}></div>
-        </div>
-      )}
-
-      {editModal && (
-        <div className="file-modal-overlay">
-          <div className="file-modal-box max-w-4xl">
-            <h3 className="font-bold text-lg">编辑：{editModal.file.name}</h3>
-            <p className="text-xs opacity-50 mt-1">{editModal.file.path}</p>
-            <div className="mt-4">
-              <textarea
-                ref={textareaRef}
-                className="textarea textarea-bordered w-full font-mono text-xs leading-relaxed"
-                rows={20}
-                value={editModal.content}
-                onChange={(e) => setEditModal({ ...editModal, content: e.target.value })}
-                aria-label="文件内容编辑器"
-                placeholder="正在加载文件内容..."
-              />
-            </div>
-            <div className="modal-action">
-              <button type="button" className="btn btn-ghost" onClick={() => setEditModal(null)}>取消</button>
-              <button type="button" className="btn btn-primary" onClick={handleSaveEdit} disabled={editSaving}>
-                {editSaving ? <span className="loading loading-spinner loading-xs"></span> : "保存"}
-              </button>
-            </div>
-          </div>
-          <div className="file-modal-backdrop" onClick={() => setEditModal(null)}></div>
         </div>
       )}
     </div>
