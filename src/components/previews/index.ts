@@ -1,4 +1,4 @@
-import { lazy } from "react";
+import { lazy, Suspense } from "react";
 import type { PreviewDefinition, RegistryEntry, PreviewMatcher } from "./types";
 import type { FileInfo } from "@/types";
 
@@ -9,7 +9,7 @@ const PREVIEW_DEFINITIONS: PreviewDefinition[] = [
     priority: 100,
     matcher: { extensions: ["jpg", "jpeg", "png", "gif", "bmp", "svg", "webp", "ico", "avif"] },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    component: () => import("./ImagePreview") as any,
+    component: lazy(() => import("./ImagePreview").then(m => ({ default: m.ImagePreview }))) as any,
   },
   {
     id: "video",
@@ -17,7 +17,7 @@ const PREVIEW_DEFINITIONS: PreviewDefinition[] = [
     priority: 90,
     matcher: { extensions: ["mp4", "avi", "mkv", "mov", "wmv", "flv", "webm"] },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    component: () => import("./VideoPreview") as any,
+    component: lazy(() => import("./VideoPreview").then(m => ({ default: m.VideoPreview }))) as any,
   },
   {
     id: "audio",
@@ -25,7 +25,7 @@ const PREVIEW_DEFINITIONS: PreviewDefinition[] = [
     priority: 80,
     matcher: { extensions: ["mp3", "wav", "flac", "aac", "ogg", "wma"] },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    component: () => import("./AudioPreview") as any,
+    component: lazy(() => import("./AudioPreview").then(m => ({ default: m.AudioPreview }))) as any,
   },
   {
     id: "archive",
@@ -33,7 +33,7 @@ const PREVIEW_DEFINITIONS: PreviewDefinition[] = [
     priority: 70,
     matcher: { extensions: ["zip", "rar", "7z", "tar", "gz", "bz2"] },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    component: () => import("./ArchivePreview") as any,
+    component: lazy(() => import("./ArchivePreview").then(m => ({ default: m.ArchivePreview }))) as any,
     supportsArchiveNavigation: true,
   },
   {
@@ -42,7 +42,7 @@ const PREVIEW_DEFINITIONS: PreviewDefinition[] = [
     priority: 60,
     matcher: { extensions: ["pdf"] },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    component: () => import("./PdfPreview") as any,
+    component: lazy(() => import("./PdfPreview").then(m => ({ default: m.PdfPreview }))) as any,
   },
   {
     id: "csv",
@@ -50,7 +50,7 @@ const PREVIEW_DEFINITIONS: PreviewDefinition[] = [
     priority: 55,
     matcher: { extensions: ["csv"] },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    component: () => import("./CsvPreview") as any,
+    component: lazy(() => import("./CsvPreview").then(m => ({ default: m.CsvPreview }))) as any,
   },
   {
     id: "text",
@@ -58,12 +58,12 @@ const PREVIEW_DEFINITIONS: PreviewDefinition[] = [
     priority: 50,
     matcher: { extensions: ["txt", "text", "json", "xml", "yaml", "yml", "md", "log", "ini", "conf", "cfg", "sh", "bat", "ps1", "py", "js", "ts", "jsx", "tsx", "css", "html", "sql", "env", "gitignore", "toml", "rs", "go", "java", "c", "cpp", "h", "hpp", "vue", "svelte"] },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    component: () => import("./TextPreview") as any,
+    component: lazy(() => import("./TextPreview").then(m => ({ default: m.TextPreview }))) as any,
   },
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const UnsupportedPreview = lazy(() => import("./UnsupportedPreview") as any);
+export const UnsupportedPreview = lazy(() => import("./UnsupportedPreview").then(m => ({ default: m.UnsupportedPreview }))) as any;
 
 class PreviewRegistry {
   private registry: RegistryEntry[] = [];

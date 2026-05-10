@@ -1,4 +1,4 @@
-import type { ComponentType } from "react";
+import type { ComponentType, LazyExoticComponent } from "react";
 import type { FileInfo } from "@/types";
 
 export interface PreviewMatcher {
@@ -14,7 +14,8 @@ export interface PreviewDefinition {
   priority?: number;
   supportsArchiveNavigation?: boolean;
   matcher: PreviewMatcher;
-  component: () => Promise<{ default: ComponentType<unknown> }>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  component: LazyExoticComponent<ComponentType<any>>;
 }
 
 export interface PreviewProps {
@@ -25,7 +26,8 @@ export interface PreviewProps {
 
 export interface RegistryEntry {
   definition: PreviewDefinition;
-  component: ComponentType<PreviewProps> | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  component: ComponentType<any> | null;
   priority: number;
 }
 

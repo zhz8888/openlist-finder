@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef, useLayoutEffect, memo } from "react";
+import { useState, useCallback, useEffect, useRef, useLayoutEffect, memo, Suspense } from "react";
 import { createPortal } from "react-dom";
 import { useFileBrowser } from "@/hooks";
 import { useServerStore, useSettingsStore, useSearchStore, useFileBrowserStore, useToastStore } from "@/stores";
@@ -771,9 +771,13 @@ export function FileList() {
               {/* 动态预览组件 */}
               {(() => {
                 const entry = previewRegistry.match(previewModal);
-                if (entry && entry.component) {
-                  const Component = entry.component;
-                  return <Component file={previewModal} serverUrl={getActiveServer()?.url || ""} />;
+                if (entry && entry.definition.component) {
+                  const Component = entry.definition.component;
+                  return (
+                    <Suspense fallback={<div className="flex items-center justify-center py-8"><span className="loading loading-spinner loading-lg"></span></div>}>
+                      <Component file={previewModal} serverUrl={getActiveServer()?.url || ""} />
+                    </Suspense>
+                  );
                 }
                 return <UnsupportedPreview file={previewModal} serverUrl={getActiveServer()?.url || ""} />;
               })()}
