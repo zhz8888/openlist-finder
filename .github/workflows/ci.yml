@@ -169,6 +169,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Generate build summary
+        shell: bash
         run: |
           # Function to check step status and format emoji
           status_emoji() {
