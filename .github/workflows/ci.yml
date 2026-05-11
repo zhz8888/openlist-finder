@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 jobs:
   test:
@@ -35,14 +35,16 @@ jobs:
       - name: Install dependencies (Ubuntu only)
         id: install-deps
         if: matrix.platform == 'ubuntu-22.04'
+        shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libfuse2
 
       - name: Install cross-compilation tools (Linux arm64)
         id: install-cross
-        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        if: matrix.platform == 'ubuntu-22.04' && matrix.target == 'aarch64-unknown-linux-gnu'
         run: |
+          sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
           echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
 
@@ -66,13 +68,95 @@ jobs:
         id: install-deps-front
         run: bun install
 
-      - name: Build frontend
-        id: build-frontend
-        run: bun run build
+      - name: Build Tauri app
+        id: cargo-build
+        shell: bash
+        env:
+          TAURI_ENV_TARGET_TRIPLE: ${{ matrix.target }}
+        run: |
+          # 开发构建: 禁用 updater artifacts (不需要签名密钥)
+          echo '{"bundle":{"createUpdaterArtifacts":false}}' > /tmp/dev-build.json
 
-      - name: Build Tauri app (check only)
-        id: cargo-check
-        run: cargo check --manifest-path src-tauri/Cargo.toml
+          ARGS=(bunx tauri build --ci --config /tmp/dev-build.json)
+
+          if [ -n "${{ matrix.tauri_args }}" ]; then
+            ARGS+=(${{ matrix.tauri_args }})
+          fi
+
+          "${ARGS[@]}"
+
+      - name: Collect artifacts
+        id: collect
+        shell: bash
+        run: |
+          BUNDLE_DIR="src-tauri/target/${{ matrix.target }}/release/bundle"
+          FALLBACK_DIR="src-tauri/target/release/bundle"
+
+          # 优先使用带 target 的路径
+          if [ -d "$BUNDLE_DIR" ]; then
+            SEARCH_DIR="$BUNDLE_DIR"
+          else
+            SEARCH_DIR="$FALLBACK_DIR"
+          fi
+
+          STAGING="build-artifacts/ci-${{ github.sha }}-${{ matrix.platform }}-${{ matrix.target }}"
+          mkdir -p "$STAGING"
+
+          echo "Searching for artifacts in: $SEARCH_DIR"
+          if [ -d "$SEARCH_DIR" ]; then
+            find "$SEARCH_DIR" \
+              \( -type f \( \
+                -name "*.dmg" -o -name "*.msi" -o \
+                -name "*.deb" -o -name "*.rpm" -o -name "*.AppImage" -o -name "*.zip" \
+              \) \) -o \
+              \( -type d -name "*.app" \) | while read -r f; do
+              base="$(basename "$f")"
+              bundle="artifact"
+              ext=""
+
+              case "$base" in
+                *.app)
+                  bundle="app"
+                  ext=".app"
+                  ;;
+                *.dmg)
+                  bundle="dmg"
+                  ext=".dmg"
+                  ;;
+                *.msi)
+                  bundle="msi"
+                  ext=".msi"
+                  ;;
+                *.deb)
+                  bundle="deb"
+                  ext=".deb"
+                  ;;
+                *.rpm)
+                  bundle="rpm"
+                  ext=".rpm"
+                  ;;
+                *.AppImage)
+                  bundle="appimage"
+                  ext=".AppImage"
+                  ;;
+                *.zip)
+                  bundle="zip"
+                  ext=".zip"
+                  ;;
+                *)
+                  ext=""
+                  ;;
+              esac
+
+              target="${{ matrix.platform }}_${{ matrix.target }}_${bundle}${ext}"
+              echo "  Copying: ${base} -> ${target}"
+              cp -R "$f" "$STAGING/$target"
+            done
+          fi
+
+          echo "staging_dir=$STAGING" >> "$GITHUB_OUTPUT"
+          echo "=== Collected artifacts ==="
+          ls -lh "$STAGING/" 2>/dev/null || echo "(empty)"
 
       - name: Upload artifacts
         id: upload-artifacts
@@ -80,10 +164,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-check-${{ matrix.platform }}-${{ matrix.target }}
-          path: |
-            dist/**
-            src-tauri/target/${{ matrix.target }}/debug/** 2>/dev/null || true
-            src-tauri/target/${{ matrix.target }}/release/** 2>/dev/null || true
+          path: ${{ steps.collect.outputs.staging_dir }}
           retention-days: 7
           if-no-files-found: warn
 
@@ -91,12 +172,20 @@ jobs:
         run: |
           # Function to check step status and format emoji
           status_emoji() {
-            if [ "$1" == "success" ]; then echo "✅"; else echo "❌"; fi
+            if [ "$1" == "success" ]; then echo "✅"
+            elif [ "$1" == "skipped" ]; then echo "⏭️"
+            else echo "❌"; fi
+          }
+
+          status_text() {
+            if [ "$1" == "success" ]; then echo "✅ Success"
+            elif [ "$1" == "skipped" ]; then echo "⏭️ Skipped"
+            else echo "❌ $1"; fi
           }
 
           # Define all steps
-          STEPS="checkout install-deps install-cross setup-node setup-rust install-bun install-deps-front build-frontend cargo-check upload-artifacts"
-          STEP_NAMES="Checkout repository|Install dependencies|Install cross-compilation|Setup Node.js|Install Rust|Install Bun|Install frontend deps|Build frontend|Cargo check|Upload artifacts"
+          STEPS="checkout install-deps install-cross setup-node setup-rust install-bun install-deps-front cargo-build upload-artifacts"
+          STEP_NAMES="Checkout repository|Install dependencies|Install cross-compilation|Setup Node.js|Install Rust|Install Bun|Install frontend deps|Cargo build|Upload artifacts"
 
           echo "## CI Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -106,7 +195,7 @@ jobs:
           echo "- **Target**: ${{ matrix.target }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Overall Status**: $(status_emoji '${{ job.status }}') ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Overall Status**: $(status_text '${{ job.status }}')" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Build Steps" >> $GITHUB_STEP_SUMMARY
           echo "| Step | Status |" >> $GITHUB_STEP_SUMMARY
@@ -118,21 +207,68 @@ jobs:
           echo "| Install Rust stable | $(status_emoji '${{ steps.setup-rust.outcome }}') |" >> $GITHUB_STEP_SUMMARY
           echo "| Install Bun | $(status_emoji '${{ steps.install-bun.outcome }}') |" >> $GITHUB_STEP_SUMMARY
           echo "| Install frontend dependencies | $(status_emoji '${{ steps.install-deps-front.outcome }}') |" >> $GITHUB_STEP_SUMMARY
-          echo "| Build frontend | $(status_emoji '${{ steps.build-frontend.outcome }}') |" >> $GITHUB_STEP_SUMMARY
-          echo "| Cargo check | $(status_emoji '${{ steps.cargo-check.outcome }}') |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Tauri app | $(status_emoji '${{ steps.cargo-build.outcome }}') |" >> $GITHUB_STEP_SUMMARY
           echo "| Upload artifacts | $(status_emoji '${{ steps.upload-artifacts.outcome }}') |" >> $GITHUB_STEP_SUMMARY
 
           # Check for failures and show error logs
           FAILED_STEPS=""
-          if [ "${{ steps.checkout.outcome }}" != "success" ]; then FAILED_STEPS="${FAILED_STEPS}checkout "; fi
-          if [ "${{ steps.install-deps.outcome }}" != "success" ]; then FAILED_STEPS="${FAILED_STEPS}install-deps "; fi
-          if [ "${{ steps.install-cross.outcome }}" != "success" ]; then FAILED_STEPS="${FAILED_STEPS}install-cross "; fi
-          if [ "${{ steps.setup-node.outcome }}" != "success" ]; then FAILED_STEPS="${FAILED_STEPS}setup-node "; fi
-          if [ "${{ steps.setup-rust.outcome }}" != "success" ]; then FAILED_STEPS="${FAILED_STEPS}setup-rust "; fi
-          if [ "${{ steps.install-bun.outcome }}" != "success" ]; then FAILED_STEPS="${FAILED_STEPS}install-bun "; fi
-          if [ "${{ steps.install-deps-front.outcome }}" != "success" ]; then FAILED_STEPS="${FAILED_STEPS}install-deps-front "; fi
-          if [ "${{ steps.build-frontend.outcome }}" != "success" ]; then FAILED_STEPS="${FAILED_STEPS}build-frontend "; fi
-          if [ "${{ steps.cargo-check.outcome }}" != "success" ]; then FAILED_STEPS="${FAILED_STEPS}cargo-check "; fi
+          SKIPPED_STEPS=""
+          if [ "${{ steps.checkout.outcome }}" != "success" ]; then
+            if [ "${{ steps.checkout.outcome }}" == "skipped" ]; then
+              SKIPPED_STEPS="${SKIPPED_STEPS}checkout "
+            else
+              FAILED_STEPS="${FAILED_STEPS}checkout "
+            fi
+          fi
+          if [ "${{ steps.install-deps.outcome }}" != "success" ]; then
+            if [ "${{ steps.install-deps.outcome }}" == "skipped" ]; then
+              SKIPPED_STEPS="${SKIPPED_STEPS}install-deps "
+            else
+              FAILED_STEPS="${FAILED_STEPS}install-deps "
+            fi
+          fi
+          if [ "${{ steps.install-cross.outcome }}" != "success" ]; then
+            if [ "${{ steps.install-cross.outcome }}" == "skipped" ]; then
+              SKIPPED_STEPS="${SKIPPED_STEPS}install-cross "
+            else
+              FAILED_STEPS="${FAILED_STEPS}install-cross "
+            fi
+          fi
+          if [ "${{ steps.setup-node.outcome }}" != "success" ]; then
+            if [ "${{ steps.setup-node.outcome }}" == "skipped" ]; then
+              SKIPPED_STEPS="${SKIPPED_STEPS}setup-node "
+            else
+              FAILED_STEPS="${FAILED_STEPS}setup-node "
+            fi
+          fi
+          if [ "${{ steps.setup-rust.outcome }}" != "success" ]; then
+            if [ "${{ steps.setup-rust.outcome }}" == "skipped" ]; then
+              SKIPPED_STEPS="${SKIPPED_STEPS}setup-rust "
+            else
+              FAILED_STEPS="${FAILED_STEPS}setup-rust "
+            fi
+          fi
+          if [ "${{ steps.install-bun.outcome }}" != "success" ]; then
+            if [ "${{ steps.install-bun.outcome }}" == "skipped" ]; then
+              SKIPPED_STEPS="${SKIPPED_STEPS}install-bun "
+            else
+              FAILED_STEPS="${FAILED_STEPS}install-bun "
+            fi
+          fi
+          if [ "${{ steps.install-deps-front.outcome }}" != "success" ]; then
+            if [ "${{ steps.install-deps-front.outcome }}" == "skipped" ]; then
+              SKIPPED_STEPS="${SKIPPED_STEPS}install-deps-front "
+            else
+              FAILED_STEPS="${FAILED_STEPS}install-deps-front "
+            fi
+          fi
+          if [ "${{ steps.cargo-build.outcome }}" != "success" ]; then
+            if [ "${{ steps.cargo-build.outcome }}" == "skipped" ]; then
+              SKIPPED_STEPS="${SKIPPED_STEPS}cargo-build "
+            else
+              FAILED_STEPS="${FAILED_STEPS}cargo-build "
+            fi
+          fi
 
           if [ -n "$FAILED_STEPS" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY
@@ -141,6 +277,17 @@ jobs:
             echo "The following steps failed. Check the [build log](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/logs) for details." >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             for step in $FAILED_STEPS; do
+              echo "- \`$step\`" >> $GITHUB_STEP_SUMMARY
+            done
+          fi
+
+          if [ -n "$SKIPPED_STEPS" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Skipped Steps" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The following steps were skipped (not applicable for this platform/target)." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            for step in $SKIPPED_STEPS; do
               echo "- \`$step\`" >> $GITHUB_STEP_SUMMARY
             done
           fi

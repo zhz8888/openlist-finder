@@ -5,6 +5,19 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      draft:
+        description: 'Create as draft release'
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   create-release:
@@ -15,13 +28,48 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Read version
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(jq -r '.version' src-tauri/tauri.conf.json)
+          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Validate tag matches version
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          EXPECTED_TAG="v${{ steps.version.outputs.value }}"
+          if [ "${GITHUB_REF_NAME}" != "$EXPECTED_TAG" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match app version ${EXPECTED_TAG}"
+            exit 1
+          fi
+
+      - name: Load release notes
+        id: release_notes
+        shell: bash
+        run: |
+          NOTES_FILE="release-notes/v${{ steps.version.outputs.value }}.md"
+          if [ ! -f "$NOTES_FILE" ]; then
+            echo "::error::Missing release notes file: $NOTES_FILE"
+            exit 1
+          fi
+
+          {
+            echo 'body<<__RELEASE_NOTES__'
+            cat "$NOTES_FILE"
+            echo
+            echo '__RELEASE_NOTES__'
+          } >> "$GITHUB_OUTPUT"
+
       - name: Create Draft Release
         id: create-release
         uses: softprops/action-gh-release@v2
         with:
-          draft: true
+          draft: ${{ github.event_name == 'workflow_dispatch' && inputs.draft || true }}
           prerelease: false
           generate_release_notes: true
+          body: ${{ steps.release_notes.outputs.body }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -34,21 +82,27 @@ jobs:
           - platform: 'macos-latest'
             target: 'aarch64-apple-darwin'
             arch: 'arm64'
+            bundles: 'dmg'
           - platform: 'macos-latest'
             target: 'x86_64-apple-darwin'
             arch: 'x64'
+            bundles: 'dmg'
           - platform: 'windows-latest'
             target: 'x86_64-pc-windows-msvc'
             arch: 'x64'
+            bundles: 'nsis'
           - platform: 'windows-latest'
             target: 'aarch64-pc-windows-msvc'
             arch: 'arm64'
+            bundles: 'nsis'
           - platform: 'ubuntu-22.04'
             target: 'x86_64-unknown-linux-gnu'
             arch: 'x64'
+            bundles: 'deb,rpm'
           - platform: 'ubuntu-22.04'
             target: 'aarch64-unknown-linux-gnu'
             arch: 'arm64'
+            bundles: 'deb,rpm'
 
     runs-on: ${{ matrix.platform }}
 
@@ -56,63 +110,88 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install dependencies (Ubuntu only)
+      - name: Read version
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(jq -r '.version' src-tauri/tauri.conf.json)
+          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Install Linux dependencies
         if: matrix.platform == 'ubuntu-22.04'
+        shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libfuse2
 
       - name: Install cross-compilation tools (Linux arm64)
-        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        if: matrix.platform == 'ubuntu-22.04' && matrix.target == 'aarch64-unknown-linux-gnu'
+        shell: bash
         run: |
           sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
           echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '24'
 
-      - name: Install Rust stable
+      - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
 
-      - name: Install Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: 'src-tauri -> target'
+          shared-key: ${{ matrix.target }}
 
       - name: Install frontend dependencies
         run: bun install
 
       - name: Build Tauri app
+        id: cargo-build
+        shell: bash
+        env:
+          TAURI_ENV_TARGET_TRIPLE: ${{ matrix.target }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
-          bun run build:release --target ${{ matrix.target }}
+          echo '{"bundle":{"createUpdaterArtifacts":false}}' > /tmp/release-build.json
+          bunx tauri build --ci --bundles ${{ matrix.bundles }} --target ${{ matrix.target }} --config /tmp/release-build.json
 
       - name: Upload to Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
         run: |
           TAG_NAME="${GITHUB_REF#refs/tags/}"
           BUNDLE_DIR="src-tauri/target/${{ matrix.target }}/release/bundle"
-          EXEC_PATH="src-tauri/target/${{ matrix.target }}/release/openlist-finder"
 
           if [ -d "$BUNDLE_DIR" ]; then
             echo "Uploading bundle files..."
-            find "$BUNDLE_DIR" -type f -name "*" | while read file; do
+            find "$BUNDLE_DIR" -type f \( -name "*.dmg" -o -name "*.msi" -o -name "*.deb" -o -name "*.rpm" -o -name "*.AppImage" -o -name "*.zip" \) | while read -r file; do
               echo "Uploading: $file"
               gh release upload "$TAG_NAME" "$file" --clobber || echo "Upload failed for $file"
             done
-          elif [ -f "$EXEC_PATH" ]; then
-            echo "Uploading executable..."
-            if [[ "${{ matrix.platform }}" == *"windows"* ]]; then
-              cp "$EXEC_PATH" "openlist-finder-${{ matrix.arch }}.exe"
-              gh release upload "$TAG_NAME" "openlist-finder-${{ matrix.arch }}.exe" --clobber
-            else
-              tar -czf "openlist-finder-${{ matrix.arch }}.tar.gz" -C src-tauri/target/${{ matrix.target }}/release openlist-finder
-              gh release upload "$TAG_NAME" "openlist-finder-${{ matrix.arch }}.tar.gz" --clobber
-            fi
           else
-            echo "Warning: No artifacts found for ${{ matrix.target }}"
+            echo "Warning: No bundle directory found for ${{ matrix.target }}"
           fi
 
   cleanup:
@@ -156,14 +235,14 @@ jobs:
           echo "- **Result**: All builds completed successfully" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Build Matrix Results" >> $GITHUB_STEP_SUMMARY
-          echo "| Platform | Target | Architecture | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|----------|--------|-------------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| macOS-latest | aarch64-apple-darwin | arm64 | ✅ Success |" >> $GITHUB_STEP_SUMMARY
-          echo "| macOS-latest | x86_64-apple-darwin | x64 | ✅ Success |" >> $GITHUB_STEP_SUMMARY
-          echo "| windows-latest | x86_64-pc-windows-msvc | x64 | ✅ Success |" >> $GITHUB_STEP_SUMMARY
-          echo "| windows-latest | aarch64-pc-windows-msvc | arm64 | ✅ Success |" >> $GITHUB_STEP_SUMMARY
-          echo "| ubuntu-22.04 | x86_64-unknown-linux-gnu | x64 | ✅ Success |" >> $GITHUB_STEP_SUMMARY
-          echo "| ubuntu-22.04 | aarch64-unknown-linux-gnu | arm64 | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+          echo "| Platform | Target | Architecture | Bundles | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|--------|-------------|--------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| macOS-latest | aarch64-apple-darwin | arm64 | dmg | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+          echo "| macOS-latest | x86_64-apple-darwin | x64 | dmg | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+          echo "| windows-latest | x86_64-pc-windows-msvc | x64 | nsis | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+          echo "| windows-latest | aarch64-pc-windows-msvc | arm64 | nsis | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+          echo "| ubuntu-22.04 | x86_64-unknown-linux-gnu | x64 | deb,rpm | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+          echo "| ubuntu-22.04 | aarch64-unknown-linux-gnu | arm64 | deb,rpm | ✅ Success |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Artifacts" >> $GITHUB_STEP_SUMMARY
           echo "All build artifacts have been uploaded to the release." >> $GITHUB_STEP_SUMMARY
