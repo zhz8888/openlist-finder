@@ -6,13 +6,13 @@
 
 - **OpenList 集成** — 连接 OpenList 服务器，浏览和管理远程文件系统（列表、重命名、删除、复制、移动）
 - **Meilisearch 搜索** — 将文件元数据同步至 Meilisearch 索引，实现快速全文检索
-- **MCP 服务** — 通过 stdio 暴露文件操作与搜索能力，供 AI 工具集成调用
+- **MCP 服务** — 通过 HTTP 传输暴露文件操作与搜索能力，供 AI 工具集成调用
 - **多服务器管理** — 支持配置多个 OpenList 服务器，Token 认证
 - **安全凭证存储** — 使用系统钥匙串安全存储敏感信息（Token、API Key）
 - **日志查看器** — 实时查看应用运行日志，支持按等级筛选和分页加载
 - **主题系统** — GitHub Light / GitHub Dark / 跟随系统，基于 Tailwind CSS 自定义主题
-- **文件编辑** — 在线预览与编辑文本文件，支持图片预览
-- **跨平台** — 支持 Windows（NSIS/MSI）和 macOS（DMG）
+- **文件预览** — 支持图片、视频、音频、PDF、CSV、文本及压缩包预览
+- **跨平台** — 支持 Windows（NSIS/MSI）、macOS（DMG）和 Linux（DEB/RPM/AppImage）
 
 ## 技术栈
 
@@ -25,7 +25,7 @@
 | 状态管理 | Zustand 5 |
 | 路由 | React Router DOM 7 |
 | Hooks | ahooks 3 |
-| 后端 | Rust（reqwest、serde、tokio、chrono、keyring） |
+| 后端 | Rust（reqwest、serde、tokio、chrono、keyring、uuid、tracing） |
 | 持久化 | Tauri Plugin Store |
 | Tauri 插件 | opener、http、store、dialog、shell、fs |
 
@@ -36,76 +36,78 @@ openlist-finder/
 ├── src/                          # 前端源码
 │   ├── assets/                   # 静态资源
 │   ├── components/               # UI 组件
-│   │   ├── Breadcrumb.tsx        # 面包屑导航
-│   │   ├── ErrorBoundary.tsx     # 错误边界
-│   │   ├── FileList.tsx          # 文件列表与操作
-│   │   ├── Sidebar.tsx           # 侧边栏
-│   │   ├── ThemeProvider.tsx     # 主题提供者
-│   │   ├── ToastContainer.tsx    # 通知容器
-│   │   └── index.ts              # 组件导出
-│   ├── hooks/                    # 自定义 Hooks
-│   │   ├── useFileBrowser.ts     # 文件浏览逻辑
-│   │   ├── useTheme.ts           # 主题切换
-│   │   └── index.ts              # Hooks 导出
-│   ├── pages/                    # 页面
-│   │   ├── HomePage.tsx          # 主页（文件浏览）
-│   │   ├── SettingsPage.tsx      # 设置页
-│   │   ├── LogViewerPage.tsx     # 日志查看器
-│   │   └── index.ts              # 页面导出
-│   ├── services/                 # API 服务
-│   │   ├── openlist.ts           # OpenList API 客户端
-│   │   ├── meilisearch.ts        # Meilisearch API 客户端
-│   │   └── index.ts              # 服务导出
-│   ├── stores/                   # Zustand 状态
-│   │   ├── fileBrowserStore.ts   # 文件浏览状态
-│   │   ├── searchStore.ts        # 搜索状态
-│   │   ├── serverStore.ts        # 服务器配置
-│   │   ├── settingsStore.ts      # 应用设置
-│   │   ├── toastStore.ts         # 通知状态
-│   │   └── index.ts              # Store 导出
-│   ├── types/                    # TypeScript 类型定义
-│   │   ├── app.ts                # 应用类型
-│   │   ├── mcp.ts                # MCP 类型
-│   │   ├── meilisearch.ts        # Meilisearch 类型
-│   │   ├── openlist.ts           # OpenList 类型
-│   │   └── index.ts              # 类型导出
+│   │   ├── layout/              # 布局组件
+│   │   ├── previews/            # 文件预览组件
+│   │   ├── Breadcrumb.tsx       # 面包屑导航
+│   │   ├── ErrorBoundary.tsx    # 错误边界
+│   │   ├── FileList.tsx         # 文件列表与操作
+│   │   ├── Sidebar.tsx          # 侧边栏
+│   │   ├── ThemeProvider.tsx    # 主题提供者
+│   │   ├── ToastContainer.tsx   # 通知容器
+│   │   └── index.ts             # 组件导出
+│   ├── hooks/                   # 自定义 Hooks
+│   │   ├── useFileBrowser.ts    # 文件浏览逻辑
+│   │   ├── useTheme.ts          # 主题切换
+│   │   └── index.ts             # Hooks 导出
+│   ├── pages/                   # 页面
+│   │   ├── HomePage.tsx         # 主页（文件浏览）
+│   │   ├── SettingsPage.tsx     # 设置页
+│   │   ├── LogViewerPage.tsx    # 日志查看器
+│   │   └── index.ts             # 页面导出
+│   ├── services/                # API 服务
+│   │   ├── openlist.ts          # OpenList API 客户端
+│   │   ├── meilisearch.ts       # Meilisearch API 客户端
+│   │   └── index.ts             # 服务导出
+│   ├── stores/                  # Zustand 状态
+│   │   ├── fileBrowserStore.ts  # 文件浏览状态
+│   │   ├── searchStore.ts       # 搜索状态
+│   │   ├── serverStore.ts       # 服务器配置
+│   │   ├── settingsStore.ts     # 应用设置
+│   │   ├── toastStore.ts        # 通知状态
+│   │   └── index.ts             # Store 导出
+│   ├── types/                   # TypeScript 类型定义
+│   │   ├── app.ts               # 应用类型
+│   │   ├── mcp.ts               # MCP 类型
+│   │   ├── meilisearch.ts       # Meilisearch 类型
+│   │   ├── openlist.ts          # OpenList 类型
+│   │   └── index.ts             # 类型导出
 │   ├── styles/
-│   │   └── index.css             # 全局样式与 Tailwind CSS 自定义主题
-│   ├── App.tsx                   # 应用入口
-│   └── main.tsx                  # React 入口
-├── src-tauri/                    # Rust 后端
+│   │   └── index.css            # 全局样式与 Tailwind CSS 自定义主题
+│   ├── App.tsx                  # 应用入口
+│   └── main.tsx                 # React 入口
+├── src-tauri/                   # Rust 后端
 │   └── src/
-│       ├── commands/             # Tauri 命令
-│       │   ├── openlist.rs       # OpenList 操作命令
+│       ├── commands/            # Tauri 命令
+│       │   ├── openlist.rs      # OpenList 操作命令
 │       │   ├── meilisearch.rs    # Meilisearch 操作命令
-│       │   ├── mcp_server.rs     # MCP 服务实现
-│       │   ├── keyring.rs        # 系统钥匙串操作命令
-│       │   ├── log.rs            # 日志操作命令
-│       │   └── mod.rs            # 命令模块导出
-│       ├── config/               # 应用配置
-│       │   ├── app_config.rs     # 配置定义
-│       │   └── mod.rs            # 配置模块导出
-│       ├── models/               # 数据模型
-│       │   ├── meilisearch.rs    # Meilisearch 模型
-│       │   ├── openlist.rs       # OpenList 模型
-│       │   └── mod.rs            # 模型模块导出
-│       ├── services/             # 后端服务层
-│       │   ├── meilisearch.rs    # Meilisearch 服务
-│       │   ├── openlist.rs       # OpenList 服务
-│       │   ├── log_manager.rs    # 日志管理服务
-│       │   └── mod.rs            # 服务模块导出
-│       ├── lib.rs                # Tauri 库入口
-│       └── main.rs               # Rust 主入口
-└── package.json                  # 项目配置
-    ├── bun.lock                  # Bun 锁定文件
+│       │   ├── mcp_server.rs    # MCP 服务实现
+│       │   ├── keyring.rs       # 系统钥匙串操作命令
+│       │   ├── log.rs           # 日志操作命令
+│       │   └── mod.rs           # 命令模块导出
+│       ├── config/              # 应用配置
+│       │   ├── app_config.rs    # 配置定义
+│       │   └── mod.rs           # 配置模块导出
+│       ├── models/              # 数据模型
+│       │   ├── meilisearch.rs   # Meilisearch 模型
+│       │   ├── openlist.rs      # OpenList 模型
+│       │   └── mod.rs           # 模型模块导出
+│       ├── services/            # 后端服务层
+│       │   ├── meilisearch.rs   # Meilisearch 服务
+│       │   ├── openlist.rs      # OpenList 服务
+│       │   ├── log_manager.rs   # 日志管理服务
+│       │   └── mod.rs           # 服务模块导出
+│       ├── lib.rs               # Tauri 库入口
+│       └── main.rs              # Rust 主入口
+└── package.json                 # 项目配置
+    └── bun.lock                 # Bun 锁定文件
 ```
 
 ## 开发
 
 ### 环境要求
 
-- [Node.js](https://nodejs.org/) >= 18
-- [Rust](https://www.rust-lang.org/tools/install) >= 1.77
+- [Node.js](https://nodejs.org/) >= 24
+- [Rust](https://www.rust-lang.org/tools/install) >= 1.90
 - [Tauri CLI](https://v2.tauri.app/start/prerequisites/)
 
 ### 安装依赖
@@ -144,11 +146,11 @@ bun tauri build
 - **Host** — Meilisearch 服务地址（默认 `http://localhost:7700`）
 - **API Key** — Meilisearch API 密钥
 - **Index UID** — 索引名称（默认 `openlist`）
-- **同步策略** — 手动 / 定时
+- **同步策略** — 手动 / 自动定时同步
 
 ### MCP 服务
 
-MCP 服务通过 stdio 传输协议运行，可被支持 MCP 的 AI 工具集成。提供的工具包括：
+MCP 服务通过 HTTP 传输协议运行，可被支持 MCP 的 AI 工具集成。提供的工具包括：
 
 | 工具 | 说明 |
 |------|------|
