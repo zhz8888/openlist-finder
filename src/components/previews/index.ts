@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy } from "react";
 import type { PreviewDefinition, RegistryEntry, PreviewMatcher } from "./types";
 import type { FileInfo } from "@/types";
 

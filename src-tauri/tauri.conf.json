@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "OpenList Finder",
+  "productName": "OpenList-Finder",
   "version": "0.1.0",
   "identifier": "cn.zhz8888.openlist-finder",
   "build": {
